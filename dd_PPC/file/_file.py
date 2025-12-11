@@ -29,6 +29,8 @@ def get_datas() -> dict:
 
 
 def save_submission(predictions: np.ndarray, folder_prefix: str | None = None):
+    if folder_prefix is None:
+        folder_prefix = ''
 
     _dir_path = '../results/'
 
