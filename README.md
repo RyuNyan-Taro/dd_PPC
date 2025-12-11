@@ -5,5 +5,6 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 
 # Scores
 ## 36.559
-- simple RandomForest
+- model: simple RandomForest
+- process: preprocess.standardized_with_numbers -> model.fit_random_forest
 - It is for the submission test
