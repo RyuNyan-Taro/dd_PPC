@@ -47,20 +47,7 @@ def save_submission(predictions: np.ndarray, folder_prefix: str | None = None):
 
     _consumption_format['cons_ppp17'] = predictions
 
-    _test = pd.read_csv('../datas/Poverty_Prediction_Challenge_-_Test_Data_-_Household_survey_features.csv')
-
-    survey_400000_cond = _test.survey_id.to_numpy() == 400000
-    survey_500000_cond = _test.survey_id.to_numpy() == 500000
-    survey_600000_cond = _test.survey_id.to_numpy() == 600000
-
-    for _col in _poverty_distribution_format.columns[1:]:
-
-        _percent = float(_col.split('_')[-1])
-        _poverty_distribution_format[_col] = [
-            sum(predictions[_cond] <= _percent) / sum(_cond)
-            for _cond in
-            [survey_400000_cond, survey_500000_cond, survey_600000_cond]
-        ]
+    _add_distribution(_poverty_distribution_format, predictions)
 
     _folder_name = folder_prefix + datetime.datetime.now().strftime('%y%m%d%H%M%S')
     _save_dir = _dir_path + _folder_name
@@ -70,3 +57,20 @@ def save_submission(predictions: np.ndarray, folder_prefix: str | None = None):
     _poverty_distribution_format.to_csv(_save_dir + 'predicted_poverty_distribution.csv', index=False)
 
     shutil.make_archive(_folder_name, 'zip', _save_dir)
+
+
+def _add_distribution(poverty_distribution_format: pd.DataFrame, predictions: np.ndarray):
+    _test = pd.read_csv('../datas/Poverty_Prediction_Challenge_-_Test_Data_-_Household_survey_features.csv')
+
+    survey_400000_cond = _test.survey_id.to_numpy() == 400000
+    survey_500000_cond = _test.survey_id.to_numpy() == 500000
+    survey_600000_cond = _test.survey_id.to_numpy() == 600000
+
+    for _col in poverty_distribution_format.columns[1:]:
+
+        _percent = float(_col.split('_')[-1])
+        poverty_distribution_format[_col] = [
+            sum(predictions[_cond] <= _percent) / sum(_cond)
+            for _cond in
+            [survey_400000_cond, survey_500000_cond, survey_600000_cond]
+        ]
