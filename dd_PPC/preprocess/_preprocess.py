@@ -3,7 +3,7 @@
 ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 """
 
-__all__ = []
+__all__ = ['standardized_with_numbers']
 
 import pandas as pd
 
