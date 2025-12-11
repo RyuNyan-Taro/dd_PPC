@@ -49,6 +49,7 @@ def save_to_submission_format(predictions: np.ndarray, folder_prefix: str | None
     _save_submissions(_consumption_format, _poverty_distribution_format, _dir_path, folder_prefix)
 
 
+# internals for save_to_submission_format
 def _get_submission_formats(dir_path) -> tuple[pd.DataFrame, pd.DataFrame]:
     consumption_format = pd.read_csv(
         dir_path + '/Poverty_Prediction_Challenge_-_Submission_format/predicted_household_consumption.csv')
@@ -56,7 +57,6 @@ def _get_submission_formats(dir_path) -> tuple[pd.DataFrame, pd.DataFrame]:
         dir_path + '/Poverty_Prediction_Challenge_-_Submission_format/predicted_poverty_distribution.csv')
 
     return consumption_format, poverty_distribution_format
-
 
 def _add_distribution(poverty_distribution_format: pd.DataFrame, predictions: np.ndarray):
     _test = pd.read_csv('../datas/Poverty_Prediction_Challenge_-_Test_Data_-_Household_survey_features.csv')
