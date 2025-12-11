@@ -46,14 +46,7 @@ def save_submission(predictions: np.ndarray, folder_prefix: str | None = None):
 
     _add_distribution(_poverty_distribution_format, predictions)
 
-    _folder_name = folder_prefix + datetime.datetime.now().strftime('%y%m%d%H%M%S')
-    _save_dir = _dir_path + _folder_name
-    os.mkdir(_save_dir)
-
-    _consumption_format.to_csv(_save_dir + 'predicted_household_consumption.csv', index=False)
-    _poverty_distribution_format.to_csv(_save_dir + 'predicted_poverty_distribution.csv', index=False)
-
-    shutil.make_archive(_folder_name, 'zip', _save_dir)
+    _save_submissions(_consumption_format, _poverty_distribution_format, _dir_path, folder_prefix)
 
 
 def _get_submission_formats(dir_path) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -80,3 +73,14 @@ def _add_distribution(poverty_distribution_format: pd.DataFrame, predictions: np
             for _cond in
             [survey_400000_cond, survey_500000_cond, survey_600000_cond]
         ]
+
+
+def _save_submissions(consumption_format: pd.DataFrame, poverty_distribution_format: pd.DataFrame, dir_path: str, folder_prefix: str):
+    _folder_name = folder_prefix + datetime.datetime.now().strftime('%y%m%d%H%M%S')
+    _save_dir = dir_path + _folder_name
+    os.mkdir(_save_dir)
+
+    consumption_format.to_csv(_save_dir + 'predicted_household_consumption.csv', index=False)
+    poverty_distribution_format.to_csv(_save_dir + 'predicted_poverty_distribution.csv', index=False)
+
+    shutil.make_archive(_folder_name, 'zip', _save_dir)
