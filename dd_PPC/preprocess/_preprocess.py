@@ -1,3 +1,8 @@
+"""Data preprocess scripts for modeling.
+
+ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
+"""
+
 __all__ = []
 
 import pandas as pd
