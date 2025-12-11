@@ -29,6 +29,12 @@ def get_datas() -> dict:
 
 
 def save_submission(predictions: np.ndarray, folder_prefix: str | None = None):
+    """Saves predictions to specified file paths.
+    Args:
+        predictions: Predictions returned by a model.
+        folder_prefix: If selected, it is added as the prefix of the save folder.
+
+    """
     if folder_prefix is None:
         folder_prefix = ''
 
