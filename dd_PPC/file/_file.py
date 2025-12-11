@@ -28,7 +28,7 @@ def get_datas() -> dict:
     return {'train': _train, 'test': _test, 'target_consumption': _target_consumption, 'target_rate': _target_rate}
 
 
-def save_submission(predictions: np.ndarray, folder_prefix: str | None = None):
+def save_to_submission_format(predictions: np.ndarray, folder_prefix: str | None = None):
     """Saves predictions to specified file paths.
     Args:
         predictions: Predictions returned by a model.
