@@ -40,10 +40,7 @@ def save_submission(predictions: np.ndarray, folder_prefix: str | None = None):
 
     _dir_path = '../results/'
 
-    _consumption_format = pd.read_csv(
-        _dir_path + '/Poverty_Prediction_Challenge_-_Submission_format/predicted_household_consumption.csv')
-    _poverty_distribution_format = pd.read_csv(
-        _dir_path + '/Poverty_Prediction_Challenge_-_Submission_format/predicted_poverty_distribution.csv')
+    _consumption_format, _poverty_distribution_format = _get_submission_formats(_dir_path)
 
     _consumption_format['cons_ppp17'] = predictions
 
@@ -57,6 +54,15 @@ def save_submission(predictions: np.ndarray, folder_prefix: str | None = None):
     _poverty_distribution_format.to_csv(_save_dir + 'predicted_poverty_distribution.csv', index=False)
 
     shutil.make_archive(_folder_name, 'zip', _save_dir)
+
+
+def _get_submission_formats(dir_path) -> tuple[pd.DataFrame, pd.DataFrame]:
+    consumption_format = pd.read_csv(
+        dir_path + '/Poverty_Prediction_Challenge_-_Submission_format/predicted_household_consumption.csv')
+    poverty_distribution_format = pd.read_csv(
+        dir_path + '/Poverty_Prediction_Challenge_-_Submission_format/predicted_poverty_distribution.csv')
+
+    return consumption_format, poverty_distribution_format
 
 
 def _add_distribution(poverty_distribution_format: pd.DataFrame, predictions: np.ndarray):
