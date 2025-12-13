@@ -20,8 +20,8 @@ def standardized_with_numbers(train: pd.DataFrame) -> tuple[pd.DataFrame, Standa
         Standardized and number columns only selected DataFrame and the StandardScaler model to use the prediction process.
     """
 
-    _num_cols = ['hhid', 'com', 'weight', 'strata', 'hsize',
-       'num_children5', 'num_children10', 'num_children18', 'age',
+    _num_cols = ['weight', 'strata', 'hsize', 'age',
+       'num_children5', 'num_children10', 'num_children18',
        'num_adult_female', 'num_adult_male', 'num_elderly',]
 
     x_train = train[_num_cols]
