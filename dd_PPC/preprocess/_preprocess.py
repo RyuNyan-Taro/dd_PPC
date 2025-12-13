@@ -22,7 +22,7 @@ def standardized_with_numbers(train: pd.DataFrame) -> tuple[pd.DataFrame, Standa
 
     _num_cols = ['weight', 'strata', 'hsize', 'age',
        'num_children5', 'num_children10', 'num_children18',
-       'num_adult_female', 'num_adult_male', 'num_elderly',]
+       'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
     x_train = train[_num_cols]
 
