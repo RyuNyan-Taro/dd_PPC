@@ -1,4 +1,4 @@
-__all__ = []
+__all__ = ['fit_random_forest']
 
 from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestRegressor

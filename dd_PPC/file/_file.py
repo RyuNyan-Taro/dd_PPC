@@ -12,7 +12,7 @@ def get_datas() -> dict:
 
     Returns:
         dict: A dictionary containing the following keys and corresponding pandas
-            DataFrames:
+        DataFrames:
             - 'train': Training data features.
             - 'test': Testing data features.
             - 'target_consumption': Target labels for household consumption.
