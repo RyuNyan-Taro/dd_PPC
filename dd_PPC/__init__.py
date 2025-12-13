@@ -1,1 +1,1 @@
-from . import file, model, preprocess
+from . import file, model, preprocess, pipeline
