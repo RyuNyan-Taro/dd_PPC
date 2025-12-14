@@ -24,7 +24,7 @@ def apply_random_forest() -> tuple[RandomForestRegressor, np.ndarray, StandardSc
 def pred_random_forest(fit_model: RandomForestRegressor, sc: StandardScaler):
     _datas = file.get_datas()
 
-    _datas_std = sc.transform(_datas['test'])
+    _datas_std, _ = preprocess.standardized_with_numbers(_datas['test'], sc)
     _datas_category = preprocess.encoding_category(_datas['test'])
 
     return fit_model.predict(np.hstack([_datas_std, _datas_category]))
