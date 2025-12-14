@@ -1,4 +1,4 @@
-__all__ = ['apply_random_forest']
+__all__ = ['apply_random_forest', 'pred_random_forest']
 
 import numpy as np
 
@@ -19,3 +19,12 @@ def apply_random_forest() -> tuple[RandomForestRegressor, np.ndarray, StandardSc
     RF, pred_RF = model.fit_random_forest(_x_train, _y_train)
 
     return RF, pred_RF, sc
+
+
+def pred_random_forest(fit_model: RandomForestRegressor, sc: StandardScaler):
+    _datas = file.get_datas()
+
+    _datas_std = sc.transform(_datas['test'])
+    _datas_category = preprocess.encoding_category(_datas['test'])
+
+    return fit_model.predict(np.hstack([_datas_std, _datas_category]))
