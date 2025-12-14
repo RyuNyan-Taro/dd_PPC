@@ -3,7 +3,7 @@
 ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 """
 
-__all__ = ['standardized_with_numbers']
+__all__ = ['standardized_with_numbers', 'encoding_category']
 
 import pandas as pd
 
@@ -32,3 +32,15 @@ def standardized_with_numbers(train: pd.DataFrame) -> tuple[pd.DataFrame, Standa
     x_train_std = sc.transform(x_train)
 
     return x_train_std, sc
+
+
+def encoding_category(train: pd.DataFrame) -> pd.DataFrame:
+
+    _category_cols = ['water', 'toilet', 'sewer', 'elect']
+
+    x_train = train[_category_cols].copy()
+
+    for _col in _category_cols:
+        x_train[_col] = x_train[_col].apply(lambda x: 1 if x == 'Access' else 0).astype(int)
+
+    return x_train
