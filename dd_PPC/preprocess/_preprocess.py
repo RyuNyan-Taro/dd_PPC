@@ -35,7 +35,7 @@ def standardized_with_numbers(train: pd.DataFrame) -> tuple[np.ndarray, Standard
     return x_train_std, sc
 
 
-def encoding_category(train: pd.DataFrame) -> pd.DataFrame:
+def encoding_category(train: pd.DataFrame) -> np.ndarray:
     """
     Encodes categorical columns in the input DataFrame by converting specific category values into
     binary indicators.
@@ -55,4 +55,4 @@ def encoding_category(train: pd.DataFrame) -> pd.DataFrame:
     for _col in _category_cols:
         x_train[_col] = x_train[_col].apply(lambda x: 1 if x == 'Access' else 0).astype(int)
 
-    return x_train
+    return x_train.to_numpy()
