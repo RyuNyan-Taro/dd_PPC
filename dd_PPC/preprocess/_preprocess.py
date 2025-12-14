@@ -3,18 +3,20 @@
 ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 """
 
-__all__ = ['standardized_with_numbers']
+__all__ = ['standardized_with_numbers', 'encoding_category']
 
+import numpy as np
 import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
 
 
-def standardized_with_numbers(train: pd.DataFrame) -> tuple[pd.DataFrame, StandardScaler]:
+def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[np.ndarray, StandardScaler]:
     """Standardized with number columns and return the values and StandardScaler model for prediction.
 
     Args:
         train: The training data
+        fit_model: The StandardScaler model to fit and transform the data. If None, a new model is created.
 
     Returns:
         Standardized and number columns only selected DataFrame and the StandardScaler model to use the prediction process.
@@ -26,9 +28,33 @@ def standardized_with_numbers(train: pd.DataFrame) -> tuple[pd.DataFrame, Standa
 
     x_train = train[_num_cols]
 
-    sc = StandardScaler()
-    sc.fit(x_train)
+    if fit_model is None:
+        fit_model = StandardScaler()
+        fit_model.fit(x_train)
 
-    x_train_std = sc.transform(x_train)
+    x_train_std = fit_model.transform(x_train)
 
-    return x_train_std, sc
+    return x_train_std, fit_model
+
+
+def encoding_category(train: pd.DataFrame) -> np.ndarray:
+    """
+    Encodes categorical columns in the input DataFrame by converting specific category values into
+    binary indicators.
+
+    Args:
+        train: The training data.
+
+    Returns:
+        pd.DataFrame: New DataFrame containing binary-encoded values for the specified
+            categorical columns.
+    """
+
+    _category_cols = ['water', 'toilet', 'sewer', 'elect']
+
+    x_train = train[_category_cols].copy()
+
+    for _col in _category_cols:
+        x_train[_col] = x_train[_col].apply(lambda x: 1 if x == 'Access' else 0).astype(int)
+
+    return x_train.to_numpy()

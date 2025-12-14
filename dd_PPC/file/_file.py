@@ -80,7 +80,5 @@ def _save_submissions(consumption_format: pd.DataFrame, poverty_distribution_for
     _save_dir = dir_path + _folder_name
     os.mkdir(_save_dir)
 
-    consumption_format.to_csv(_save_dir + 'predicted_household_consumption.csv', index=False)
-    poverty_distribution_format.to_csv(_save_dir + 'predicted_poverty_distribution.csv', index=False)
-
-    shutil.make_archive(_folder_name, 'zip', _save_dir)
+    consumption_format.to_csv(os.path.join(_save_dir, 'predicted_household_consumption.csv'), index=False)
+    poverty_distribution_format.to_csv(os.path.join(_save_dir, 'predicted_poverty_distribution.csv'), index=False)
