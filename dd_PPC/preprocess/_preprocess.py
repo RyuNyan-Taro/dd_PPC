@@ -5,12 +5,13 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'encoding_category']
 
+import numpy as np
 import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
 
 
-def standardized_with_numbers(train: pd.DataFrame) -> tuple[pd.DataFrame, StandardScaler]:
+def standardized_with_numbers(train: pd.DataFrame) -> tuple[np.ndarray, StandardScaler]:
     """Standardized with number columns and return the values and StandardScaler model for prediction.
 
     Args:
