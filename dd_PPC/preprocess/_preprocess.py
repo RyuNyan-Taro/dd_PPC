@@ -35,6 +35,17 @@ def standardized_with_numbers(train: pd.DataFrame) -> tuple[pd.DataFrame, Standa
 
 
 def encoding_category(train: pd.DataFrame) -> pd.DataFrame:
+    """
+    Encodes categorical columns in the input DataFrame by converting specific category values into
+    binary indicators.
+
+    Args:
+        train: The training data.
+
+    Returns:
+        pd.DataFrame: New DataFrame containing binary-encoded values for the specified
+            categorical columns.
+    """
 
     _category_cols = ['water', 'toilet', 'sewer', 'elect']
 
