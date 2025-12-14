@@ -11,11 +11,12 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
 
-def standardized_with_numbers(train: pd.DataFrame) -> tuple[np.ndarray, StandardScaler]:
+def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[np.ndarray, StandardScaler]:
     """Standardized with number columns and return the values and StandardScaler model for prediction.
 
     Args:
         train: The training data
+        fit_model: The StandardScaler model to fit and transform the data. If None, a new model is created.
 
     Returns:
         Standardized and number columns only selected DataFrame and the StandardScaler model to use the prediction process.
@@ -27,12 +28,13 @@ def standardized_with_numbers(train: pd.DataFrame) -> tuple[np.ndarray, Standard
 
     x_train = train[_num_cols]
 
-    sc = StandardScaler()
-    sc.fit(x_train)
+    if fit_model is None:
+        fit_model = StandardScaler()
+        fit_model.fit(x_train)
 
-    x_train_std = sc.transform(x_train)
+    x_train_std = fit_model.transform(x_train)
 
-    return x_train_std, sc
+    return x_train_std, fit_model
 
 
 def encoding_category(train: pd.DataFrame) -> np.ndarray:
