@@ -8,6 +8,10 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - model: simple RandomForest
 - process: preprocess.standardized_with_numbers -> model.fit_random_forest
 - It is for the submission test
+## 22.148
+- model simple RandomForest
+- process: pipeline.apply_random_forest
+- some category labels are used
 
 # Records
 - pipeline.apply_random_forest
