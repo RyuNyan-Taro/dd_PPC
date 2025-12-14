@@ -1,11 +1,13 @@
 __all__ = ['apply_random_forest']
 
 import numpy as np
-import pandas as pd
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import StandardScaler
 
 from .. import file, preprocess, model
 
-def apply_random_forest():
+def apply_random_forest() -> tuple[RandomForestRegressor, np.ndarray, StandardScaler]:
     _datas = file.get_datas()
 
     _datas_std, sc = preprocess.standardized_with_numbers(_datas['train'])
