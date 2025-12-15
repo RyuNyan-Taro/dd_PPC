@@ -14,7 +14,6 @@ def weighted_average_of_consumption_and_poverty_rate(
         consumption: prediction and target values of consumption.
         poverty_rate_pred: Prediction values per survey id.
         poverty_rate_target: Target values per survey id.
-        survey_ids: The survey IDs of the training data.
 
     Returns:
         The weighted average of consumption and poverty rate.
@@ -25,7 +24,7 @@ def weighted_average_of_consumption_and_poverty_rate(
     """
 
     _consumption_weighted_averages = [_calc_consumption_weighted_average(_df['cons_pred'], _df['cons_ppp17']) for _, _df in consumption.groupby('survey_id')]
-    _poverty_rate_weighted_averages = [_calc_poverty_rate_weighted_average(_pred.to_numpy(), poverty_rate_target[_id].T.to_numpy()) for _id, _pred in poverty_rate_pred.T.groupby('survey_id')]
+    _poverty_rate_weighted_averages = [_calc_poverty_rate_weighted_average(_pred.T.to_numpy(), poverty_rate_target.loc[_id, :].T.to_numpy()) for _id, _pred in poverty_rate_pred.groupby('survey_id')]
 
     _weighted_average = sum(_consumption_weighted_averages) + sum(_poverty_rate_weighted_averages)
 
