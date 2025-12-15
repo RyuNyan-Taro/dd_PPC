@@ -1,4 +1,4 @@
-__all__ = []
+__all__ = ['weighted_average_of_consumption_and_poverty_rate']
 
 import numpy as np
 
@@ -35,7 +35,7 @@ def weighted_average_of_consumption_and_poverty_rate(
 
     return _weighted_average / len(_ids)
 
-
+# sub functions for weighted_average_of_consumption_and_poverty_rate
 def _calc_consumption_weighted_average(preds: np.ndarray, targets: np.ndarray) -> float:
     _absolute_errors = [abs(_target - _pred) / _target for _pred, _target in zip(preds, targets)]
 
