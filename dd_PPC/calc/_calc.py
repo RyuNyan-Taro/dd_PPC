@@ -1,4 +1,4 @@
-__all__ = ['weighted_average_of_consumption_and_poverty_rate']
+__all__ = ['weighted_average_of_consumption_and_poverty_rate', 'poverty_rates_from_consumption']
 
 import numpy as np
 import pandas as pd
@@ -42,3 +42,17 @@ def _calc_poverty_rate_weighted_average(preds: np.ndarray, targets: np.ndarray) 
     _absolute_errors = [_weight * abs(_target - _pred) / _target for _pred, _target, _weight in zip(preds, targets, _weights)]
 
     return 90 / sum(_weights) * sum(_absolute_errors)
+
+
+def poverty_rates_from_consumption(consumptions: pd.DataFrame, consumption_column: str = 'cons_ppp17') -> pd.DataFrame:
+    _poverty_thresholds = [
+        3.17, 3.94, 4.60, 5.26, 5.88, 6.47, 7.06, 7.70, 8.40, 9.13,
+        9.87, 10.70, 11.62, 12.69, 14.03, 15.64, 17.76, 20.99, 27.37
+    ]
+    _columns = ['survey_id'] + [f'pct_hh_below_{_threshold}' for _threshold in _poverty_thresholds]
+
+    _poverty_rates = []
+    for _id, _df in consumptions.groupby('survey_id'):
+        _poverty_rates.append([_id] + [np.sum(_df[consumption_column] < _threshold) / len(_df) for _threshold in _poverty_thresholds])
+
+    return pd.DataFrame(_poverty_rates, columns=_columns)
