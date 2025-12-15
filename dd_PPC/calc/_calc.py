@@ -22,9 +22,11 @@ def weighted_average_of_consumption_and_poverty_rate(
         competition info: https://www.drivendata.org/competitions/305/competition-worldbank-poverty/page/965/
 
     """
+    _poverty_rate_pred = poverty_rate_pred.set_index('survey_id')
+    _poverty_rate_target = poverty_rate_target.set_index('survey_id')
 
     _consumption_weighted_averages = [_calc_consumption_weighted_average(_df['cons_pred'], _df['cons_ppp17']) for _, _df in consumption.groupby('survey_id')]
-    _poverty_rate_weighted_averages = [_calc_poverty_rate_weighted_average(_pred.T.to_numpy(), poverty_rate_target.loc[_id, :].T.to_numpy()) for _id, _pred in poverty_rate_pred.groupby('survey_id')]
+    _poverty_rate_weighted_averages = [_calc_poverty_rate_weighted_average(_pred.T.to_numpy(), _poverty_rate_target.loc[_id, :].T.to_numpy()) for _id, _pred in _poverty_rate_pred.groupby('survey_id')]
 
     _weighted_average = sum(_consumption_weighted_averages) + sum(_poverty_rate_weighted_averages)
 
