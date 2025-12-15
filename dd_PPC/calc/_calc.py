@@ -1,19 +1,19 @@
 __all__ = ['weighted_average_of_consumption_and_poverty_rate']
 
 import numpy as np
+import pandas as pd
 
 
 def weighted_average_of_consumption_and_poverty_rate(
-        capita_consumption_pred: np.ndarray, capita_consumption_target: np.ndarray,
-        poverty_rate_pred: np.ndarray, poverty_rate_target: np.ndarray,
-        survey_ids: np.ndarray) -> float:
+        consumption: pd.DataFrame,
+        poverty_rate_pred: pd.DataFrame,
+        poverty_rate_target: pd.DataFrame) -> float:
     """Calculate weighted average of consumption and poverty rate, which is the primary competition metric of the competition.
 
     Args:
-        capita_consumption_pred: Prediction values.
-        capita_consumption_target: Target values.
-        poverty_rate_pred: Prediction values.
-        poverty_rate_target: Target values.
+        consumption: prediction and target values of consumption.
+        poverty_rate_pred: Prediction values per survey id.
+        poverty_rate_target: Target values per survey id.
         survey_ids: The survey IDs of the training data.
 
     Returns:
@@ -23,17 +23,13 @@ def weighted_average_of_consumption_and_poverty_rate(
         competition info: https://www.drivendata.org/competitions/305/competition-worldbank-poverty/page/965/
 
     """
-    _ids = np.unique(survey_ids)
 
-    _weighted_average = 0
+    _consumption_weighted_averages = [_calc_consumption_weighted_average(_df['cons_pred'], _df['cons_ppp17']) for _, _df in consumption.groupby('survey_id')]
+    _poverty_rate_weighted_averages = [_calc_poverty_rate_weighted_average(_pred.to_numpy(), poverty_rate_target[_id].T.to_numpy()) for _id, _pred in poverty_rate_pred.T.groupby('survey_id')]
 
-    for _id in _ids:
-        _cond = survey_ids == _id
-        _consumption_weighted_average = _calc_consumption_weighted_average(capita_consumption_pred[_cond], capita_consumption_target[_cond])
-        _poverty_rate_weighed_average = _calc_poverty_rate_weighted_average(poverty_rate_pred[_cond], poverty_rate_target[_cond])
-        _weighted_average += _consumption_weighted_average + _poverty_rate_weighed_average
+    _weighted_average = sum(_consumption_weighted_averages) + sum(_poverty_rate_weighted_averages)
 
-    return _weighted_average / len(_ids)
+    return _weighted_average / len(poverty_rate_pred)
 
 # sub functions for weighted_average_of_consumption_and_poverty_rate
 def _calc_consumption_weighted_average(preds: np.ndarray, targets: np.ndarray) -> float:
