@@ -36,9 +36,14 @@ def weighted_average_of_consumption_and_poverty_rate(
     return _weighted_average / len(_ids)
 
 
-def _calc_consumption_weighted_average(pred: np.ndarray, target: np.ndarray) -> float:
-    return 0
+def _calc_consumption_weighted_average(preds: np.ndarray, targets: np.ndarray) -> float:
+    _absolute_errors = [abs(_target - _pred) / _target for _pred, _target in zip(preds, targets)]
+
+    return 10 / len(_absolute_errors) * sum(_absolute_errors)
 
 
-def _calc_poverty_rate_weighted_average(pred: np.ndarray, target: np.ndarray) -> float:
-    return 0
+def _calc_poverty_rate_weighted_average(preds: np.ndarray, targets: np.ndarray) -> float:
+    _weights = [1 - abs(0.4 - _percent/100) for _percent in range(5, 100, 5)]
+    _absolute_errors = [_weight * abs(_target - _pred) / _target for _pred, _target, _weight in zip(preds, targets, _weights)]
+
+    return 90 / sum(_weights) * sum(_absolute_errors)
