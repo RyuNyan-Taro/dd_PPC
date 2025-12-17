@@ -22,10 +22,13 @@ def divide_value_types(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     return two_categories, some_category_or_number
 
 
-def split_datas(dependent: pd.DataFrame, target: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def split_datas(dependent: pd.DataFrame, consumptions: pd.DataFrame, rates: pd.DataFrame
+                ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     _test_survey_id = 300000
 
     return (dependent[dependent.survey_id != _test_survey_id, :],
-            target[target.survey_id != _test_survey_id],
+            consumptions[consumptions.survey_id != _test_survey_id],
+            rates[rates.survey_id != _test_survey_id],
             dependent[dependent.survey_id == _test_survey_id],
-            target[target.survey_id == _test_survey_id])
+            consumptions[consumptions.survey_id == _test_survey_id],
+            rates[rates.survey_id == _test_survey_id])
