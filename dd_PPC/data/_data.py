@@ -1,4 +1,4 @@
-__all__ = []
+__all__ = ['divide_value_types', 'split_datas']
 
 import pandas as pd
 
@@ -20,3 +20,12 @@ def divide_value_types(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     print(len(two_categories), len(some_category_or_number))
 
     return two_categories, some_category_or_number
+
+
+def split_datas(dependent: pd.DataFrame, target: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    _test_survey_id = 300000
+
+    return (dependent[dependent.survey_id != _test_survey_id, :],
+            target[target.survey_id != _test_survey_id],
+            dependent[dependent.survey_id == _test_survey_id],
+            target[target.survey_id == _test_survey_id])
