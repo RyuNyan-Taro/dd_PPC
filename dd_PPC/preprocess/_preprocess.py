@@ -50,11 +50,20 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
             categorical columns.
     """
 
+    _access_or_not = {'Access': 1, 'No access': 0}
+
+    _category_number_maps = {
+        'water': _access_or_not,
+        'toilet': _access_or_not,
+        'sewer': _access_or_not,
+        'elect': _access_or_not
+    }
+
     _category_cols = ['water', 'toilet', 'sewer', 'elect']
 
     x_train = train[_category_cols].copy()
 
     for _col in _category_cols:
-        x_train[_col] = x_train[_col].apply(lambda x: 1 if x == 'Access' else 0).astype(int)
+        x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
 
     return x_train.to_numpy()
