@@ -44,7 +44,7 @@ def fit_and_predict_random_forest():
 
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
-        consumption = test_x.copy()
+        consumption = test_cons_y_.copy()
         consumption['cons_pred'] = pred_cons_y
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
