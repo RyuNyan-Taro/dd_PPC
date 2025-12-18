@@ -28,6 +28,8 @@ def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | N
 
     x_train = train[_num_cols]
 
+    print('\nstandardize_numbers\n-----------------\n', x_train.head())
+
     if fit_model is None:
         fit_model = StandardScaler()
         fit_model.fit(x_train)
@@ -64,6 +66,7 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
 
     x_train = train[_category_cols].copy()
 
+    print('\nencoding_category\n-----------------\n', x_train.head())
     for _col in _category_cols:
         x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
 
