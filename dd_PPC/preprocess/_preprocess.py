@@ -60,7 +60,7 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
         'toilet': _access_or_not,
         'sewer': _access_or_not,
         'elect': _access_or_not,
-        # 'male': {'Male': 1, 'Female': 0},
+        'male': {'Male': 1, 'Female': 0},
         'urban': {'Urban': 1, 'Rural': 0},
         'region1': _already_number,
         'region2': _already_number,
@@ -72,7 +72,7 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
     }
 
     _category_cols = [
-        'water', 'toilet', 'sewer', 'elect', 'urban',
+        'water', 'toilet', 'sewer', 'elect', 'male', 'urban',
         'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
     ]
 
