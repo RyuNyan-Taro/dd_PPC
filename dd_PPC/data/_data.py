@@ -26,7 +26,7 @@ def split_datas(dependent: pd.DataFrame, consumptions: pd.DataFrame, rates: pd.D
                 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     _test_survey_id = 300000
 
-    return (dependent[dependent.survey_id != _test_survey_id, :],
+    return (dependent[dependent.survey_id != _test_survey_id],
             consumptions[consumptions.survey_id != _test_survey_id],
             rates[rates.survey_id != _test_survey_id],
             dependent[dependent.survey_id == _test_survey_id],

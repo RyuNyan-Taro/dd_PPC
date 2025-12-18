@@ -28,7 +28,7 @@ def fit_and_predict_random_forest():
         _datas_category = preprocess.encoding_category(train_x_)
 
         _x_train = np.hstack([_datas_std, _datas_category])
-        _y_train = train_cons_y_['target_consumption'].loc[:, 'cons_ppp17']
+        _y_train = train_cons_y_.loc[:, 'cons_ppp17']
 
         RF, pred_RF = model.fit_random_forest(_x_train, _y_train)
 
@@ -42,9 +42,9 @@ def fit_and_predict_random_forest():
 
         pred_cons_y = rf.predict(x_test)
 
-        y_test = test_cons_y_['target_consumption'].loc[:, 'cons_ppp17']
+        y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
-        consumption = test_x.copy()
+        consumption = test_cons_y_.copy()
         consumption['cons_pred'] = pred_cons_y
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
