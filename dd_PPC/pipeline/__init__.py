@@ -1,4 +1,4 @@
-from . import _pipeline
-from ._pipeline import *
+from . import _random_forest
+from ._random_forest import *
 
-__all__ = _pipeline.__all__.copy()
+__all__ = _random_forest.__all__.copy()

@@ -4,10 +4,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 
-def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, show_pred_plot: bool = False) -> tuple[RandomForestRegressor, np.ndarray]:
+def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, show_pred_plot: bool = False, seed: int = 42) -> tuple[RandomForestRegressor, np.ndarray]:
     _verbose = 2 if show_fit_process else 0
 
-    RF = RandomForestRegressor(verbose=_verbose)
+    RF = RandomForestRegressor(verbose=_verbose, random_state=seed)
     RF.fit(x_train_std, y_train)
 
     pred_RF = RF.predict(x_train_std)

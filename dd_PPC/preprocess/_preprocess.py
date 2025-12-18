@@ -28,6 +28,8 @@ def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | N
 
     x_train = train[_num_cols]
 
+    print('\nstandardize_numbers\n-----------------\n', x_train.head())
+
     if fit_model is None:
         fit_model = StandardScaler()
         fit_model.fit(x_train)
@@ -50,11 +52,34 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
             categorical columns.
     """
 
-    _category_cols = ['water', 'toilet', 'sewer', 'elect']
+    _access_or_not = {'Access': 1, 'No access': 0}
+    _already_number = {0: 0, 1: 1}
+
+    _category_number_maps = {
+        'water': _access_or_not,
+        'toilet': _access_or_not,
+        'sewer': _access_or_not,
+        'elect': _access_or_not,
+        'male': {'Male': 1, 'Female': 0},
+        'urban': {'Urban': 1, 'Rural': 0},
+        'region1': _already_number,
+        'region2': _already_number,
+        'region3': _already_number,
+        'region4': _already_number,
+        'region5': _already_number,
+        'region6': _already_number,
+        'region7': _already_number,
+    }
+
+    _category_cols = [
+        'water', 'toilet', 'sewer', 'elect', 'male', 'urban',
+        'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
+    ]
 
     x_train = train[_category_cols].copy()
 
+    print('\nencoding_category\n-----------------\n', x_train.head())
     for _col in _category_cols:
-        x_train[_col] = x_train[_col].apply(lambda x: 1 if x == 'Access' else 0).astype(int)
+        x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
 
     return x_train.to_numpy()
