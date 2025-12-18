@@ -1,4 +1,4 @@
-__all__ = ['apply_random_forest', 'fit_and_test_random_forest', 'pred_random_forest']
+__all__ = ['apply_random_forest', 'fit_and_test_random_forest', 'pred_random_forest', 'fit_and_predictions']
 
 import numpy as np
 
