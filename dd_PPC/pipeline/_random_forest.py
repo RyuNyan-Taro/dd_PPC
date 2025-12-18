@@ -72,7 +72,29 @@ def fit_and_test_random_forest():
     show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _RF, _x_test, test_rate_y)
 
 
-def pred_random_forest(fit_model: RandomForestRegressor, sc: StandardScaler):
+def fit_and_predictions(folder_prefix: str | None = None):
+    """Fits model; predicts consumption; saves the submission format"""
+
+    _datas = file.get_datas()
+
+    _train = _datas['train']
+    _target = _datas['target_consumption']
+
+    _datas_std, _sc = preprocess.standardized_with_numbers(_train)
+    _datas_category = preprocess.encoding_category(_train)
+
+    _x_train = np.hstack([_datas_std, _datas_category])
+    _y_train = _target.loc[:, 'cons_ppp17']
+
+    _RF, _pred_RF = model.fit_random_forest(_x_train, _y_train)
+
+    _predicted = pred_random_forest(_RF, _sc)
+
+    file.save_to_submission_format(_predicted, folder_prefix)
+
+
+
+def pred_random_forest(fit_model: RandomForestRegressor, sc: StandardScaler) -> np.ndarray:
     _datas = file.get_datas()
 
     _datas_std, _ = preprocess.standardized_with_numbers(_datas['test'], sc)
