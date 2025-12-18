@@ -22,6 +22,7 @@ def apply_random_forest() -> tuple[RandomForestRegressor, np.ndarray, StandardSc
 
 
 def fit_and_predict_random_forest():
+    """Fits model; predicts consumption; shows metrics"""
 
     def fit_data(train_x_, train_cons_y_):
         _datas_std, sc = preprocess.standardized_with_numbers(train_x_)
