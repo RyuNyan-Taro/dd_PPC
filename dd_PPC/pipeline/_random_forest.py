@@ -1,4 +1,4 @@
-__all__ = ['apply_random_forest', 'fit_and_predict_random_forest', 'pred_random_forest']
+__all__ = ['apply_random_forest', 'fit_and_test_random_forest', 'pred_random_forest']
 
 import numpy as np
 
@@ -21,7 +21,7 @@ def apply_random_forest() -> tuple[RandomForestRegressor, np.ndarray, StandardSc
     return RF, pred_RF, sc
 
 
-def fit_and_predict_random_forest():
+def fit_and_test_random_forest():
     """Fits model; predicts consumption; shows metrics"""
 
     def fit_data(train_x_, train_cons_y_):
