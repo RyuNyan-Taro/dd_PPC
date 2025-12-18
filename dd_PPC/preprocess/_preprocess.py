@@ -56,10 +56,11 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
         'water': _access_or_not,
         'toilet': _access_or_not,
         'sewer': _access_or_not,
-        'elect': _access_or_not
+        'elect': _access_or_not,
+        'male': {'Male': 1, 'Female': 0},
     }
 
-    _category_cols = ['water', 'toilet', 'sewer', 'elect']
+    _category_cols = ['water', 'toilet', 'sewer', 'elect', 'male']
 
     x_train = train[_category_cols].copy()
 
