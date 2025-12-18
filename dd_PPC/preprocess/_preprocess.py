@@ -53,6 +53,7 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
     """
 
     _access_or_not = {'Access': 1, 'No access': 0}
+    _already_number = {0: 0, 1: 1}
 
     _category_number_maps = {
         'water': _access_or_not,
@@ -61,9 +62,19 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
         'elect': _access_or_not,
         # 'male': {'Male': 1, 'Female': 0},
         'urban': {'Urban': 1, 'Rural': 0},
+        'region1': _already_number,
+        'region2': _already_number,
+        'region3': _already_number,
+        'region4': _already_number,
+        'region5': _already_number,
+        'region6': _already_number,
+        'region7': _already_number,
     }
 
-    _category_cols = ['water', 'toilet', 'sewer', 'elect', 'urban']
+    _category_cols = [
+        'water', 'toilet', 'sewer', 'elect', 'urban',
+        'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
+    ]
 
     x_train = train[_category_cols].copy()
 
