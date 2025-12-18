@@ -13,6 +13,11 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - process: pipeline.apply_random_forest
 - some category labels are used
 
+## 21.492
+- model: simple RandomForest
+- process: pipeline.fit_and_predictions
+- a few category labels and hot encoded region columns are used
+
 # Records
 - pipeline.apply_random_forest
    - two_category: large category has more high difference from prediction
