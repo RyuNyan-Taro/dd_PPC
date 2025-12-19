@@ -48,4 +48,4 @@ def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarra
     _datas_std, _ = preprocess.standardized_with_numbers_dataframe(_datas['test'], sc)
     _datas_category = preprocess.encoding_category_dataframe(_datas['test'])
 
-    return fit_model.predict(np.hstack([_datas_std, _datas_category]))
+    return fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
