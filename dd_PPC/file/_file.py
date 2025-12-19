@@ -76,7 +76,7 @@ def _add_distribution(poverty_distribution_format: pd.DataFrame, predictions: np
 
 
 def _save_submissions(consumption_format: pd.DataFrame, poverty_distribution_format: pd.DataFrame, dir_path: str, folder_prefix: str):
-    _folder_name = folder_prefix + datetime.datetime.now().strftime('%y%m%d%H%M%S')
+    _folder_name = f'{folder_prefix}_{datetime.datetime.now().strftime("%y%m%d%H%M%S")}'
     _save_dir = dir_path + _folder_name
     os.mkdir(_save_dir)
 
