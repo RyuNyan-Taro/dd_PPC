@@ -23,7 +23,7 @@ def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, show_
 
 
 def fit_lightgbm(x_train, y_train, seed: int = 42, show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.ndarray]:
-    model = lgb.LGBMRegressor(random_state=seed, verbose=1)
+    model = lgb.LGBMRegressor(random_state=seed, verbose=1, n_estimators=3000)
     pred_y = model.fit(x_train, y_train)
 
     pred_lgb = pred_y.predict(x_train)
