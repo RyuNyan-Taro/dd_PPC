@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 
 from .. import file, preprocess, model, data, calc
 
-def apply_random_forest() -> tuple[RandomForestRegressor, np.ndarray, StandardScaler]:
+def apply_random_forest(show_pred_plot: bool = False) -> tuple[RandomForestRegressor, np.ndarray, StandardScaler]:
     _datas = file.get_datas()
 
     _datas_std, sc = preprocess.standardized_with_numbers(_datas['train'])
@@ -16,7 +16,7 @@ def apply_random_forest() -> tuple[RandomForestRegressor, np.ndarray, StandardSc
     _x_train = np.hstack([_datas_std, _datas_category])
     _y_train = _datas['target_consumption'].loc[:, 'cons_ppp17']
 
-    RF, pred_RF = model.fit_random_forest(_x_train, _y_train)
+    RF, pred_RF = model.fit_random_forest(_x_train, _y_train, show_pred_plot=show_pred_plot)
 
     return RF, pred_RF, sc
 
