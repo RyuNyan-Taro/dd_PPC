@@ -18,6 +18,11 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - process: pipeline.fit_and_predictions
 - a few category labels and hot encoded region columns are used
 
+## 23.876 
+- model: simple lightgbm.LGBMRegressor
+- process: pipeline.fit_and_predictions_lightgbm
+- it is the first submission by using lightgbm
+
 # Records
 - pipeline.apply_random_forest
    - two_category: large category has more high difference from prediction
