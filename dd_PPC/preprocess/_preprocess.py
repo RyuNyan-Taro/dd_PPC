@@ -92,14 +92,18 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     _access_or_not = {'Access': 1, 'No access': 0}
     _already_number = {0: 0, 1: 1}
+    _yes_no = {'Yes': 1, 'No': 0}
 
     _category_number_maps = {
+        'owner': {'Owner': 1, 'Not owner': 0},
         'water': _access_or_not,
         'toilet': _access_or_not,
         'sewer': _access_or_not,
         'elect': _access_or_not,
         'male': {'Male': 1, 'Female': 0},
         'urban': {'Urban': 1, 'Rural': 0},
+        'employed': {'Employed': 1, 'Not employed': 0},
+        'any_nonagric': _yes_no,
         'region1': _already_number,
         'region2': _already_number,
         'region3': _already_number,
@@ -107,10 +111,65 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'region5': _already_number,
         'region6': _already_number,
         'region7': _already_number,
+        'water_source': {
+            'Piped water into dwelling': 6,
+            'Surface water': 1,
+            'Other': 2,
+            'Piped water to yard/plot': 5,
+            'Protected dug well': 4,
+            'Public tap or standpipe': 3,
+            'Tanker-truck': 0,
+            'Protected spring': 4,
+        },
+        'sanitation_source': {
+            'A piped sewer system': 5,
+            'A septic tank': 3,
+            'Pit latrine with slab': 2,
+            'No facilities or bush or field': 0,
+            'Pit latrine': 1,
+            'Other': 4,
+        },
+        'dweltyp': {
+            'Detached house': 4,
+            'Separate apartment': 2,
+            'Several buildings connected': 1,
+            'Other': 0,
+            'Improvised housing unit': 3,
+        },
+        'educ_max': {
+            'Complete Tertiary Education': 6,
+            'Complete Secondary Education': 5,
+            'Incomplete Tertiary Education': 4,
+            'Incomplete Primary Education': 2,
+            'Complete Primary Education': 3,
+            'Incomplete Secondary Education': 1,
+            'Never attended': 0,
+        },
+        'sector1d': {
+            'Agriculture, hunting and forestry': 0,
+            'Wholesale and retail trade': 1,
+            'Transport, storage and communications': 2,
+            'Manufacturing': 3,
+            'Construction': 4,
+            'Public administration and defence': 5,
+            'Hotels and restaurants': 6,
+            'Education': 7,
+            'Real estate, renting and business activities': 8,
+            'Other community, social and personal service activities': 9,
+            'Mining and quarrying': 10,
+            'Health and social work': 11,
+            'Activities of private households as employers': 12,
+            'Fishing': 13,
+            'Financial intermediation': 14,
+            'Electricity, gas and water supply': 15,
+        },
+
     }
 
     category_cols = [
         'water', 'toilet', 'sewer', 'elect', 'male', 'urban',
+        'owner', 'employed', 'any_nonagric',
+        'water_source', 'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
         'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
     ]
 
