@@ -1,4 +1,4 @@
-__all__ = ['apply_random_forest', 'fit_and_test_random_forest', 'pred_random_forest', 'fit_and_predictions']
+__all__ = ['apply_random_forest', 'fit_and_test_random_forest', 'pred_random_forest', 'fit_and_prediction_random_forest']
 
 import numpy as np
 
@@ -72,7 +72,7 @@ def fit_and_test_random_forest():
     show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _RF, _x_test, test_rate_y)
 
 
-def fit_and_predictions(folder_prefix: str | None = None):
+def fit_and_prediction_random_forest(folder_prefix: str | None = None):
     """Fits model; predicts consumption; saves the submission format"""
 
     _datas = file.get_datas()
