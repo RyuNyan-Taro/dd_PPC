@@ -140,7 +140,7 @@ def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     _regions = np.array([0] * len(df))
     for _col in df.columns:
-        if _col.startswith('region'):
+        if not _col.startswith('region'):
             continue
         _region_number = int(_col.split('region')[1])
         _regions[_regions == 1] = _region_number
