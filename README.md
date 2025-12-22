@@ -23,6 +23,11 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - process: pipeline.fit_and_predictions_lightgbm
 - it is the first submission by using lightgbm
 
+## 20.451
+- model: simple RandomForest
+- process: pipeline.fit_and_prediction_random_forest
+- add all category columns with encoding
+
 # Records
 - pipeline.apply_random_forest
    - two_category: large category has more high difference from prediction
