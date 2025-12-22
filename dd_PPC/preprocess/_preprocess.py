@@ -158,7 +158,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
             'Other community, social and personal service activities': 9,
             'Mining and quarrying': 10,
             'Health and social work': 11,
-            'Activities of private households as employers': 12,
+            'Activities of private households as employers ': 12,
             'Fishing': 13,
             'Financial intermediation': 14,
             'Electricity, gas and water supply': 15,
@@ -177,6 +177,12 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     print('\nencoding_category\n-----------------\n', x_train.head())
     for _col in category_cols:
+
+        _values = x_train[_col]
+        _nulls = _values.isnull()
+        _top_value = _values.value_counts().idxmax()
+        x_train[_col] = x_train[_col].fillna(_top_value)
+
         x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
 
     return x_train.to_numpy(), category_cols
@@ -201,7 +207,5 @@ def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     _infra_columns = ['water', 'toilet', 'sewer', 'elect']
 
     _infra_counts = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
-
-    print(_infra_counts)
 
     return _infra_counts, ['infra_count']
