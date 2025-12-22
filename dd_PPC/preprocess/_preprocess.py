@@ -3,7 +3,8 @@
 ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 """
 
-__all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category', 'encoding_category_dataframe']
+__all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
+           'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array']
 
 import numpy as np
 import pandas as pd
@@ -120,3 +121,28 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
 
     return x_train.to_numpy(), category_cols
+
+
+def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
+
+
+    _features, _ = _create_features(df)
+
+    return _features
+
+
+def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
+    _features, _columns = _create_features(df)
+
+    return pd.DataFrame(_features, columns=_columns)
+
+
+def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+
+    _infra_columns = ['water', 'toilet', 'sewer', 'elect']
+
+    _infra_counts = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
+
+    print(_infra_counts)
+
+    return _infra_counts, ['infra_count']
