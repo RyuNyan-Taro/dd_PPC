@@ -14,10 +14,7 @@ def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.
     _datas_category = preprocess.encoding_category_dataframe(_datas['train'])
     _new_features = preprocess.create_new_features_data_frame(_datas['train'])
 
-    _region_columns = [_col for _col in _datas_category.columns if _col.startswith('region')]
-
-
-    _x_train = pd.concat([_datas_std, _datas_category, _new_features], axis=1).drop(_region_columns, axis=1)
+    _x_train = pd.concat([_datas_std, _datas_category, _new_features], axis=1)
     _y_train = _datas['target_consumption'].loc[:, 'cons_ppp17']
 
     LB, pred_LB = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)

@@ -125,24 +125,24 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
 def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 
-    _regions, _ = _create_features(df)
 
-    return _regions
+    _features, _ = _create_features(df)
+
+    return _features
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
-    _regions, _columns = _create_features(df)
+    _features, _columns = _create_features(df)
 
-    return pd.DataFrame(_regions, columns=_columns)
+    return pd.DataFrame(_features, columns=_columns)
 
 
 def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
-    _regions = np.array([0] * len(df))
-    for _col in df.columns:
-        if not _col.startswith('region'):
-            continue
-        _region_number = int(_col.split('region')[1])
-        _regions[_regions == 1] = _region_number
+    _infra_columns = ['water', 'toilet', 'sewer', 'elect']
 
-    return _regions, ['region']
+    _infra_counts = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
+
+    print(_infra_counts)
+
+    return _infra_counts, ['infra_count']
