@@ -120,3 +120,28 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
 
     return x_train.to_numpy(), category_cols
+
+
+def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
+
+    _regions, _ = _create_features(df)
+
+    return _regions
+
+
+def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
+    _regions, _columns = _create_features(df)
+
+    return pd.DataFrame(_regions, columns=_columns)
+
+
+def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+
+    _regions = np.array([0] * len(df))
+    for _col in df.columns:
+        if _col.startswith('region_'):
+            continue
+        _region_number = int(_col.split('_')[1])
+        _regions[_regions == 1] = _region_number
+
+    return _regions, ['region']
