@@ -3,7 +3,8 @@
 ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 """
 
-__all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category', 'encoding_category_dataframe']
+__all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
+           'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array']
 
 import numpy as np
 import pandas as pd
