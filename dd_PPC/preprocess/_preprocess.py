@@ -162,6 +162,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
             'Fishing': 13,
             'Financial intermediation': 14,
             'Electricity, gas and water supply': 15,
+            ' Extraterritorial organizations and bodies': 16,
         },
 
     }
