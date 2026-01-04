@@ -188,19 +188,18 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
 def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 
-
-    _features, _ = _create_features(df)
+    _features, _ = _create_infra_features(df)
 
     return _features
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
-    _features, _columns = _create_features(df)
+    _features, _columns = _create_infra_features(df)
 
     return pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
 
 
-def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     features = df.copy()
 
