@@ -33,8 +33,6 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         boxcox_lambda = _GLOBAL_LAMBDA
 
     def fit_data(train_x_, train_cons_y_):
-        _datas_new = preprocess.create_new_features_data_frame(train_x_)
-        train_x_ = pd.concat([train_x_, _datas_new], axis=1)
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
 
@@ -49,8 +47,6 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
 
     def pred_data(test_x_, test_cons_y_, sc, lb):
-        _datas_new = preprocess.create_new_features_data_frame(test_x_)
-        test_x_ = pd.concat([test_x_.reset_index(drop=True), _datas_new], axis=1)
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(test_x_, sc)
         _datas_category = preprocess.encoding_category_dataframe(test_x_)
 
