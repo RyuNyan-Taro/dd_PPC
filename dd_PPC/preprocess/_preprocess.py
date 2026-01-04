@@ -202,8 +202,32 @@ def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
 
 def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
+    features = df.copy()
+
     _infra_columns = ['water', 'toilet', 'sewer', 'elect']
 
-    _infra_counts = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
+    features['infra_count'] = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
 
-    return _infra_counts, ['infra_count']
+    # Infrastructure access patterns
+    water_access = (df['water'] == 'Access').astype(int)
+    toilet_access = (df['toilet'] == 'Access').astype(int)
+    sewer_access = (df['sewer'] == 'Access').astype(int)
+    elect_access = (df['elect'] == 'Access').astype(int)
+
+    # Infrastructure combinations
+    features['water_toilet'] = water_access * toilet_access
+    features['full_sanitation'] = water_access * toilet_access * sewer_access
+    features['modern_amenities'] = elect_access * (df['water_source'] >= 5).astype(int)
+
+    # Infrastructure quality weighted by household size
+    features['infra_per_person'] = (water_access + toilet_access + sewer_access + elect_access) / df['hsize']
+
+    feature_columns = [
+        'infra_count',
+        'water_toilet',
+        'full_sanitation',
+        'modern_amenities',
+        'infra_per_person'
+    ]
+
+    return features[feature_columns], feature_columns
