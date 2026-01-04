@@ -17,11 +17,11 @@ def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.
     _datas_category = preprocess.encoding_category_dataframe(_datas['train'])
 
     _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-    _y_train = np.log1p(_datas['target_consumption'].loc[:, 'cons_ppp17'])
+    _y_train = calc.apply_boxcox_transform(_datas['target_consumption'].loc[:, 'cons_ppp17'], _GLOBAL_LAMBDA)
 
-    LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
+    LB, pred_LB_coxbox = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
 
-    pred_LB = np.expm1(pred_LB_log)
+    pred_LB = calc.inverse_boxcox_transform(pred_LB_coxbox, _GLOBAL_LAMBDA)
 
     return LB, pred_LB, sc
 
