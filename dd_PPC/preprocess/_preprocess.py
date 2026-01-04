@@ -35,7 +35,8 @@ def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | N
 
 def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[np.ndarray, list[str]]:
 
-    num_cols = ['weight', 'strata', 'hsize', 'age',
+    num_cols = ['weight', 'strata',
+                # 'hsize', 'age',
                  'num_children5', 'num_children10', 'num_children18',
                  'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
@@ -195,13 +196,19 @@ def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
-    _features, _columns = _create_infra_features(df)
+    _infra_features, _infra_columns = _create_infra_features(df)
 
     # _features, _columns = _create_interaction_features(df)
 
-    # _features, _columns = _create_binned_features(df)
+    _binned_features, _binned_columns = _create_binned_features(df)
 
-    return pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
+    _datas = [
+        pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
+        for _features, _columns
+        in [(_infra_features, _infra_columns), (_binned_features, _binned_columns)]
+    ]
+
+    return pd.concat(_datas, axis=1)
 
 
 def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
