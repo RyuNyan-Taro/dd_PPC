@@ -8,6 +8,8 @@ from sklearn.preprocessing import StandardScaler
 from .. import file, preprocess, model, data, calc
 
 
+_GLOBAL_LAMBDA = 0.09
+
 def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.ndarray, StandardScaler]:
     _datas = file.get_datas()
 
@@ -24,19 +26,22 @@ def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.
     return LB, pred_LB, sc
 
 
-def fit_and_test_lightgbm():
+def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     """Fits and tests LightGBM model; evaluates competition score"""
+
+    if boxcox_lambda is None:
+        boxcox_lambda = _GLOBAL_LAMBDA
 
     def fit_data(train_x_, train_cons_y_):
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
 
         _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-        _y_train = np.log1p(train_cons_y_.loc[:, 'cons_ppp17'])
+        _y_train, _ = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], boxcox_lambda)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
 
-        pred_LB = np.expm1(pred_LB_log)
+        pred_LB = calc.inverse_boxcox_transform(pred_LB_log, boxcox_lambda)
 
         return LB, pred_LB, sc
 
@@ -49,7 +54,7 @@ def fit_and_test_lightgbm():
 
         _pred_cons_y_log = lb.predict(x_test)
 
-        pred_cons_y = np.expm1(_pred_cons_y_log)
+        pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, boxcox_lambda)
 
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
@@ -94,13 +99,15 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
     _datas_category = preprocess.encoding_category_dataframe(_datas['train'])
 
     _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-    _y_train = np.log1p(_datas['target_consumption'].loc[:, 'cons_ppp17'])
+    _y_train, _ = calc.apply_boxcox_transform(_datas['target_consumption'].loc[:, 'cons_ppp17'], _GLOBAL_LAMBDA)
 
     _cat_cols = _datas_category.columns
 
-    _LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
+    _LB, _ = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
 
-    _predicted = pred_lightgbm(_LB, _sc)
+    _predicted_coxbox = pred_lightgbm(_LB, _sc)
+
+    _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, _GLOBAL_LAMBDA)
 
     file.save_to_submission_format(_predicted, folder_prefix)
 
@@ -111,6 +118,4 @@ def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarra
     _datas_std, _ = preprocess.standardized_with_numbers_dataframe(_datas['test'], sc)
     _datas_category = preprocess.encoding_category_dataframe(_datas['test'])
 
-    pred_log = fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
-
-    return np.expm1(pred_log)
+    return fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))

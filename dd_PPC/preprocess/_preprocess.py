@@ -41,8 +41,6 @@ def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None) 
 
     x_train = train[num_cols]
 
-    print('\nstandardize_numbers\n-----------------\n', x_train.head())
-
     if fit_model is None:
         fit_model = StandardScaler()
         fit_model.fit(x_train)
@@ -176,7 +174,6 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     x_train = train[category_cols].copy()
 
-    print('\nencoding_category\n-----------------\n', x_train.head())
     for _col in category_cols:
 
         _values = x_train[_col]
