@@ -10,14 +10,21 @@ from .. import file, preprocess, model, data, calc
 
 _GLOBAL_LAMBDA = 0.09
 
-def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.ndarray, StandardScaler]:
+def apply_lightgbm(show_pred_plot: bool = False, survey_ids: list[int] | None = None) -> tuple[lgb.LGBMRegressor, np.ndarray, StandardScaler]:
     _datas = file.get_datas()
 
-    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(_datas['train'])
-    _datas_category = preprocess.encoding_category_dataframe(_datas['train'])
+    if survey_ids is None:
+        _x = _datas['train']
+        _y = _datas['target_consumption'].loc[:, 'cons_ppp17']
+    else:
+        _x = _datas['train'].loc[_datas['train'].survey_id.isin(survey_ids), :]
+        _y = _datas['target_consumption'].loc[_datas['target_consumption'].survey_id.isin(survey_ids), 'cons_ppp17']
+
+    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(_x)
+    _datas_category = preprocess.encoding_category_dataframe(_x)
 
     _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-    _y_train = calc.apply_boxcox_transform(_datas['target_consumption'].loc[:, 'cons_ppp17'], _GLOBAL_LAMBDA)
+    _y_train = calc.apply_boxcox_transform(_y, _GLOBAL_LAMBDA)
 
     LB, pred_LB_coxbox = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
 
