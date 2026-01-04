@@ -51,7 +51,6 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         _datas_category = preprocess.encoding_category_dataframe(test_x_)
 
         x_test = pd.concat([_datas_std, _datas_category], axis=1)
-
         _pred_cons_y_log = lb.predict(x_test)
 
         pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, boxcox_lambda)

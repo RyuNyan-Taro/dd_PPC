@@ -166,9 +166,10 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     }
 
     category_cols = [
-        'water', 'toilet', 'sewer', 'elect', 'male', 'urban',
+        'water', 'toilet', 'sewer', 'elect', 'water_source',
+        'male', 'urban',
         'owner', 'employed', 'any_nonagric',
-        'water_source', 'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
+        'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
         'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
     ]
 
@@ -188,22 +189,116 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
 def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 
-
-    _features, _ = _create_features(df)
+    _features, _ = _create_infra_features(df)
 
     return _features
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
-    _features, _columns = _create_features(df)
+    _infra_features, _infra_columns = _create_infra_features(df)
 
-    return pd.DataFrame(_features, columns=_columns)
+    # _features, _columns = _create_interaction_features(df)
+
+    _binned_features, _binned_columns = _create_binned_features(df)
+
+    _datas = [
+        pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
+        for _features, _columns
+        in [(_infra_features, _infra_columns), (_binned_features, _binned_columns)]
+    ]
+
+    return pd.concat(_datas, axis=1)
 
 
-def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
+
+    # it worse the score to 9.667269918408259 -> 9.871187466282631
+    features = df.copy()
 
     _infra_columns = ['water', 'toilet', 'sewer', 'elect']
 
-    _infra_counts = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
+    features['infra_count'] = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
 
-    return _infra_counts, ['infra_count']
+    # Infrastructure access patterns
+    water_access = (df['water'] == 'Access').astype(int)
+    toilet_access = (df['toilet'] == 'Access').astype(int)
+    sewer_access = (df['sewer'] == 'Access').astype(int)
+    elect_access = (df['elect'] == 'Access').astype(int)
+
+    # Infrastructure combinations
+    features['water_toilet'] = water_access * toilet_access
+    features['full_sanitation'] = water_access * toilet_access * sewer_access
+    features['modern_amenities'] = elect_access * (df['water_source'].isin(['Piped water to yard/plot', 'Piped water into dwelling'])).astype(int)
+
+    # Infrastructure quality weighted by household size
+    features['infra_per_person'] = (water_access + toilet_access + sewer_access + elect_access) / df['hsize']
+
+    feature_columns = [
+        'infra_count',
+        'water_toilet',
+        'full_sanitation',
+        'modern_amenities',
+        'infra_per_person'
+    ]
+
+    return features[feature_columns], feature_columns
+
+
+def _create_interaction_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Create interaction features between key variables."""
+
+    # it worse the score to 9.667269918408259 -> 10.056012578908941
+    features = df.copy()
+
+    # Household composition interactions
+    features['adults_per_child'] = (features['num_adult_female'] + features['num_adult_male']) / (
+                features['num_children18'] + 1)
+    features['dependency_ratio'] = features['num_children18'] / (
+                features['num_adult_female'] + features['num_adult_male'] + 1)
+
+    # Economic interactions
+    employed = (df['employed'] == 'Employed').astype(int)
+    _top_value = features['educ_max'].value_counts().idxmax()
+    features['educ_max'] = features['educ_max'].fillna(_top_value)
+    educ_max = features['educ_max'].apply(lambda x: {
+            'Complete Tertiary Education': 6,
+            'Complete Secondary Education': 5,
+            'Incomplete Tertiary Education': 4,
+            'Incomplete Primary Education': 2,
+            'Complete Primary Education': 3,
+            'Incomplete Secondary Education': 1,
+            'Never attended': 0,
+        }[x]).astype(int)
+
+    features['workers_per_household'] = features['sworkershh'] / features['hsize']
+    features['education_employment'] = educ_max * employed
+
+    features_columns = [
+        'adults_per_child',
+        'dependency_ratio',
+        'workers_per_household',
+        'education_employment'
+    ]
+
+    return features[features_columns], features_columns
+
+
+def _create_binned_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Create binned versions of continuous variables."""
+
+    # a little worse with dropping the base column: 9.667269918408259 -> 9.77464917925407
+    features = df.copy()
+
+    # Age groups
+    features['age_group'] = pd.cut(df['age'], bins=[0, 25, 45, 65, 100], labels=[0, 1, 2, 3])
+
+    # Household size categories
+    features['hsize_category'] = pd.cut(df['hsize'], bins=[0, 2, 4, 6, 20], labels=[0, 1, 2, 3])
+
+    # Polynomial features for key variables
+    features['age_squared'] = df['age'] ** 2
+    features['hsize_squared'] = df['hsize'] ** 2
+
+    feature_columns = ['age_group', 'hsize_category', 'age_squared', 'hsize_squared']
+
+    return features[feature_columns], feature_columns
