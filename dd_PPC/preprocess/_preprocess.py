@@ -259,8 +259,6 @@ def _create_interaction_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[s
             'Never attended': 0,
         }[x]).astype(int)
 
-    print(employed)
-    print()
     features['workers_per_household'] = features['sworkershh'] / features['hsize']
     features['education_employment'] = educ_max * employed
 
