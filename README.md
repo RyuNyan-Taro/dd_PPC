@@ -36,3 +36,6 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 # Records
 - pipeline.apply_random_forest
    - two_category: large category has more high difference from prediction
+- use coxbox
+   - lambda = 0.09 is best score for pipeline.fit_and_test_lightgbm: 10.050838758 -> 9.667269918408259
+   - it is not standardized, but the competition score is target a 0.4.
