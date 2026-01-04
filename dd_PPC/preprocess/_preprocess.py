@@ -94,10 +94,10 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     _category_number_maps = {
         'owner': {'Owner': 1, 'Not owner': 0},
-        'water': _access_or_not,
-        'toilet': _access_or_not,
-        'sewer': _access_or_not,
-        'elect': _access_or_not,
+        # 'water': _access_or_not,
+        # 'toilet': _access_or_not,
+        # 'sewer': _access_or_not,
+        # 'elect': _access_or_not,
         'male': {'Male': 1, 'Female': 0},
         'urban': {'Urban': 1, 'Rural': 0},
         'employed': {'Employed': 1, 'Not employed': 0},
@@ -109,16 +109,16 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'region5': _already_number,
         'region6': _already_number,
         'region7': _already_number,
-        'water_source': {
-            'Piped water into dwelling': 6,
-            'Surface water': 1,
-            'Other': 2,
-            'Piped water to yard/plot': 5,
-            'Protected dug well': 4,
-            'Public tap or standpipe': 3,
-            'Tanker-truck': 0,
-            'Protected spring': 4,
-        },
+        # 'water_source': {
+        #     'Piped water into dwelling': 6,
+        #     'Surface water': 1,
+        #     'Other': 2,
+        #     'Piped water to yard/plot': 5,
+        #     'Protected dug well': 4,
+        #     'Public tap or standpipe': 3,
+        #     'Tanker-truck': 0,
+        #     'Protected spring': 4,
+        # },
         'sanitation_source': {
             'A piped sewer system': 5,
             'A septic tank': 3,
@@ -166,9 +166,10 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     }
 
     category_cols = [
-        'water', 'toilet', 'sewer', 'elect', 'male', 'urban',
+        # 'water', 'toilet', 'sewer', 'elect', 'water_source',
+        'male', 'urban',
         'owner', 'employed', 'any_nonagric',
-        'water_source', 'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
+        'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
         'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
     ]
 
@@ -194,11 +195,11 @@ def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
-    # _features, _columns = _create_infra_features(df)
+    _features, _columns = _create_infra_features(df)
 
     # _features, _columns = _create_interaction_features(df)
 
-    _features, _columns = _create_binned_features(df)
+    # _features, _columns = _create_binned_features(df)
 
     return pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
 
