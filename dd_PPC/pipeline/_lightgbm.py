@@ -35,7 +35,7 @@ def fit_and_test_lightgbm():
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
 
         _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-        _y_train = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], GLOBAL_LAMBDA)
+        _y_train, _ = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], GLOBAL_LAMBDA)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
 
