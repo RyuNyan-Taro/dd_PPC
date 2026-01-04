@@ -35,8 +35,7 @@ def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | N
 
 def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[np.ndarray, list[str]]:
 
-    num_cols = ['weight', 'strata',
-                # 'hsize', 'age',
+    num_cols = ['weight', 'strata', 'hsize', 'age',
                  'num_children5', 'num_children10', 'num_children18',
                  'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
@@ -95,10 +94,10 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     _category_number_maps = {
         'owner': {'Owner': 1, 'Not owner': 0},
-        # 'water': _access_or_not,
-        # 'toilet': _access_or_not,
-        # 'sewer': _access_or_not,
-        # 'elect': _access_or_not,
+        'water': _access_or_not,
+        'toilet': _access_or_not,
+        'sewer': _access_or_not,
+        'elect': _access_or_not,
         'male': {'Male': 1, 'Female': 0},
         'urban': {'Urban': 1, 'Rural': 0},
         'employed': {'Employed': 1, 'Not employed': 0},
@@ -110,16 +109,16 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'region5': _already_number,
         'region6': _already_number,
         'region7': _already_number,
-        # 'water_source': {
-        #     'Piped water into dwelling': 6,
-        #     'Surface water': 1,
-        #     'Other': 2,
-        #     'Piped water to yard/plot': 5,
-        #     'Protected dug well': 4,
-        #     'Public tap or standpipe': 3,
-        #     'Tanker-truck': 0,
-        #     'Protected spring': 4,
-        # },
+        'water_source': {
+            'Piped water into dwelling': 6,
+            'Surface water': 1,
+            'Other': 2,
+            'Piped water to yard/plot': 5,
+            'Protected dug well': 4,
+            'Public tap or standpipe': 3,
+            'Tanker-truck': 0,
+            'Protected spring': 4,
+        },
         'sanitation_source': {
             'A piped sewer system': 5,
             'A septic tank': 3,
@@ -167,7 +166,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     }
 
     category_cols = [
-        # 'water', 'toilet', 'sewer', 'elect', 'water_source',
+        'water', 'toilet', 'sewer', 'elect', 'water_source',
         'male', 'urban',
         'owner', 'employed', 'any_nonagric',
         'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
