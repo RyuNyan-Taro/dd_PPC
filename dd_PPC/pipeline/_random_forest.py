@@ -33,7 +33,9 @@ def fit_and_test_random_forest():
         _x_train = np.hstack([_datas_std, _datas_category])
         _y_train = train_cons_y_.loc[:, 'cons_ppp17']
 
-        RF, pred_RF = model.fit_random_forest(_x_train, _y_train)
+        RF, pred_RF_log = model.fit_random_forest(_x_train, _y_train)
+
+        pred_RF = np.expm1(pred_RF_log)
 
         return RF, pred_RF, sc
 
@@ -43,7 +45,9 @@ def fit_and_test_random_forest():
 
         x_test = np.hstack([_datas_std, _datas_category])
 
-        pred_cons_y = rf.predict(x_test)
+        _pred_cons_y_log = rf.predict(x_test)
+
+        pred_cons_y = np.expm1(_pred_cons_y_log)
 
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
