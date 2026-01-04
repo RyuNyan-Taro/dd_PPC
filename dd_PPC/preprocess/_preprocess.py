@@ -203,6 +203,7 @@ def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
 
 def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
+    # it worse the score to 9.667269918408259 -> 9.871187466282631
     features = df.copy()
 
     _infra_columns = ['water', 'toilet', 'sewer', 'elect']
@@ -237,6 +238,7 @@ def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 def _create_interaction_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     """Create interaction features between key variables."""
 
+    # it worse the score to 9.667269918408259 -> 10.056012578908941
     features = df.copy()
 
     # Household composition interactions
