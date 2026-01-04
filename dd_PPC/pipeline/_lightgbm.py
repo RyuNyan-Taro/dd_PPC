@@ -31,12 +31,10 @@ def fit_and_test_lightgbm():
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
 
-        _cat_cols = ['water_source', 'sanitation_source', 'dweltyp', 'educ_max', 'sector1d']
-
         _x_train = pd.concat([_datas_std, _datas_category], axis=1)
         _y_train = np.log1p(train_cons_y_.loc[:, 'cons_ppp17'])
 
-        LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
+        LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
 
         pred_LB = np.expm1(pred_LB_log)
 
