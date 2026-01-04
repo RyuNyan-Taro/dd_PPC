@@ -247,6 +247,8 @@ def _create_interaction_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[s
 
     # Economic interactions
     employed = (df['employed'] == 'Employed').astype(int)
+    _top_value = features['educ_max'].value_counts().idxmax()
+    features['educ_max'] = features['educ_max'].fillna(_top_value)
     educ_max = features['educ_max'].apply(lambda x: {
             'Complete Tertiary Education': 6,
             'Complete Secondary Education': 5,
