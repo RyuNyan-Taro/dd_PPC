@@ -247,8 +247,20 @@ def _create_interaction_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[s
 
     # Economic interactions
     employed = (df['employed'] == 'Employed').astype(int)
+    educ_max = features['educ_max'].apply(lambda x: {
+            'Complete Tertiary Education': 6,
+            'Complete Secondary Education': 5,
+            'Incomplete Tertiary Education': 4,
+            'Incomplete Primary Education': 2,
+            'Complete Primary Education': 3,
+            'Incomplete Secondary Education': 1,
+            'Never attended': 0,
+        }[x]).astype(int)
+
+    print(employed)
+    print()
     features['workers_per_household'] = features['sworkershh'] / features['hsize']
-    features['education_employment'] = features['educ_max'] * employed
+    features['education_employment'] = educ_max * employed
 
     features_columns = [
         'adults_per_child',
