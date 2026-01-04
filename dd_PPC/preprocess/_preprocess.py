@@ -37,7 +37,12 @@ def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None) 
 
     num_cols = ['weight', 'strata', 'hsize', 'age',
                  'num_children5', 'num_children10', 'num_children18',
-                 'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
+                 'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh',
+                'adults_per_child',
+                'dependency_ratio',
+                'workers_per_household',
+                'education_employment'
+                ]
 
     x_train = train[num_cols]
 
@@ -195,19 +200,19 @@ def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
-    _infra_features, _infra_columns = _create_infra_features(df)
+    # _infra_features, _infra_columns = _create_infra_features(df)
 
-    # _features, _columns = _create_interaction_features(df)
+    _features, _columns = _create_interaction_features(df)
 
-    _binned_features, _binned_columns = _create_binned_features(df)
+    # _binned_features, _binned_columns = _create_binned_features(df)
 
-    _datas = [
-        pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
-        for _features, _columns
-        in [(_infra_features, _infra_columns), (_binned_features, _binned_columns)]
-    ]
+    # _datas = [
+    #     pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
+    #     for _features, _columns
+    #     in [(_infra_features, _infra_columns), (_binned_features, _binned_columns)]
+    # ]
 
-    return pd.concat(_datas, axis=1)
+    return pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
 
 
 def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
