@@ -1,7 +1,15 @@
-__all__ = ['weighted_average_of_consumption_and_poverty_rate', 'poverty_rates_from_consumption']
+__all__ = [
+    'weighted_average_of_consumption_and_poverty_rate',
+    'poverty_rates_from_consumption',
+    'apply_boxcox_transform',
+    'inverse_boxcox_transform'
+]
 
+from typing import Any
 import numpy as np
 import pandas as pd
+from scipy.stats import boxcox
+from scipy.special import inv_boxcox
 
 
 def weighted_average_of_consumption_and_poverty_rate(
@@ -58,3 +66,32 @@ def poverty_rates_from_consumption(consumptions: pd.DataFrame, consumption_colum
         _poverty_rates.append([_id] + [np.sum(_df[consumption_column] < _threshold) / len(_df) for _threshold in _poverty_thresholds])
 
     return pd.DataFrame(_poverty_rates, columns=_columns)
+
+
+def apply_boxcox_transform(data: np.ndarray, lambda_param: float | None = None) -> tuple[Any, float]:
+    """
+    Apply Box-Cox transformation to the target variable.
+
+    Args:
+        data: Target values (must be positive)
+        lambda_param: If None, find optimal lambda. Otherwise, use provided lambda.
+
+    Returns:
+        Tuple of (transformed_data, lambda_param)
+    """
+
+    if lambda_param is None:
+        transformed, fitted_lambda = boxcox(data)
+        return transformed, float(fitted_lambda)
+    else:
+        # Use pre-fitted lambda
+        if lambda_param == 0:
+            return np.log(data), lambda_param
+        else:
+            return (np.power(data, lambda_param) - 1) / lambda_param, lambda_param
+
+
+def inverse_boxcox_transform(transformed_data: np.ndarray, lambda_param: float):
+    """Inverse Box-Cox transformation"""
+
+    return inv_boxcox(transformed_data, lambda_param)
