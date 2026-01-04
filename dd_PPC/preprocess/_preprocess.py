@@ -194,7 +194,9 @@ def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
-    _features, _columns = _create_infra_features(df)
+    # _features, _columns = _create_infra_features(df)
+
+    _features, _columns = _create_interaction_features(df)
 
     return pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
 
@@ -230,3 +232,28 @@ def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     ]
 
     return features[feature_columns], feature_columns
+
+
+def _create_interaction_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Create interaction features between key variables."""
+
+    features = df.copy()
+
+    # Household composition interactions
+    features['adults_per_child'] = (features['num_adult_female'] + features['num_adult_male']) / (
+                features['num_children18'] + 1)
+    features['dependency_ratio'] = features['num_children18'] / (
+                features['num_adult_female'] + features['num_adult_male'] + 1)
+
+    # Economic interactions
+    features['workers_per_household'] = features['sworkershh'] / features['hsize']
+    features['education_employment'] = features['educ_max'] * features['employed']
+
+    features_columns = [
+        'adults_per_child',
+        'dependency_ratio',
+        'workers_per_household',
+        'education_employment'
+    ]
+
+    return features[features_columns], features_columns
