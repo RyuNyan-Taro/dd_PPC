@@ -14,9 +14,11 @@ def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.
     _datas_category = preprocess.encoding_category_dataframe(_datas['train'])
 
     _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-    _y_train = _datas['target_consumption'].loc[:, 'cons_ppp17']
+    _y_train = np.log1p(_datas['target_consumption'].loc[:, 'cons_ppp17'])
 
-    LB, pred_LB = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
+    LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
+
+    pred_LB = np.expm1(pred_LB_log)
 
     return LB, pred_LB, sc
 
@@ -33,9 +35,9 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
     _datas_category = preprocess.encoding_category_dataframe(_datas['train'])
 
     _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-    _y_train = _datas['target_consumption'].loc[:, 'cons_ppp17']
+    _y_train = np.log1p(_datas['target_consumption'].loc[:, 'cons_ppp17'])
 
-    _LB, pred_LB = model.fit_lightgbm(_x_train, _y_train)
+    _LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
 
     _predicted = pred_lightgbm(_LB, _sc)
 
@@ -48,4 +50,6 @@ def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarra
     _datas_std, _ = preprocess.standardized_with_numbers_dataframe(_datas['test'], sc)
     _datas_category = preprocess.encoding_category_dataframe(_datas['test'])
 
-    return fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
+    pred_log = fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
+
+    return np.expm1(pred_log)
