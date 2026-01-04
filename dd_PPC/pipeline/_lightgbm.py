@@ -24,21 +24,19 @@ def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.
     return LB, pred_LB, sc
 
 
-def fit_and_test_lightgbm(GLOBAL_LAMBDA: float = -0.095):
+def fit_and_test_lightgbm(boxcox_lambda: float = 0.09):
     """Fits and tests LightGBM model; evaluates competition score"""
-
-    # It is calculated values for all training data
 
     def fit_data(train_x_, train_cons_y_):
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
 
         _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-        _y_train, _ = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], GLOBAL_LAMBDA)
+        _y_train, _ = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], boxcox_lambda)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
 
-        pred_LB = calc.inverse_boxcox_transform(pred_LB_log, GLOBAL_LAMBDA)
+        pred_LB = calc.inverse_boxcox_transform(pred_LB_log, boxcox_lambda)
 
         return LB, pred_LB, sc
 
@@ -51,7 +49,7 @@ def fit_and_test_lightgbm(GLOBAL_LAMBDA: float = -0.095):
 
         _pred_cons_y_log = lb.predict(x_test)
 
-        pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, GLOBAL_LAMBDA)
+        pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, boxcox_lambda)
 
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
