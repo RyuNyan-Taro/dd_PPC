@@ -35,7 +35,8 @@ def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | N
 
 def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[np.ndarray, list[str]]:
 
-    num_cols = ['weight', 'strata', 'hsize', 'age',
+    num_cols = ['weight', 'strata',
+                # 'hsize', 'age',
                  'num_children5', 'num_children10', 'num_children18',
                  'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
