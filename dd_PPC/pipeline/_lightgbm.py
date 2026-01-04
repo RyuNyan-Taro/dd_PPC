@@ -8,6 +8,8 @@ from sklearn.preprocessing import StandardScaler
 from .. import file, preprocess, model, data, calc
 
 
+_GLOBAL_LAMBDA = 0.09
+
 def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.ndarray, StandardScaler]:
     _datas = file.get_datas()
 
@@ -24,8 +26,11 @@ def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.
     return LB, pred_LB, sc
 
 
-def fit_and_test_lightgbm(boxcox_lambda: float = 0.09):
+def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     """Fits and tests LightGBM model; evaluates competition score"""
+
+    if boxcox_lambda is None:
+        boxcox_lambda = _GLOBAL_LAMBDA
 
     def fit_data(train_x_, train_cons_y_):
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
