@@ -31,7 +31,7 @@ def fit_and_test_lightgbm():
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
 
-        _cat_cols = _datas_category.columns.tolist()
+        _cat_cols = ['water_source', 'sanitation_source', 'dweltyp', 'educ_max', 'sector1d']
 
         _x_train = pd.concat([_datas_std, _datas_category], axis=1)
         _y_train = np.log1p(train_cons_y_.loc[:, 'cons_ppp17'])
