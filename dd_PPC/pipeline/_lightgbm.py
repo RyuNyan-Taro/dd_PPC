@@ -99,13 +99,15 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
     _datas_category = preprocess.encoding_category_dataframe(_datas['train'])
 
     _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-    _y_train = np.log1p(_datas['target_consumption'].loc[:, 'cons_ppp17'])
+    _y_train, _ = calc.apply_boxcox_transform(_datas['target_consumption'].loc[:, 'cons_ppp17'], _GLOBAL_LAMBDA)
 
     _cat_cols = _datas_category.columns
 
-    _LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
+    _LB, _ = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
 
-    _predicted = pred_lightgbm(_LB, _sc)
+    _predicted_coxbox = pred_lightgbm(_LB, _sc)
+
+    _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, _GLOBAL_LAMBDA)
 
     file.save_to_submission_format(_predicted, folder_prefix)
 
