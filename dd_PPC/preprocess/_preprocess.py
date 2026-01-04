@@ -197,7 +197,7 @@ def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
     _features, _columns = _create_features(df)
 
-    return pd.DataFrame(_features, columns=_columns)
+    return pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
 
 
 def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:

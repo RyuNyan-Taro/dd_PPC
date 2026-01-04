@@ -37,8 +37,13 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
         _datas_new = preprocess.create_new_features_data_frame(train_x_)
 
+        for _datas in [_datas_std, _datas_category, _datas_new]:
+            print(_datas.shape)
+
         _x_train = pd.concat([_datas_std, _datas_category, _datas_new], axis=1)
         print('\ntrain columns:', _x_train.columns)
+        print(_x_train)
+        print(_datas_new)
         _y_train, _ = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], boxcox_lambda)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
@@ -53,7 +58,14 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         _datas_category = preprocess.encoding_category_dataframe(test_x_)
         _datas_new = preprocess.create_new_features_data_frame(test_x_)
 
+        for _datas in [_datas_std, _datas_category, _datas_new]:
+            print(_datas.shape)
+
         x_test = pd.concat([_datas_std, _datas_category, _datas_new], axis=1)
+
+        print('x_test shape:', x_test.shape, '\n')
+        print(x_test)
+        print(_datas_new)
 
         _pred_cons_y_log = lb.predict(x_test)
 
@@ -62,7 +74,11 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
         consumption = test_cons_y_.copy()
+        print('\ntest columns:', consumption.columns, consumption.shape)
+        print('\nconsumption:', consumption.head())
+        print('\npred_cons_y:', pred_cons_y.shape)
         consumption['cons_pred'] = pred_cons_y
+
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
 
