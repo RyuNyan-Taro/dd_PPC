@@ -24,11 +24,10 @@ def apply_lightgbm(show_pred_plot: bool = False) -> tuple[lgb.LGBMRegressor, np.
     return LB, pred_LB, sc
 
 
-def fit_and_test_lightgbm():
+def fit_and_test_lightgbm(GLOBAL_LAMBDA: float = -0.095):
     """Fits and tests LightGBM model; evaluates competition score"""
 
     # It is calculated values for all training data
-    GLOBAL_LAMBDA = -0.095
 
     def fit_data(train_x_, train_cons_y_):
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
