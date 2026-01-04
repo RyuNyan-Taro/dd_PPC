@@ -195,9 +195,19 @@ def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
-    _features, _columns = _create_infra_features(df)
+    _infra_features, _infra_columns = _create_infra_features(df)
 
-    return pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
+    # _features, _columns = _create_interaction_features(df)
+
+    _binned_features, _binned_columns = _create_binned_features(df)
+
+    _datas = [
+        pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
+        for _features, _columns
+        in [(_infra_features, _infra_columns), (_binned_features, _binned_columns)]
+    ]
+
+    return pd.concat(_datas, axis=1)
 
 
 def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
@@ -207,7 +217,7 @@ def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     _infra_columns = ['water', 'toilet', 'sewer', 'elect']
 
-    # features['infra_count'] = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
+    features['infra_count'] = df[_infra_columns].apply(lambda x: sum([{'Access': 1, 'No access': 0}[_val] for _val in x]), axis=1)
 
     # Infrastructure access patterns
     water_access = (df['water'] == 'Access').astype(int)
@@ -216,18 +226,18 @@ def _create_infra_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     elect_access = (df['elect'] == 'Access').astype(int)
 
     # Infrastructure combinations
-    # features['water_toilet'] = water_access * toilet_access
-    # features['full_sanitation'] = water_access * toilet_access * sewer_access
-    # features['modern_amenities'] = elect_access * (df['water_source'].isin(['Piped water to yard/plot', 'Piped water into dwelling'])).astype(int)
+    features['water_toilet'] = water_access * toilet_access
+    features['full_sanitation'] = water_access * toilet_access * sewer_access
+    features['modern_amenities'] = elect_access * (df['water_source'].isin(['Piped water to yard/plot', 'Piped water into dwelling'])).astype(int)
 
     # Infrastructure quality weighted by household size
     features['infra_per_person'] = (water_access + toilet_access + sewer_access + elect_access) / df['hsize']
 
     feature_columns = [
-        # 'infra_count',
-        # 'water_toilet',
-        # 'full_sanitation',
-        # 'modern_amenities',
+        'infra_count',
+        'water_toilet',
+        'full_sanitation',
+        'modern_amenities',
         'infra_per_person'
     ]
 
