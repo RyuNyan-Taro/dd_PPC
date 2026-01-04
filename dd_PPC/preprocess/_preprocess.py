@@ -217,7 +217,7 @@ def _create_features(df: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     # Infrastructure combinations
     features['water_toilet'] = water_access * toilet_access
     features['full_sanitation'] = water_access * toilet_access * sewer_access
-    features['modern_amenities'] = elect_access * (df['water_source'] >= 5).astype(int)
+    features['modern_amenities'] = elect_access * (df['water_source'].isin(['Piped water to yard/plot', 'Piped water into dwelling'])).astype(int)
 
     # Infrastructure quality weighted by household size
     features['infra_per_person'] = (water_access + toilet_access + sewer_access + elect_access) / df['hsize']
