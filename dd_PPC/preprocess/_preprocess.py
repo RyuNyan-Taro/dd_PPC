@@ -279,6 +279,8 @@ def _create_interaction_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[s
 
 def _create_binned_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     """Create binned versions of continuous variables."""
+
+    # a little worse with dropping the base column: 9.667269918408259 -> 9.77464917925407
     features = df.copy()
 
     # Age groups
