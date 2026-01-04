@@ -196,7 +196,9 @@ def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
     # _features, _columns = _create_infra_features(df)
 
-    _features, _columns = _create_interaction_features(df)
+    # _features, _columns = _create_interaction_features(df)
+
+    _features, _columns = _create_binned_features(df)
 
     return pd.DataFrame(_features, columns=_columns).reset_index(drop=True)
 
@@ -272,3 +274,22 @@ def _create_interaction_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[s
     ]
 
     return features[features_columns], features_columns
+
+
+def _create_binned_features(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Create binned versions of continuous variables."""
+    features = df.copy()
+
+    # Age groups
+    features['age_group'] = pd.cut(df['age'], bins=[0, 25, 45, 65, 100], labels=[0, 1, 2, 3])
+
+    # Household size categories
+    features['hsize_category'] = pd.cut(df['hsize'], bins=[0, 2, 4, 6, 20], labels=[0, 1, 2, 3])
+
+    # Polynomial features for key variables
+    features['age_squared'] = df['age'] ** 2
+    features['hsize_squared'] = df['hsize'] ** 2
+
+    feature_columns = ['age_group', 'hsize_category', 'age_squared', 'hsize_squared']
+
+    return features[feature_columns], feature_columns
