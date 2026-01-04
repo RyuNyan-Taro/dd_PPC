@@ -35,8 +35,9 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     def fit_data(train_x_, train_cons_y_):
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
+        _datas_new = preprocess.create_new_features_data_frame(train_x_)
 
-        _x_train = pd.concat([_datas_std, _datas_category], axis=1)
+        _x_train = pd.concat([_datas_std, _datas_category, _datas_new], axis=1)
         _y_train, _ = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], boxcox_lambda)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
@@ -49,8 +50,9 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     def pred_data(test_x_, test_cons_y_, sc, lb):
         _datas_std, sc = preprocess.standardized_with_numbers_dataframe(test_x_, sc)
         _datas_category = preprocess.encoding_category_dataframe(test_x_)
+        _datas_new = preprocess.create_new_features_data_frame(test_x_)
 
-        x_test = pd.concat([_datas_std, _datas_category], axis=1)
+        x_test = pd.concat([_datas_std, _datas_category, _datas_new], axis=1)
         _pred_cons_y_log = lb.predict(x_test)
 
         pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, boxcox_lambda)
