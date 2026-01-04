@@ -14,9 +14,11 @@ def apply_random_forest(show_pred_plot: bool = False) -> tuple[RandomForestRegre
     _datas_category = preprocess.encoding_category(_datas['train'])
 
     _x_train = np.hstack([_datas_std, _datas_category])
-    _y_train = _datas['target_consumption'].loc[:, 'cons_ppp17']
+    _y_train = np.log1p(_datas['target_consumption'].loc[:, 'cons_ppp17'])
 
-    RF, pred_RF = model.fit_random_forest(_x_train, _y_train, show_pred_plot=show_pred_plot)
+    RF, pred_RF_log = model.fit_random_forest(_x_train, _y_train, show_pred_plot=show_pred_plot)
+
+    pred_RF = np.expm1(pred_RF_log)
 
     return RF, pred_RF, sc
 
@@ -29,9 +31,11 @@ def fit_and_test_random_forest():
         _datas_category = preprocess.encoding_category(train_x_)
 
         _x_train = np.hstack([_datas_std, _datas_category])
-        _y_train = train_cons_y_.loc[:, 'cons_ppp17']
+        _y_train = np.log1p(train_cons_y_.loc[:, 'cons_ppp17'])
 
-        RF, pred_RF = model.fit_random_forest(_x_train, _y_train)
+        RF, pred_RF_log = model.fit_random_forest(_x_train, _y_train)
+
+        pred_RF = np.expm1(pred_RF_log)
 
         return RF, pred_RF, sc
 
@@ -41,7 +45,9 @@ def fit_and_test_random_forest():
 
         x_test = np.hstack([_datas_std, _datas_category])
 
-        pred_cons_y = rf.predict(x_test)
+        _pred_cons_y_log = rf.predict(x_test)
+
+        pred_cons_y = np.expm1(_pred_cons_y_log)
 
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
@@ -84,9 +90,9 @@ def fit_and_prediction_random_forest(folder_prefix: str | None = None):
     _datas_category = preprocess.encoding_category(_train)
 
     _x_train = np.hstack([_datas_std, _datas_category])
-    _y_train = _target.loc[:, 'cons_ppp17']
+    _y_train = np.log1p(_target.loc[:, 'cons_ppp17'])
 
-    _RF, _pred_RF = model.fit_random_forest(_x_train, _y_train)
+    _RF, _pred_RF_log = model.fit_random_forest(_x_train, _y_train)
 
     _predicted = pred_random_forest(_RF, _sc)
 
@@ -100,4 +106,6 @@ def pred_random_forest(fit_model: RandomForestRegressor, sc: StandardScaler) -> 
     _datas_std, _ = preprocess.standardized_with_numbers(_datas['test'], sc)
     _datas_category = preprocess.encoding_category(_datas['test'])
 
-    return fit_model.predict(np.hstack([_datas_std, _datas_category]))
+    pred_log = fit_model.predict(np.hstack([_datas_std, _datas_category]))
+
+    return np.expm1(pred_log)
