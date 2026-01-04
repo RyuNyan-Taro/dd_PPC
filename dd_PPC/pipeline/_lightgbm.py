@@ -37,8 +37,8 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         _datas_category = preprocess.encoding_category_dataframe(train_x_)
         _datas_new = preprocess.create_new_features_data_frame(train_x_)
 
-        _x_train = pd.concat([_datas_std, _datas_category], axis=1)
         _x_train = pd.concat([_datas_std, _datas_category, _datas_new], axis=1)
+        print('\ntrain columns:', _x_train.columns)
         _y_train, _ = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], boxcox_lambda)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
