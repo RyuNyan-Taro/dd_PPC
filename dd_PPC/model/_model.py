@@ -1,6 +1,7 @@
 __all__ = ['fit_random_forest', 'fit_lightgbm', 'fit_isotonic_regression']
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.isotonic import IsotonicRegression
@@ -38,7 +39,12 @@ def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] =
     return pred_y, pred_lgb
 
 
-def fit_isotonic_regression(X, y) -> IsotonicRegression:
+def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) -> IsotonicRegression:
+
+    # drop survey_id and flatten
+    X = pred_rate.T.to_numpy()[1:].flatten()
+    y = target_rate.T.to_numpy()[1:].flatten()
+
     ir = IsotonicRegression(out_of_bounds='clip')
     ir.fit(X, y)
 
