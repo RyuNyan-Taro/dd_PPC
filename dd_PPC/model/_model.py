@@ -53,14 +53,15 @@ def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) 
 
 def transform_isotonic_regression(pred_rate: pd.DataFrame, ir: IsotonicRegression) -> pd.DataFrame:
 
-    _id_and_rates = pred_rate.T.to_numpy()
-    _id = _id_and_rates[0]
-    _rates = _id_and_rates[1:]
+    _datas = []
+    for _id, _group in pred_rate.groupby('survey_id'):
+        _rates = _group.T.to_numpy()[1:]
 
-    _transformed = ir.transform(_rates.flatten()).T
+        _transformed = ir.transform(_rates.flatten()).T
+        _datas.append(np.append(np.array(_id), _transformed))
 
     return pd.DataFrame(
-        np.append(_id, _transformed).flatten().reshape(1, -1),
+        data=_datas,
         index=pred_rate.index,
         columns=pred_rate.columns
     )
