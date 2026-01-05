@@ -41,7 +41,7 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 ## 76.229
 - model: lightgm.LGBMRegressor with coxbox and isotonic
 - process: pipeline.fit_and_predictions_lightgbm
-- apply isotonic regression. But it is not good.
+- apply isotonic regression. But it is not good. <- It was fixed by f808b27. foggoten inverse coxbox was the case.
 
 # Records
 - pipeline.apply_random_forest
