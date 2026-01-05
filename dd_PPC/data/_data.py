@@ -28,14 +28,15 @@ def divide_value_types(df: pd.DataFrame) -> tuple[list[str], list[str]]:
 
 def split_datas(dependent: pd.DataFrame, consumptions: pd.DataFrame, rates: pd.DataFrame
                 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    _test_survey_id = 300000
+    _test_survey_ids = [300000]
 
-    return (dependent[dependent.survey_id != _test_survey_id],
-            consumptions[consumptions.survey_id != _test_survey_id],
-            rates[rates.survey_id != _test_survey_id],
-            dependent[dependent.survey_id == _test_survey_id],
-            consumptions[consumptions.survey_id == _test_survey_id],
-            rates[rates.survey_id == _test_survey_id])
+    return (dependent[~dependent.survey_id.isin(_test_survey_ids)],
+            consumptions[~consumptions.survey_id.isin(_test_survey_ids)],
+            rates[~rates.survey_id.isin(_test_survey_ids)],
+            dependent[dependent.survey_id.isin(_test_survey_ids)],
+            consumptions[consumptions.survey_id.isin(_test_survey_ids)],
+            rates[rates.survey_id.isin(_test_survey_ids)],
+            )
 
 
 def compare_transformations(y_data: np.ndarray):
