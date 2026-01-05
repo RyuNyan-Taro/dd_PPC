@@ -47,6 +47,7 @@ def save_to_submission_format(predictions: np.ndarray, pred_rate: pd.DataFrame |
     if pred_rate is None:
         _add_distribution(_poverty_distribution_format, predictions)
     else:
+        pred_rate.columns = _poverty_distribution_format.columns
         _poverty_distribution_format = pred_rate
 
     _save_submissions(_consumption_format, _poverty_distribution_format, _dir_path, folder_prefix)
