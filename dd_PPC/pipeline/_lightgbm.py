@@ -20,7 +20,7 @@ def apply_lightgbm(show_pred_plot: bool = False, survey_ids: list[int] | None = 
         _x = _datas['train'].loc[_datas['train'].survey_id.isin(survey_ids), :]
         _y = _datas['target_consumption'].loc[_datas['target_consumption'].survey_id.isin(survey_ids), 'cons_ppp17']
 
-    _x_train, sc = _preprocess_data(_x)
+    _x_train, sc, _ = _preprocess_data(_x)
     _y_train = _get_modified_target(_y)
 
     LB, pred_LB_coxbox = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
@@ -38,7 +38,7 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
     def fit_data(train_x_, train_cons_y_):
 
-        _x_train, sc = _preprocess_data(train_x_)
+        _x_train, sc, _ = _preprocess_data(train_x_)
         _y_train  = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
@@ -50,7 +50,7 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
     def pred_data(test_x_, test_cons_y_, sc, lb):
 
-        x_test, _ = _preprocess_data(test_x_, sc)
+        x_test, *_ = _preprocess_data(test_x_, sc)
         _pred_cons_y_log = lb.predict(x_test)
 
         pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, boxcox_lambda)
@@ -89,16 +89,8 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
 
     _datas = file.get_datas()
 
-    _train = _datas['train']
-    _target = _datas['target_consumption']
-
-    _datas_std, _sc = preprocess.standardized_with_numbers_dataframe(_datas['train'])
-    _datas_category = preprocess.encoding_category_dataframe(_datas['train'])
-
-    _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-    _y_train, _ = calc.apply_boxcox_transform(_datas['target_consumption'].loc[:, 'cons_ppp17'], _GLOBAL_LAMBDA)
-
-    _cat_cols = _datas_category.columns
+    _x_train, _sc, _cat_cols = _preprocess_data(_datas['train'])
+    _y_train = _get_modified_target(_datas['target_consumption'])
 
     _LB, _ = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
 
@@ -118,11 +110,13 @@ def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarra
     return fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
 
 
-def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
+def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
     _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas['test'], sc)
     _datas_category = preprocess.encoding_category_dataframe(datas['test'])
 
-    return pd.concat([_datas_std, _datas_category], axis=1), sc
+    category_cols = _datas_category.columns
+
+    return pd.concat([_datas_std, _datas_category], axis=1), sc, category_cols
 
 
 def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = None) -> pd.DataFrame:
