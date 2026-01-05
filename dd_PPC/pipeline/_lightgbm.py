@@ -21,7 +21,7 @@ def apply_lightgbm(show_pred_plot: bool = False, survey_ids: list[int] | None = 
         _y = _datas['target_consumption'].loc[_datas['target_consumption'].survey_id.isin(survey_ids), 'cons_ppp17']
 
     _x_train, sc = _preprocess_data(_x)
-    _y_train, _ = calc.apply_boxcox_transform(_y, _GLOBAL_LAMBDA)
+    _y_train = _get_modified_target(_y)
 
     LB, pred_LB_coxbox = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
 
@@ -37,11 +37,9 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         boxcox_lambda = _GLOBAL_LAMBDA
 
     def fit_data(train_x_, train_cons_y_):
-        _datas_std, sc = preprocess.standardized_with_numbers_dataframe(train_x_)
-        _datas_category = preprocess.encoding_category_dataframe(train_x_)
 
-        _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-        _y_train, _ = calc.apply_boxcox_transform(train_cons_y_.loc[:, 'cons_ppp17'], boxcox_lambda)
+        _x_train, sc = _preprocess_data(train_x_)
+        _y_train  = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
 
@@ -51,10 +49,8 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
 
     def pred_data(test_x_, test_cons_y_, sc, lb):
-        _datas_std, sc = preprocess.standardized_with_numbers_dataframe(test_x_, sc)
-        _datas_category = preprocess.encoding_category_dataframe(test_x_)
 
-        x_test = pd.concat([_datas_std, _datas_category], axis=1)
+        x_test, _ = _preprocess_data(test_x_, sc)
         _pred_cons_y_log = lb.predict(x_test)
 
         pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, boxcox_lambda)
