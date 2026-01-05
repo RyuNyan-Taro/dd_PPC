@@ -49,9 +49,7 @@ def save_to_submission_format(predictions: np.ndarray, pred_rate: pd.DataFrame |
     else:
         _poverty_distribution_format = pred_rate
 
-    print(pred_rate)
-
-    # _save_submissions(_consumption_format, _poverty_distribution_format, _dir_path, folder_prefix)
+    _save_submissions(_consumption_format, _poverty_distribution_format, _dir_path, folder_prefix)
 
 
 def get_submission_formats(dir_path) -> tuple[pd.DataFrame, pd.DataFrame]:
