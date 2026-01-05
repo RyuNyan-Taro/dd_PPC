@@ -132,3 +132,11 @@ def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None) -> pd.DataF
     _datas_category = preprocess.encoding_category_dataframe(datas['test'])
 
     return pd.concat([_datas_std, _datas_category], axis=1)
+
+
+def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = None) -> pd.DataFrame:
+
+    if boxcox_lambda is None:
+        boxcox_lambda = _GLOBAL_LAMBDA
+
+    return calc.apply_boxcox_transform(targets['target_consumption'].loc[:, 'cons_ppp17'], boxcox_lambda)[0]
