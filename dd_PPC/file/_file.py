@@ -28,10 +28,11 @@ def get_datas() -> dict:
     return {'train': _train, 'test': _test, 'target_consumption': _target_consumption, 'target_rate': _target_rate}
 
 
-def save_to_submission_format(predictions: np.ndarray, folder_prefix: str | None = None):
+def save_to_submission_format(predictions: np.ndarray, pred_rate: pd.DataFrame | None = None, folder_prefix: str | None = None):
     """Saves predictions to specified file paths.
     Args:
         predictions: Predictions returned by a model.
+        pred_rate: Poverty rates calculated from predictions.
         folder_prefix: If selected, it is added as the prefix of the save folder.
 
     """
@@ -44,9 +45,14 @@ def save_to_submission_format(predictions: np.ndarray, folder_prefix: str | None
 
     _consumption_format['cons_ppp17'] = predictions
 
-    _add_distribution(_poverty_distribution_format, predictions)
+    if pred_rate is None:
+        _add_distribution(_poverty_distribution_format, predictions)
+    else:
+        _poverty_distribution_format = pred_rate
 
-    _save_submissions(_consumption_format, _poverty_distribution_format, _dir_path, folder_prefix)
+    print(pred_rate)
+
+    # _save_submissions(_consumption_format, _poverty_distribution_format, _dir_path, folder_prefix)
 
 
 # internals for save_to_submission_format

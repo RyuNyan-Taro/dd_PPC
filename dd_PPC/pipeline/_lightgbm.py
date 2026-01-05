@@ -100,22 +100,28 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
 
     _datas = file.get_datas()
 
+    # learning
     _x_train, _sc, _cat_cols = _preprocess_data(_datas['train'])
     _y_train = _get_modified_target(_datas['target_consumption'])
 
-    _LB, _ = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
-
-    _predicted_coxbox = pred_lightgbm(_LB, _sc)
-
-    _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, _GLOBAL_LAMBDA)
+    _LB, _cons_pred = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
 
     _consumption = _y_train.copy()
-    _consumption['cons_pred'] = _predicted
+    _consumption['cons_pred'] = _cons_pred
 
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
     ir = model.fit_isotonic_regression(pred_rate_y, _datas['target_rate'])
 
-    file.save_to_submission_format(_predicted, folder_prefix)
+    # prediction
+    _predicted_coxbox = pred_lightgbm(_LB, _sc)
+    _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, _GLOBAL_LAMBDA)
+
+    _consumption = _y_train.copy()
+    _consumption['cons_pred'] = _predicted
+    pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
+    pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
+
+    file.save_to_submission_format(_predicted, pred_rate_y, folder_prefix)
 
 
 def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarray:
