@@ -122,8 +122,8 @@ def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarra
 
 
 def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
-    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas['test'], sc)
-    _datas_category = preprocess.encoding_category_dataframe(datas['test'])
+    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas, sc)
+    _datas_category = preprocess.encoding_category_dataframe(datas)
 
     category_cols = _datas_category.columns
 
@@ -135,4 +135,4 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
     if boxcox_lambda is None:
         boxcox_lambda = _GLOBAL_LAMBDA
 
-    return calc.apply_boxcox_transform(targets['target_consumption'].loc[:, 'cons_ppp17'], boxcox_lambda)[0]
+    return calc.apply_boxcox_transform(targets.loc[:, 'cons_ppp17'], boxcox_lambda)[0]
