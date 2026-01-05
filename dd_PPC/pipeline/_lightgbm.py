@@ -112,9 +112,6 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
     ir = model.fit_isotonic_regression(pred_rate_y, _datas['target_rate'])
 
-    print('calculated_pred_rate_y:')
-    print(pred_rate_y)
-
     # prediction
     _predicted_coxbox = pred_lightgbm(_LB, _sc)
     _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, _GLOBAL_LAMBDA)
@@ -122,13 +119,9 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
     _consumption, _ = file.get_submission_formats('../results')
     _consumption['cons_pred'] = _predicted
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
-    print('calculated_pred_rate_y:')
-    print(pred_rate_y)
     pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
-    print('transformed_pred_rate_y:')
-    print(pred_rate_y)
 
-    # file.save_to_submission_format(_predicted, folder_prefix=folder_prefix)
+    file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)
 
 
 def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarray:
