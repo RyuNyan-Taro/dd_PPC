@@ -3,6 +3,8 @@ __all__ = ['apply_lightgbm', 'fit_and_predictions_lightgbm', 'pred_lightgbm', 'f
 import numpy as np
 import lightgbm as lgb
 import pandas as pd
+from lightgbm import LGBMRegressor
+from sklearn.isotonic import IsotonicRegression
 from sklearn.preprocessing import StandardScaler
 
 from .. import file, preprocess, model, data, calc
@@ -36,7 +38,7 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     if boxcox_lambda is None:
         boxcox_lambda = _GLOBAL_LAMBDA
 
-    def fit_data(train_x_, train_cons_y_):
+    def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
         _x_train, sc, _ = _preprocess_data(train_x_)
         _y_train  = _get_modified_target(train_cons_y_, boxcox_lambda)
@@ -45,10 +47,17 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
         pred_LB = calc.inverse_boxcox_transform(pred_LB_log, boxcox_lambda)
 
-        return LB, pred_LB, sc
+        consumption = train_cons_y_.copy()
+        consumption['cons_pred'] = pred_LB
+
+        pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+
+        ir = model.fit_isotonic_regression(pred_rate_y, train_rate_y_)
+
+        return LB, pred_LB, sc, ir
 
 
-    def pred_data(test_x_, test_cons_y_, sc, lb):
+    def pred_data(test_x_, test_cons_y_, sc: StandardScaler, lb: LGBMRegressor, ir: IsotonicRegression):
 
         x_test, *_ = _preprocess_data(test_x_, sc)
         _pred_cons_y_log = lb.predict(x_test)
@@ -62,6 +71,8 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
 
+        pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
+
         return x_test, y_test, consumption, pred_cons_y, pred_rate_y
 
     def show_metrics(pred_cons_y, y_test, pred_rate_y, consumption, lb, x_test, test_rate_y_):
@@ -73,13 +84,13 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
     _datas = file.get_datas()
 
-    train_x, train_cons_y, _, test_x, test_cons_y, test_rate_y = data.split_datas(_datas['train'],
+    train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(_datas['train'],
                                                                                   _datas['target_consumption'],
                                                                                   _datas['target_rate'])
 
-    _LB, _pred_LB, _sc = fit_data(train_x, train_cons_y)
+    _LB, _pred_LB, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
 
-    _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _LB)
+    _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _LB, _ir)
 
     show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _LB, _x_test, test_rate_y)
 
