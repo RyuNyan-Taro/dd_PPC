@@ -1,4 +1,4 @@
-__all__ = ['fit_random_forest', 'fit_lightgbm', 'fit_isotonic_regression']
+__all__ = ['fit_random_forest', 'fit_lightgbm', 'fit_isotonic_regression', 'transform_isotonic_regression']
 
 import numpy as np
 import pandas as pd
@@ -49,3 +49,17 @@ def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) 
     ir.fit(X, y)
 
     return ir
+
+
+def transform_isotonic_regression(pred_rate: pd.DataFrame, ir: IsotonicRegression) -> pd.DataFrame:
+
+    _id_and_rates = pred_rate.T.to_numpy()
+    _id = _id_and_rates[0]
+    _rates = _id_and_rates[1:]
+
+    _transformed = ir.transform(_rates.flatten()).T
+    return pd.DataFrame(
+        np.append(_id, _transformed),
+        index=pred_rate.index,
+        columns=pred_rate.columns
+    )
