@@ -58,8 +58,9 @@ def transform_isotonic_regression(pred_rate: pd.DataFrame, ir: IsotonicRegressio
     _rates = _id_and_rates[1:]
 
     _transformed = ir.transform(_rates.flatten()).T
+
     return pd.DataFrame(
-        np.append(_id, _transformed),
+        np.append(_id, _transformed).flatten().reshape(1, -1),
         index=pred_rate.index,
         columns=pred_rate.columns
     )
