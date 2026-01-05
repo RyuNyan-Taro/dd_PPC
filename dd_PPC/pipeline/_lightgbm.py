@@ -124,7 +124,7 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
     print('transformed_pred_rate_y:')
     print(pred_rate_y)
 
-    file.save_to_submission_format(_predicted, folder_prefix=folder_prefix)
+    # file.save_to_submission_format(_predicted, folder_prefix=folder_prefix)
 
 
 def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarray:
