@@ -24,7 +24,7 @@ def apply_lightgbm(show_pred_plot: bool = False, survey_ids: list[int] | None = 
     _datas_category = preprocess.encoding_category_dataframe(_x)
 
     _x_train = pd.concat([_datas_std, _datas_category], axis=1)
-    _y_train = calc.apply_boxcox_transform(_y, _GLOBAL_LAMBDA)
+    _y_train, _ = calc.apply_boxcox_transform(_y, _GLOBAL_LAMBDA)
 
     LB, pred_LB_coxbox = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
 
