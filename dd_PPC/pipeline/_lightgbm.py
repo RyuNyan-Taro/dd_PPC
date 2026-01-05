@@ -41,7 +41,7 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
         _x_train, sc, _ = _preprocess_data(train_x_)
-        _y_train  = _get_modified_target(train_cons_y_, boxcox_lambda)
+        _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
 
