@@ -1,8 +1,9 @@
-__all__ = ['fit_random_forest', 'fit_lightgbm']
+__all__ = ['fit_random_forest', 'fit_lightgbm', 'fit_isotonic_regression']
 
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.isotonic import IsotonicRegression
 import lightgbm as lgb
 
 def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, show_pred_plot: bool = False, seed: int = 42) -> tuple[RandomForestRegressor, np.ndarray]:
@@ -35,3 +36,10 @@ def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] =
         plt.show()
 
     return pred_y, pred_lgb
+
+
+def fit_isotonic_regression(X, y) -> IsotonicRegression:
+    ir = IsotonicRegression(out_of_bounds='clip')
+    ir.fit(X, y)
+
+    return ir
