@@ -33,6 +33,16 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - process: pipeline.fit_and_predictions_lightgbm
 - modify to use log transformation
 
+## 10.165
+- model: simple lightgbm.LGBMRegressor with coxbox
+- process: pipeline.fit_and_predictions_lightgbm
+- apply to coxbox
+
+## 76.229
+- model: lightgm.LGBMRegressor with coxbox and isotonic
+- process: pipeline.fit_and_predictions_lightgbm
+- apply isotonic regression. But it is not good.
+
 # Records
 - pipeline.apply_random_forest
    - two_category: large category has more high difference from prediction
