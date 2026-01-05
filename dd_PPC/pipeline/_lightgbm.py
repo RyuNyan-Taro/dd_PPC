@@ -84,8 +84,6 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _LB, _x_test, test_rate_y)
 
 
-
-
 def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
     """Fits lightgbm model; predicts consumption; saves the submission format"""
 
