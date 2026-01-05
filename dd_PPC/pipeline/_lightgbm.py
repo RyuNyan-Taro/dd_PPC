@@ -105,11 +105,15 @@ def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
     _y_train = _get_modified_target(_datas['target_consumption'])
 
     _LB, _cons_pred = model.fit_lightgbm(_x_train, _y_train, categorical_cols=_cat_cols)
+    _cons_pred = calc.inverse_boxcox_transform(_cons_pred, _GLOBAL_LAMBDA)
 
     _consumption = _datas['target_consumption']
     _consumption['cons_pred'] = _cons_pred
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
     ir = model.fit_isotonic_regression(pred_rate_y, _datas['target_rate'])
+
+    print('calculated_pred_rate_y:')
+    print(pred_rate_y)
 
     # prediction
     _predicted_coxbox = pred_lightgbm(_LB, _sc)
