@@ -60,8 +60,11 @@ def transform_isotonic_regression(pred_rate: pd.DataFrame, ir: IsotonicRegressio
         _transformed = ir.transform(_rates.flatten()).T
         _datas.append(np.append(np.array(_id), _transformed))
 
-    return pd.DataFrame(
+    result_df = pd.DataFrame(
         data=_datas,
         index=pred_rate.index,
         columns=pred_rate.columns
     )
+    result_df['survey_id'] = result_df['survey_id'].astype('int64')
+
+    return result_df
