@@ -20,10 +20,7 @@ def apply_lightgbm(show_pred_plot: bool = False, survey_ids: list[int] | None = 
         _x = _datas['train'].loc[_datas['train'].survey_id.isin(survey_ids), :]
         _y = _datas['target_consumption'].loc[_datas['target_consumption'].survey_id.isin(survey_ids), 'cons_ppp17']
 
-    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(_x)
-    _datas_category = preprocess.encoding_category_dataframe(_x)
-
-    _x_train = pd.concat([_datas_std, _datas_category], axis=1)
+    _x_train, sc = _preprocess_data(_x)
     _y_train, _ = calc.apply_boxcox_transform(_y, _GLOBAL_LAMBDA)
 
     LB, pred_LB_coxbox = model.fit_lightgbm(_x_train, _y_train, show_pred_plot=show_pred_plot)
@@ -127,7 +124,7 @@ def pred_lightgbm(fit_model: lgb.LGBMRegressor, sc: StandardScaler) -> np.ndarra
     return fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
 
 
-def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None) -> tuple[pd.DataFrame, StandardScaler]:
+def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
     _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas['test'], sc)
     _datas_category = preprocess.encoding_category_dataframe(datas['test'])
 
