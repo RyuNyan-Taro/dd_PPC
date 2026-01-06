@@ -177,12 +177,28 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
     ]
 
-    x_train = train.copy()
+    _drop_cols = [
+        'consumed100', 'consumed200', 'consumed300', 'consumed400',
+        'consumed500', 'consumed600', 'consumed700', 'consumed800',
+        'consumed900', 'consumed1000', 'consumed1100', 'consumed1200',
+        'consumed1300', 'consumed1400', 'consumed1500', 'consumed1600',
+        'consumed1700', 'consumed1800', 'consumed1900', 'consumed2000',
+        'consumed2100', 'consumed2200', 'consumed2300', 'consumed2400',
+        'consumed2500', 'consumed2600', 'consumed2700', 'consumed2800',
+        'consumed2900', 'consumed3000', 'consumed3100', 'consumed3200',
+        'consumed3300', 'consumed3400', 'consumed3500', 'consumed3600',
+        'consumed3700', 'consumed3800', 'consumed3900', 'consumed4000',
+        'consumed4100', 'consumed4200', 'consumed4300', 'consumed4400',
+        'consumed4500', 'consumed4600', 'consumed4700', 'consumed4800',
+        'consumed4900', 'consumed5000',
+    ]
+
+    x_train = train.copy().drop(_drop_cols, axis=1)
 
     for _col in category_cols:
 
         _nulls = x_train[_col].isnull()
-        x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
+        x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x]).astype(float)
 
     _knn_imputed = pd.DataFrame(
         KNNImputer(n_neighbors=2).fit_transform(x_train),
