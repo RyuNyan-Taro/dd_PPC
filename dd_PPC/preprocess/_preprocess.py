@@ -182,7 +182,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     for _col in category_cols:
 
         _nulls = x_train[_col].isnull()
-        x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
+        x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
 
     _knn_imputed = pd.DataFrame(
         KNNImputer(n_neighbors=2).fit_transform(train),
@@ -192,8 +192,11 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         IterativeImputer(max_iter=20, random_state=0).fit_transform(train),
         columns=train.columns
     )
+    _imputed = _knn_imputed
 
-    # TODO: add imputed values with round
+    for _col in category_cols:
+
+        x_train[_col] = _knn_imputed[_col].apply(round).astype(int)
 
     return x_train.to_numpy(), category_cols
 
