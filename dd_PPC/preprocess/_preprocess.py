@@ -10,6 +10,10 @@ import numpy as np
 import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
+from sklearn.impute import KNNImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+
 
 def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
     x_train_std, _num_cols = _standardized(train, fit_model)
