@@ -181,12 +181,8 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     for _col in category_cols:
 
-        _values = x_train[_col]
-        _nulls = _values.isnull()
-        _top_value = _values.value_counts().idxmax()
-        x_train[_col] = x_train[_col].fillna(_top_value)
-
-        x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
+        _nulls = x_train[_col].isnull()
+        x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
 
     _knn_imputed = pd.DataFrame(
         KNNImputer(n_neighbors=2).fit_transform(train),
