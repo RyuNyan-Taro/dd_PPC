@@ -177,7 +177,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
     ]
 
-    x_train = train[category_cols].copy()
+    x_train = train.copy()
 
     for _col in category_cols:
 
@@ -185,12 +185,12 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
 
     _knn_imputed = pd.DataFrame(
-        KNNImputer(n_neighbors=2).fit_transform(train),
-        columns=train.columns
+        KNNImputer(n_neighbors=2).fit_transform(x_train),
+        columns=x_train.columns
     )
     _iterative_imputed = pd.DataFrame(
-        IterativeImputer(max_iter=20, random_state=0).fit_transform(train),
-        columns=train.columns
+        IterativeImputer(max_iter=20, random_state=0).fit_transform(x_train),
+        columns=x_train.columns
     )
     _imputed = _knn_imputed
 
@@ -198,7 +198,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
         x_train[_col] = _knn_imputed[_col].apply(round).astype(int)
 
-    return x_train.to_numpy(), category_cols
+    return x_train[category_cols].to_numpy(), category_cols
 
 
 def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
