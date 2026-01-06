@@ -207,6 +207,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
         x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
 
+    # TODO: check the fit process
     # print('start imputation')
     # _knn_imputed = pd.DataFrame(
     #     KNNImputer(n_neighbors=2).fit_transform(x_train),
