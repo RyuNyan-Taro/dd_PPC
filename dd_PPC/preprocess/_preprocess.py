@@ -178,7 +178,16 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     ]
 
     x_train = train[category_cols].copy()
+    _knn_imputed = pd.DataFrame(
+        KNNImputer(n_neighbors=2).fit_transform(train),
+        columns=train.columns
+    )
+    _iterative_imputed = pd.DataFrame(
+        IterativeImputer(max_iter=20, random_state=0).fit_transform(train),
+        columns=train.columns
+    )
 
+    # TODO: add imputed values with round
     for _col in category_cols:
 
         _values = x_train[_col]
