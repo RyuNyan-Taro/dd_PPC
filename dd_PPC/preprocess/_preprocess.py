@@ -11,7 +11,7 @@ import pandas as pd
 import tqdm
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.impute import IterativeImputer
+from sklearn.impute import IterativeImputer, SimpleImputer
 
 
 def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
@@ -202,38 +202,15 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'consumed4900', 'consumed5000',
     ]
 
-    # _drop_cols = [
-    #     'consumed100', 'consumed200', 'consumed300', 'consumed400',
-    #     'consumed500', 'consumed600', 'consumed700', 'consumed800',
-    #     'consumed900', 'consumed1000', 'consumed1100', 'consumed1200',
-    #     'consumed1300', 'consumed1400', 'consumed1500', 'consumed1600',
-    #     'consumed1700', 'consumed1800', 'consumed1900', 'consumed2000',
-    #     'consumed2100', 'consumed2200', 'consumed2300', 'consumed2400',
-    #     'consumed2500', 'consumed2600', 'consumed2700', 'consumed2800',
-    #     'consumed2900', 'consumed3000', 'consumed3100', 'consumed3200',
-    #     'consumed3300', 'consumed3400', 'consumed3500', 'consumed3600',
-    #     'consumed3700', 'consumed3800', 'consumed3900', 'consumed4000',
-    #     'consumed4100', 'consumed4200', 'consumed4300', 'consumed4400',
-    #     'consumed4500', 'consumed4600', 'consumed4700', 'consumed4800',
-    #     'consumed4900', 'consumed5000',
-    # ]
-
     x_train = train.copy()
+    _imputer = SimpleImputer(strategy='most_frequent')
 
     for _col in tqdm.tqdm(category_cols):
 
         _nulls = x_train[_col].isnull()
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
-
-    print('start imputation')
-    _imputed = pd.DataFrame(
-        IterativeImputer(max_iter=20, random_state=0, min_value=0).fit_transform(x_train),
-        columns=x_train.columns
-    )
-    print('finish imputation')
-
-    for _col in category_cols:
-        x_train[_col] = _imputed[_col].apply(round).astype(int).values
+        x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()),
+                                  index=x_train.index).astype(int)
 
     return x_train[category_cols].to_numpy(), category_cols
 
