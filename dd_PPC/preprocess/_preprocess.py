@@ -8,8 +8,11 @@ __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','e
 
 import numpy as np
 import pandas as pd
+import tqdm
 
 from sklearn.preprocessing import StandardScaler
+from sklearn.impute import IterativeImputer, SimpleImputer
+
 
 def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
     x_train_std, _num_cols = _standardized(train, fit_model)
@@ -162,6 +165,19 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
             'Electricity, gas and water supply': 15,
             ' Extraterritorial organizations and bodies': 16,
         },
+        'consumed100': _yes_no, 'consumed200': _yes_no, 'consumed300': _yes_no, 'consumed400': _yes_no,
+        'consumed500': _yes_no, 'consumed600': _yes_no, 'consumed700': _yes_no, 'consumed800': _yes_no,
+        'consumed900': _yes_no, 'consumed1000': _yes_no, 'consumed1100': _yes_no, 'consumed1200': _yes_no,
+        'consumed1300': _yes_no, 'consumed1400': _yes_no, 'consumed1500': _yes_no, 'consumed1600': _yes_no,
+        'consumed1700': _yes_no, 'consumed1800': _yes_no, 'consumed1900': _yes_no, 'consumed2000': _yes_no,
+        'consumed2100': _yes_no, 'consumed2200': _yes_no, 'consumed2300': _yes_no, 'consumed2400': _yes_no,
+        'consumed2500': _yes_no, 'consumed2600': _yes_no, 'consumed2700': _yes_no, 'consumed2800': _yes_no,
+        'consumed2900': _yes_no, 'consumed3000': _yes_no, 'consumed3100': _yes_no, 'consumed3200': _yes_no,
+        'consumed3300': _yes_no, 'consumed3400': _yes_no, 'consumed3500': _yes_no, 'consumed3600': _yes_no,
+        'consumed3700': _yes_no, 'consumed3800': _yes_no, 'consumed3900': _yes_no, 'consumed4000': _yes_no,
+        'consumed4100': _yes_no, 'consumed4200': _yes_no, 'consumed4300': _yes_no, 'consumed4400': _yes_no,
+        'consumed4500': _yes_no, 'consumed4600': _yes_no, 'consumed4700': _yes_no, 'consumed4800': _yes_no,
+        'consumed4900': _yes_no, 'consumed5000': _yes_no,
 
     }
 
@@ -171,20 +187,32 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'owner', 'employed', 'any_nonagric',
         'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
         'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
+        'consumed100', 'consumed200', 'consumed300', 'consumed400',
+        'consumed500', 'consumed600', 'consumed700', 'consumed800',
+        'consumed900', 'consumed1000', 'consumed1100', 'consumed1200',
+        'consumed1300', 'consumed1400', 'consumed1500', 'consumed1600',
+        'consumed1700', 'consumed1800', 'consumed1900', 'consumed2000',
+        'consumed2100', 'consumed2200', 'consumed2300', 'consumed2400',
+        'consumed2500', 'consumed2600', 'consumed2700', 'consumed2800',
+        'consumed2900', 'consumed3000', 'consumed3100', 'consumed3200',
+        'consumed3300', 'consumed3400', 'consumed3500', 'consumed3600',
+        'consumed3700', 'consumed3800', 'consumed3900', 'consumed4000',
+        'consumed4100', 'consumed4200', 'consumed4300', 'consumed4400',
+        'consumed4500', 'consumed4600', 'consumed4700', 'consumed4800',
+        'consumed4900', 'consumed5000',
     ]
 
-    x_train = train[category_cols].copy()
+    x_train = train.copy()
+    _imputer = SimpleImputer(strategy='most_frequent')
 
-    for _col in category_cols:
+    for _col in tqdm.tqdm(category_cols):
 
-        _values = x_train[_col]
-        _nulls = _values.isnull()
-        _top_value = _values.value_counts().idxmax()
-        x_train[_col] = x_train[_col].fillna(_top_value)
+        _nulls = x_train[_col].isnull()
+        x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
+        x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()),
+                                  index=x_train.index).astype(int)
 
-        x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
-
-    return x_train.to_numpy(), category_cols
+    return x_train[category_cols].to_numpy(), category_cols
 
 
 def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
