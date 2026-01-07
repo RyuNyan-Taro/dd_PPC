@@ -11,6 +11,9 @@ import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
+from sklearn.impute import KNNImputer
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
 
 
 def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
@@ -198,7 +201,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
         _nulls = x_train[_col].isnull()
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
-        x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()), index=x_train.index).astype(int)
+        # x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()), index=x_train.index).astype(int)
 
         # _values = x_train[_col]
         # _nulls = _values.isnull()
@@ -207,6 +210,17 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         #
         # x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
         # print(x_train[_col].value_counts())
+
+    _imputed = pd.DataFrame(
+        IterativeImputer(max_iter=20, random_state=0, min_value=0).fit_transform(x_train),
+        columns=x_train.columns
+    )
+    print('finish imputation')
+
+    for _col in category_cols:
+
+        x_train[_col] = _imputed[_col].apply(round).astype(int).values
+        print(x_train[_col].value_counts())
 
     return x_train[category_cols].to_numpy(), category_cols
 
