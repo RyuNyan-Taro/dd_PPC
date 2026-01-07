@@ -8,6 +8,7 @@ __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','e
 
 import numpy as np
 import pandas as pd
+import tqdm
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import IterativeImputer
@@ -219,15 +220,17 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     x_train = train.copy()
 
-    for _col in category_cols:
+    for _col in tqdm.tqdm(category_cols):
 
         _nulls = x_train[_col].isnull()
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
 
+    print('start imputation')
     _imputed = pd.DataFrame(
         IterativeImputer(max_iter=20, random_state=0, min_value=0).fit_transform(x_train),
         columns=x_train.columns
     )
+    print('finish imputation')
 
     for _col in category_cols:
         x_train[_col] = _imputed[_col].apply(round).astype(int).values
