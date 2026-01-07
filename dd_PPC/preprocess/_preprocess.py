@@ -10,9 +10,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.impute import KNNImputer
-from sklearn.experimental import enable_iterative_imputer
-from sklearn.impute import IterativeImputer
+from sklearn.impute import SimpleImputer
 
 
 def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
@@ -194,12 +192,13 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     ]
 
     x_train = train.copy().drop(_drop_cols, axis=1)
+    _imputer = SimpleImputer(strategy='mean')
 
     for _col in category_cols:
 
         _nulls = x_train[_col].isnull()
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
-        x_train[_col] = x_train.loc[:, _col].astype(float)
+        x_train[_col] = _imputer.fit_transform(x_train[_col].values.reshape(-1, 1)).apply(round).astype(int)
 
         # _values = x_train[_col]
         # _nulls = _values.isnull()
