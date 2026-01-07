@@ -198,7 +198,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
         _nulls = x_train[_col].isnull()
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
-        x_train[_col] = _imputer.fit_transform(x_train[_col].values.reshape(-1, 1)).apply(round).astype(int)
+        x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()), index=x_train.index).astype(int)
 
         # _values = x_train[_col]
         # _nulls = _values.isnull()
@@ -206,6 +206,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         # x_train[_col] = x_train[_col].fillna(_top_value)
         #
         # x_train[_col] = x_train[_col].apply(lambda x: _category_number_maps[_col][x]).astype(int)
+        # print(x_train[_col].value_counts())
 
     return x_train[category_cols].to_numpy(), category_cols
 
