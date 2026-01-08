@@ -66,9 +66,7 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     def pred_data(test_x_, test_cons_y_, sc: StandardScaler, lbs: list[LGBMRegressor], ir: IsotonicRegression):
 
         x_test, *_ = _preprocess_data(test_x_, sc)
-        _pred_cons_y_log = np.mean([_lb.predict(x_test) for _lb in lbs], axis=0)
-
-        pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, boxcox_lambda)
+        pred_cons_y = np.mean([_lb.predict(x_test) for _lb in lbs], axis=0)
 
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
