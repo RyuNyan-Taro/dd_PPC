@@ -79,10 +79,10 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
         return x_test, y_test, consumption, pred_cons_y, pred_rate_y
 
-    def show_metrics(pred_cons_y, y_test, pred_rate_y, consumption, lb, x_test, test_rate_y_):
+    def show_metrics(pred_cons_y, y_test, pred_rate_y, consumption, lbs: list[LGBMRegressor], x_test, test_rate_y_):
         print(f'RMSE: {np.sqrt(np.mean((pred_cons_y - y_test) ** 2))}')
         print(f'MAE: {np.mean(np.abs(pred_cons_y - y_test))}')
-        print(f'R2: {lb.score(x_test, y_test)}')
+        print(f'R2: {np.mean([_lb.score(x_test, y_test) for _lb in lbs])}')
         print(
             f'CompetitionScore: {calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, test_rate_y_)}')
 
