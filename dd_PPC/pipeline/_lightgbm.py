@@ -1,11 +1,14 @@
 __all__ = ['apply_lightgbm', 'fit_and_predictions_lightgbm', 'pred_lightgbm', 'fit_and_test_lightgbm']
 
+import random
+
 import numpy as np
 import lightgbm as lgb
 import pandas as pd
 from lightgbm import LGBMRegressor
 from sklearn.isotonic import IsotonicRegression
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
 from .. import file, preprocess, model, data, calc
 
@@ -43,26 +46,34 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         _x_train, sc, _ = _preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
-        LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
+        # LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
+        #
+        # pred_LB = calc.inverse_boxcox_transform(pred_LB_log, boxcox_lambda)
 
-        pred_LB = calc.inverse_boxcox_transform(pred_LB_log, boxcox_lambda)
+        models, pred_LBs = _modeling_with_some_seeds(_x_train, _y_train, boxcox_lambda)
 
         consumption = train_cons_y_.copy()
-        consumption['cons_pred'] = pred_LB
+        consumption['cons_pred'] = np.mean(pred_LBs, axis=0)
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
 
         ir = model.fit_isotonic_regression(pred_rate_y, train_rate_y_)
 
-        return LB, pred_LB, sc, ir
+        _transformed_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
+
+        print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, _transformed_rate_y))
+
+        # return LB, pred_LB, sc, ir
+
+        return models, pred_LBs, sc, ir
 
 
-    def pred_data(test_x_, test_cons_y_, sc: StandardScaler, lb: LGBMRegressor, ir: IsotonicRegression):
+    def pred_data(test_x_, test_cons_y_, sc: StandardScaler, lbs: list[LGBMRegressor], ir: IsotonicRegression):
 
         x_test, *_ = _preprocess_data(test_x_, sc)
-        _pred_cons_y_log = lb.predict(x_test)
+        pred_cons_ys = _fitting_with_some_models(lbs, x_test, boxcox_lambda)
 
-        pred_cons_y = calc.inverse_boxcox_transform(_pred_cons_y_log, boxcox_lambda)
+        pred_cons_y = np.mean(pred_cons_ys, axis=0)
 
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
@@ -75,10 +86,10 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
         return x_test, y_test, consumption, pred_cons_y, pred_rate_y
 
-    def show_metrics(pred_cons_y, y_test, pred_rate_y, consumption, lb, x_test, test_rate_y_):
+    def show_metrics(pred_cons_y, y_test, pred_rate_y, consumption, lbs: list[LGBMRegressor], x_test, test_rate_y_):
         print(f'RMSE: {np.sqrt(np.mean((pred_cons_y - y_test) ** 2))}')
         print(f'MAE: {np.mean(np.abs(pred_cons_y - y_test))}')
-        print(f'R2: {lb.score(x_test, y_test)}')
+        print(f'R2: {np.mean([_lb.score(x_test, y_test) for _lb in lbs])}')
         print(
             f'CompetitionScore: {calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, test_rate_y_)}')
 
@@ -88,11 +99,11 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
                                                                                   _datas['target_consumption'],
                                                                                   _datas['target_rate'])
 
-    _LB, _pred_LB, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
+    _LBs, _pred_LBs, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
 
-    _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _LB, _ir)
+    _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _LBs, _ir)
 
-    show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _LB, _x_test, test_rate_y)
+    show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _LBs, _x_test, test_rate_y)
 
 
 def fit_and_predictions_lightgbm(folder_prefix: str | None = None):
@@ -148,3 +159,23 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
         boxcox_lambda = _GLOBAL_LAMBDA
 
     return calc.apply_boxcox_transform(targets.loc[:, 'cons_ppp17'], boxcox_lambda)[0]
+
+
+def _modeling_with_some_seeds(x_train, y_train, boxcox_lambda: float) -> tuple[list[LGBMRegressor], list[np.ndarray]]:
+    random.seed(0)
+    _seeds_length = 2
+
+    # seed_list =
+    seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
+    model_with_preds = [model.fit_lightgbm(x_train, y_train, seed=_seed, categorical_cols=None) for _seed in tqdm(seed_list, desc='modeling with some seeds')]
+    models = [_model for _model, _ in model_with_preds]
+    preds = [calc.inverse_boxcox_transform(_preds_boxcox, boxcox_lambda) for _, _preds_boxcox in model_with_preds]
+
+    return models, preds
+
+
+def _fitting_with_some_models(models, x_test, boxcox_lambda: float) -> list[np.ndarray]:
+    _preds_boxcox = [_model.predict(x_test) for _model in models]
+
+    return [calc.inverse_boxcox_transform(_pred_bc, boxcox_lambda) for _pred_bc in _preds_boxcox]
+

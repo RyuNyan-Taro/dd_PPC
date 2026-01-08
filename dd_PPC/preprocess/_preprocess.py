@@ -11,7 +11,7 @@ import pandas as pd
 import tqdm
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.impute import IterativeImputer, SimpleImputer
+from sklearn.impute import SimpleImputer
 
 
 def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
