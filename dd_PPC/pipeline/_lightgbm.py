@@ -1,5 +1,7 @@
 __all__ = ['apply_lightgbm', 'fit_and_predictions_lightgbm', 'pred_lightgbm', 'fit_and_test_lightgbm']
 
+import random
+
 import numpy as np
 import lightgbm as lgb
 import pandas as pd
@@ -148,3 +150,15 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
         boxcox_lambda = _GLOBAL_LAMBDA
 
     return calc.apply_boxcox_transform(targets.loc[:, 'cons_ppp17'], boxcox_lambda)[0]
+
+
+def _modeling_with_some_seeds(x_train, y_train, boxcox_lambda: float) -> tuple[list[LGBMRegressor], list[np.ndarray]]:
+    random.seed(0)
+
+    seed_list = random.sample(range(1, 1000), 3)
+    model_with_preds = [model.fit_lightgbm(x_train, y_train, seed=_seed, categorical_cols=None) for _seed in seed_list]
+    models = [_model for _model, _ in model_with_preds]
+    preds = [calc.inverse_boxcox_transform(_preds_boxcox, boxcox_lambda) for _, _preds_boxcox in model_with_preds]
+
+    return models, preds
+
