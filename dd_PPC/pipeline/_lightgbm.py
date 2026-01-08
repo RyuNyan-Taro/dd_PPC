@@ -58,7 +58,7 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         print([_lb[:3] for _lb in pred_LBs])
 
         consumption = train_cons_y_.copy()
-        consumption['cons_pred'] = pred_LB
+        consumption['cons_pred'] = pred_LBs[0]
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
 
@@ -72,8 +72,10 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     def pred_data(test_x_, test_cons_y_, sc: StandardScaler, lbs: list[LGBMRegressor], ir: IsotonicRegression):
 
         x_test, *_ = _preprocess_data(test_x_, sc)
-        pred_cons_y = np.mean([_lb.predict(x_test) for _lb in lbs], axis=0)
+        pred_cons_ys = [_lb.predict(x_test) for _lb in lbs]
+        # pred_cons_y = np.mean(, axis=0)
 
+        pred_cons_y = pred_cons_ys[0]
         print('pred cons ys:', [_lb.predict(x_test) for _lb in lbs])
 
         print(f'pred cons y:', pred_cons_y.shape, pred_cons_y[:3])
