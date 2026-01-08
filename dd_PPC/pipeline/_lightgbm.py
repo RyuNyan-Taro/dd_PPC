@@ -78,8 +78,7 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
     def pred_data(test_x_, test_cons_y_, sc: StandardScaler, lbs: list[LGBMRegressor], ir: IsotonicRegression):
 
         x_test, *_ = _preprocess_data(test_x_, sc)
-        pred_cons_ys = [_lb.predict(x_test) for _lb in lbs]
-        # pred_cons_y = np.mean(, axis=0)
+        pred_cons_ys = _fitting_with_some_models(lbs, x_test, boxcox_lambda)
 
         pred_cons_y = pred_cons_ys[0]
         print('pred cons ys:', [_lb.predict(x_test) for _lb in lbs])
@@ -90,6 +89,8 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
         consumption = test_cons_y_.copy()
         consumption['cons_pred'] = pred_cons_y
+
+        print(consumption['cons_pred'])
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
 
@@ -176,10 +177,16 @@ def _modeling_with_some_seeds(x_train, y_train, boxcox_lambda: float) -> tuple[l
     random.seed(0)
 
     # seed_list = random.sample(range(1, 1000), 3)
-    seed_list = [123, 1, 0]
+    seed_list = [123, 1]
     model_with_preds = [model.fit_lightgbm(x_train, y_train, seed=_seed, categorical_cols=None) for _seed in seed_list]
     models = [_model for _model, _ in model_with_preds]
     preds = [calc.inverse_boxcox_transform(_preds_boxcox, boxcox_lambda) for _, _preds_boxcox in model_with_preds]
 
     return models, preds
+
+
+def _fitting_with_some_models(models, x_test, boxcox_lambda: float) -> list[np.ndarray]:
+    _preds_boxcox = [_model.predict(x_test) for _model in models]
+
+    return [calc.inverse_boxcox_transform(_pred_bc, boxcox_lambda) for _pred_bc in _preds_boxcox]
 
