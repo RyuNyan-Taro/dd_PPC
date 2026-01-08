@@ -62,7 +62,13 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
 
+        print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, train_rate_y_))
+
         ir = model.fit_isotonic_regression(pred_rate_y, train_rate_y_)
+
+        _transformed_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
+
+        print('transformed comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, _transformed_rate_y))
 
         # return LB, pred_LB, sc, ir
 
