@@ -174,7 +174,7 @@ def _modeling_with_some_seeds(x_train, y_train, boxcox_lambda: float) -> tuple[l
 
 
 def _fitting_with_some_models(models, x_test, boxcox_lambda: float) -> list[np.ndarray]:
-    _preds_boxcox = [_model.predict(x_test) for _model in tqdm(models, desc='fitting with some models')]
+    _preds_boxcox = [_model.predict(x_test) for _model in models]
 
     return [calc.inverse_boxcox_transform(_pred_bc, boxcox_lambda) for _pred_bc in _preds_boxcox]
 
