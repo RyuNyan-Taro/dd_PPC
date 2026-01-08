@@ -169,7 +169,8 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
 def _modeling_with_some_seeds(x_train, y_train, boxcox_lambda: float) -> tuple[list[LGBMRegressor], list[np.ndarray]]:
     random.seed(0)
 
-    seed_list = random.sample(range(1, 1000), 3)
+    # seed_list = random.sample(range(1, 1000), 3)
+    seed_list = [123, 1, 0]
     model_with_preds = [model.fit_lightgbm(x_train, y_train, seed=_seed, categorical_cols=None) for _seed in seed_list]
     models = [_model for _model, _ in model_with_preds]
     preds = [calc.inverse_boxcox_transform(_preds_boxcox, boxcox_lambda) for _, _preds_boxcox in model_with_preds]
