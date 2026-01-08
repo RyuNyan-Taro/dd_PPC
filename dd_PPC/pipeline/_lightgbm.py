@@ -45,14 +45,20 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
         _x_train, sc, _ = _preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
-        # LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
-        #
-        # pred_LB = calc.inverse_boxcox_transform(pred_LB_log, boxcox_lambda)
+        LB, pred_LB_log = model.fit_lightgbm(_x_train, _y_train)
+
+        pred_LB = calc.inverse_boxcox_transform(pred_LB_log, boxcox_lambda)
+
+        print(f'pred lb:', pred_LB.shape, pred_LB)
 
         models, pred_LBs = _modeling_with_some_seeds(_x_train, _y_train, boxcox_lambda)
 
+        print(f'multi pred:', pred_LBs)
+        print([_lb.shape for _lb in pred_LBs])
+        print([_lb[:3] for _lb in pred_LBs])
+
         consumption = train_cons_y_.copy()
-        consumption['cons_pred'] = np.mean(pred_LBs, axis=0)
+        consumption['cons_pred'] = pred_LB
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
 
@@ -67,6 +73,10 @@ def fit_and_test_lightgbm(boxcox_lambda: float | None = None):
 
         x_test, *_ = _preprocess_data(test_x_, sc)
         pred_cons_y = np.mean([_lb.predict(x_test) for _lb in lbs], axis=0)
+
+        print('pred cons ys:', [_lb.predict(x_test) for _lb in lbs])
+
+        print(f'pred cons y:', pred_cons_y.shape, pred_cons_y[:3])
 
         y_test = test_cons_y_.loc[:, 'cons_ppp17']
 
