@@ -163,7 +163,7 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
 
 def _modeling_with_some_seeds(x_train, y_train, boxcox_lambda: float) -> tuple[list[LGBMRegressor], list[np.ndarray]]:
     random.seed(0)
-    _seeds_length = 4
+    _seeds_length = 2
 
     # seed_list =
     seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
