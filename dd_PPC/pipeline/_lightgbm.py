@@ -8,6 +8,7 @@ import pandas as pd
 from lightgbm import LGBMRegressor
 from sklearn.isotonic import IsotonicRegression
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
 from .. import file, preprocess, model, data, calc
 
@@ -165,7 +166,7 @@ def _modeling_with_some_seeds(x_train, y_train, boxcox_lambda: float) -> tuple[l
     _seeds_length = 10
 
     seed_list = random.sample(range(1, 1000), _seeds_length)
-    model_with_preds = [model.fit_lightgbm(x_train, y_train, seed=_seed, categorical_cols=None) for _seed in seed_list]
+    model_with_preds = [model.fit_lightgbm(x_train, y_train, seed=_seed, categorical_cols=None) for _seed in tqdm(seed_list, desc='modeling with some seeds')]
     models = [_model for _model, _ in model_with_preds]
     preds = [calc.inverse_boxcox_transform(_preds_boxcox, boxcox_lambda) for _, _preds_boxcox in model_with_preds]
 
@@ -173,7 +174,7 @@ def _modeling_with_some_seeds(x_train, y_train, boxcox_lambda: float) -> tuple[l
 
 
 def _fitting_with_some_models(models, x_test, boxcox_lambda: float) -> list[np.ndarray]:
-    _preds_boxcox = [_model.predict(x_test) for _model in models]
+    _preds_boxcox = [_model.predict(x_test) for _model in tqdm(models, desc='fitting with some models')]
 
     return [calc.inverse_boxcox_transform(_pred_bc, boxcox_lambda) for _pred_bc in _preds_boxcox]
 
