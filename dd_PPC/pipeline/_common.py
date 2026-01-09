@@ -14,7 +14,7 @@ from .. import file, preprocess, model, data, calc
 _GLOBAL_LAMBDA = 0.09
 
 
-def fit_and_test_model(model_name: str, boxcox_lambda: float | None = None):
+def fit_and_test_model(model_name: str, model_params: dict | None = None, boxcox_lambda: float | None = None):
     """Fits and tests the selected_model; evaluates competition score"""
 
     if boxcox_lambda is None:
@@ -25,7 +25,7 @@ def fit_and_test_model(model_name: str, boxcox_lambda: float | None = None):
         _x_train, sc, _ = _preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
-        models, pred_LBs = _modeling_with_some_seeds(model_name, _x_train, _y_train, boxcox_lambda)
+        models, pred_LBs = _modeling_with_some_seeds(model_name, mdoel_params, _x_train, _y_train, boxcox_lambda)
 
         consumption = train_cons_y_.copy()
         consumption['cons_pred'] = np.mean(pred_LBs, axis=0)
@@ -138,13 +138,13 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
     return calc.apply_boxcox_transform(targets.loc[:, 'cons_ppp17'], boxcox_lambda)[0]
 
 
-def _modeling_with_some_seeds(model_name: str, x_train, y_train, boxcox_lambda: float) -> tuple[list, list[np.ndarray]]:
+def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_train, y_train, boxcox_lambda: float) -> tuple[list, list[np.ndarray]]:
     random.seed(0)
     _seeds_length = 2
 
     seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
     model_with_preds = [
-        getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed)
+        getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params)
         for _seed in tqdm(seed_list, desc='modeling with some seeds')
     ]
     models = [_model for _model, _ in model_with_preds]
