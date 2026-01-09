@@ -2,12 +2,17 @@ __all__ = [
     'fit_random_forest',
     'fit_lightgbm',
     'fit_xgboost',
+    'fit_catboost',
     'fit_isotonic_regression',
     'transform_isotonic_regression'
 ]
 
+from typing import Any
+
+import catboost
 import numpy as np
 import pandas as pd
+from catboost import CatBoost
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.isotonic import IsotonicRegression
 import lightgbm as lgb
@@ -59,6 +64,25 @@ def fit_xgboost(x_train, y_train, seed: int = 42, params: dict | None = None) ->
     pred_xgb = pred_y.predict(x_train)
 
     return pred_y, pred_xgb
+
+
+def fit_catboost(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[CatBoost, Any]:
+    if params is None:
+        params = dict(
+            iterations=200,
+            learning_rate=0.03,
+            depth=6,
+            loss_function='RMSE'
+        )
+    params['random_seed'] = seed
+
+    model = catboost.CatBoostRegressor(**params)
+
+    pred_y = model.fit(x_train, y_train)
+
+    pred_cat = pred_y.predict(x_train)
+
+    return pred_y, pred_cat
 
 
 def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) -> IsotonicRegression:
