@@ -4,7 +4,8 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 """
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
-           'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array']
+           'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
+           'target_encode', 'create_survey_aggregates']
 
 import numpy as np
 import pandas as pd
@@ -87,6 +88,37 @@ def encoding_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     x_train, _columns = _category_encoding(train)
 
     return pd.DataFrame(x_train, columns=_columns)
+
+
+def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply Target Encoding to categorical columns.
+
+    Args:
+        train: Training features
+        test: Testing features
+        target: Training target values
+        cols: Columns to encode
+        smoothing: Smoothing factor for the mean
+
+    Returns:
+        Encoded train and test DataFrames
+    """
+    train_encoded = train.copy()
+    test_encoded = test.copy()
+
+    prior = target.mean()
+
+    for col in cols:
+        stats = target.groupby(train[col]).agg(['count', 'mean'])
+        counts = stats['count']
+        means = stats['mean']
+
+        smooth = (counts * means + smoothing * prior) / (counts + smoothing)
+
+        train_encoded[col] = train[col].map(smooth)
+        test_encoded[col] = test[col].map(smooth).fillna(prior)
+
+    return train_encoded[cols], test_encoded[cols]
 
 
 def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
@@ -220,6 +252,31 @@ def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
     _features, _ = _create_infra_features(df)
 
     return _features
+
+
+def create_survey_aggregates(df: pd.DataFrame) -> pd.DataFrame:
+    """Create aggregates at the survey_id level.
+
+    Args:
+        df: Input DataFrame
+
+    Returns:
+        DataFrame with survey-level aggregated features
+    """
+    # Define columns to aggregate
+    num_cols = ['hsize', 'age', 'num_children5', 'num_children10', 'num_children18',
+                'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
+
+    # Group by survey_id and calculate mean, std, etc.
+    survey_groups = df.groupby('survey_id')[num_cols]
+
+    means = survey_groups.transform('mean').add_suffix('_survey_mean')
+    stds = survey_groups.transform('std').add_suffix('_survey_std')
+
+    # Calculate ratios of household value to survey mean
+    ratios = (df[num_cols] / means.to_numpy()).add_suffix('_to_survey_mean')
+
+    return pd.concat([means, stds, ratios], axis=1)
 
 
 def create_new_features_data_frame(df: pd.DataFrame) -> pd.DataFrame:
