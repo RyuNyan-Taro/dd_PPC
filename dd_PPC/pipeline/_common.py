@@ -150,7 +150,7 @@ def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_trai
     # seed_list = [123]
     model_with_preds = [
         getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params)
-        for _seed in tqdm(seed_list, desc='modeling with some seeds')
+        for _seed in tqdm(seed_list, desc=f'{model_name}: modeling with some seeds')
     ]
     models = [_model for _model, _ in model_with_preds]
     preds = [calc.inverse_boxcox_transform(_preds_boxcox, boxcox_lambda) for _, _preds_boxcox in model_with_preds]
