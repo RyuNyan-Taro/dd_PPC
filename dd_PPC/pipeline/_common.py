@@ -14,7 +14,7 @@ from .. import file, preprocess, model, data, calc
 _GLOBAL_LAMBDA = 0.09
 
 
-def fit_and_test_model(model_name: str, model_params: dict | None = None, boxcox_lambda: float | None = None):
+def fit_and_test_model(model_names: list[str], model_params: dict | None = None, boxcox_lambda: float | None = None):
     """Fits and tests the selected_model; evaluates competition score"""
 
     if boxcox_lambda is None:
@@ -25,7 +25,11 @@ def fit_and_test_model(model_name: str, model_params: dict | None = None, boxcox
         _x_train, sc, _ = _preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
-        models, pred_vals = _modeling_with_some_seeds(model_name, model_params, _x_train, _y_train, boxcox_lambda)
+        models, pred_vals = [], []
+        for _model in model_names:
+            _one_models, _one_pred_vals = _modeling_with_some_seeds(_model, model_params, _x_train, _y_train, boxcox_lambda)
+            models.extend(_one_models)
+            pred_vals.extend(_one_pred_vals)
 
         consumption = train_cons_y_.copy()
         consumption['cons_pred'] = np.mean(pred_vals, axis=0)
