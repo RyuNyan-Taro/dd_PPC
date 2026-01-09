@@ -25,7 +25,7 @@ def fit_and_test_model(model_name: str, model_params: dict | None = None, boxcox
         _x_train, sc, _ = _preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
-        models, pred_LBs = _modeling_with_some_seeds(model_name, mdoel_params, _x_train, _y_train, boxcox_lambda)
+        models, pred_LBs = _modeling_with_some_seeds(model_name, model_params, _x_train, _y_train, boxcox_lambda)
 
         consumption = train_cons_y_.copy()
         consumption['cons_pred'] = np.mean(pred_LBs, axis=0)
@@ -142,7 +142,8 @@ def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_trai
     random.seed(0)
     _seeds_length = 2
 
-    seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
+    # seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
+    seed_list = [123]
     model_with_preds = [
         getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params)
         for _seed in tqdm(seed_list, desc='modeling with some seeds')
