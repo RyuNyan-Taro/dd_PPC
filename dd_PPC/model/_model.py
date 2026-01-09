@@ -48,7 +48,7 @@ def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] =
     return pred_y, pred_lgb
 
 
-def fit_xgboost(x_train, y_train, seed: int = 42, categorical_cols: list[str] = None, show_pred_plot: bool = False) -> tuple[xgb.XGBRegressor, np.ndarray]:
+def fit_xgboost(x_train, y_train, seed: int = 42, show_pred_plot: bool = False) -> tuple[xgb.XGBRegressor, np.ndarray]:
     model = xgb.XGBRegressor(random_state=seed, n_estimators=3000, subsample=0.8)
 
     pred_y = model.fit(x_train, y_train)

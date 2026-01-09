@@ -88,7 +88,11 @@ def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
     _x_train, _sc, _cat_cols = _preprocess_data(_datas['train'])
     _y_train = _get_modified_target(_datas['target_consumption'])
 
-    _model, _cons_pred = getattr(model, f'fit_{model_name}')(_x_train, _y_train, categorical_cols=_cat_cols)
+    if model_name == 'lightgbm':
+        _model, _cons_pred = getattr(model, f'fit_{model_name}')(_x_train, _y_train, categorical_cols=_cat_cols)
+    else:
+        _model, _cons_pred = getattr(model, f'fit_{model_name}')(_x_train, _y_train)
+
     _cons_pred = calc.inverse_boxcox_transform(_cons_pred, _GLOBAL_LAMBDA)
 
     _consumption = _datas['target_consumption']
@@ -140,7 +144,7 @@ def _modeling_with_some_seeds(model_name: str, x_train, y_train, boxcox_lambda: 
 
     seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
     model_with_preds = [
-        getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, categorical_cols=None)
+        getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed)
         for _seed in tqdm(seed_list, desc='modeling with some seeds')
     ]
     models = [_model for _model, _ in model_with_preds]
