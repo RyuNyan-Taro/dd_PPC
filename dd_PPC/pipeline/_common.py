@@ -14,7 +14,7 @@ from .. import file, preprocess, model, data, calc
 _GLOBAL_LAMBDA = 0.09
 
 
-def fit_and_test_model(model_name: str, model_params: dict | None = None, boxcox_lambda: float | None = None):
+def fit_and_test_model(model_names: list[str], model_params: dict | None = None, boxcox_lambda: float | None = None):
     """Fits and tests the selected_model; evaluates competition score"""
 
     if boxcox_lambda is None:
@@ -25,10 +25,14 @@ def fit_and_test_model(model_name: str, model_params: dict | None = None, boxcox
         _x_train, sc, _ = _preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
-        models, pred_LBs = _modeling_with_some_seeds(model_name, model_params, _x_train, _y_train, boxcox_lambda)
+        models, pred_vals = [], []
+        for _model in model_names:
+            _one_models, _one_pred_vals = _modeling_with_some_seeds(_model, model_params, _x_train, _y_train, boxcox_lambda)
+            models.extend(_one_models)
+            pred_vals.extend(_one_pred_vals)
 
         consumption = train_cons_y_.copy()
-        consumption['cons_pred'] = np.mean(pred_LBs, axis=0)
+        consumption['cons_pred'] = np.mean(pred_vals, axis=0)
 
         pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
 
@@ -38,7 +42,7 @@ def fit_and_test_model(model_name: str, model_params: dict | None = None, boxcox
 
         print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, _transformed_rate_y))
 
-        return models, pred_LBs, sc, ir
+        return models, pred_vals, sc, ir
 
 
     def pred_data(test_x_, test_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
@@ -72,11 +76,11 @@ def fit_and_test_model(model_name: str, model_params: dict | None = None, boxcox
                                                                                   _datas['target_consumption'],
                                                                                   _datas['target_rate'])
 
-    _LBs, _pred_LBs, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
+    _models, _pred_vals, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
 
-    _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _LBs, _ir)
+    _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _models, _ir)
 
-    show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _LBs, _x_test, test_rate_y)
+    show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
 
 
 def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
@@ -146,7 +150,7 @@ def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_trai
     # seed_list = [123]
     model_with_preds = [
         getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params)
-        for _seed in tqdm(seed_list, desc='modeling with some seeds')
+        for _seed in tqdm(seed_list, desc=f'{model_name}: modeling with some seeds')
     ]
     models = [_model for _model, _ in model_with_preds]
     preds = [calc.inverse_boxcox_transform(_preds_boxcox, boxcox_lambda) for _, _preds_boxcox in model_with_preds]

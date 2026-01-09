@@ -49,3 +49,5 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - use coxbox
    - lambda = 0.09 is best score for pipeline.fit_and_test_lightgbm: 10.050838758 -> 9.667269918408259
    - it is not standardized, but the competition score is target a 0.4.
+- model ansamble
+  - 5.524771423370167 (xgboost) -> 4.996441241862218 (xgboost, lightgbm and catboost)
