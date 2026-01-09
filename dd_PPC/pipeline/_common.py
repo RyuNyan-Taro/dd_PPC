@@ -63,24 +63,47 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
 
         return x_test, y_test, consumption, pred_cons_y, pred_rate_y
 
-    def show_metrics(pred_cons_y, y_test, pred_rate_y, consumption, models: list, x_test, test_rate_y_):
-        print(f'RMSE: {np.sqrt(np.mean((pred_cons_y - y_test) ** 2))}')
-        print(f'MAE: {np.mean(np.abs(pred_cons_y - y_test))}')
-        print(f'R2: {np.mean([_lb.score(x_test, y_test) for _lb in models])}')
-        print(
-            f'CompetitionScore: {calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, test_rate_y_)}')
+    def calculate_metrics(pred_cons_y, y_test, pred_rate_y, consumption, models: list, x_test, test_rate_y_) -> dict[str, float]:
+        rmse = np.sqrt(np.mean((pred_cons_y - y_test) ** 2))
+        mae = np.mean(np.abs(pred_cons_y - y_test))
+        r2 = np.mean([_lb.score(x_test, y_test) for _lb in models])
+        competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, test_rate_y_)
+
+        return dict(
+            rmse=rmse,
+            mae=mae,
+            r2=r2,
+            competition_score=competition_score
+        )
+
+    def show_metrics(scores: list[dict[str, float]]):
+
+        _scores_df = pd.DataFrame(scores)
+        print('\ntotal_score\n-----------')
+        print(_scores_df.mean(axis=0))
+        print('\nstd_score\n----------')
+        print(_scores_df.std(axis=0))
+        print('\n')
+        print(_scores_df)
 
     _datas = file.get_datas()
+    _scores = []
 
-    train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(_datas['train'],
-                                                                                  _datas['target_consumption'],
-                                                                                  _datas['target_rate'])
+    for _id in [100000, 200000, 300000]:
 
-    _models, _pred_vals, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
+        train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(
+            _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
+        )
 
-    _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _models, _ir)
+        _models, _pred_vals, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
 
-    show_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
+        _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _models, _ir)
+
+        _metrics = calculate_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
+
+        _scores.append(_metrics)
+
+    show_metrics(_scores)
 
 
 def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
