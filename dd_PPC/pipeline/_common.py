@@ -89,7 +89,7 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
     _datas = file.get_datas()
     _scores = []
 
-    for _id in [100000, 200000, 300000]:
+    for _id in tqdm([100000, 200000, 300000], desc='k fold:'):
 
         train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
