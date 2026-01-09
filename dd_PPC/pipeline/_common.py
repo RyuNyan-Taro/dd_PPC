@@ -127,11 +127,12 @@ def pred_model(fit_model, sc: StandardScaler) -> np.ndarray:
 
 def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
     _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas, sc)
+    _datas_aggregates = preprocess.create_survey_aggregates(datas)
     _datas_category = preprocess.encoding_category_dataframe(datas)
 
     category_cols = _datas_category.columns
 
-    return pd.concat([_datas_std, _datas_category], axis=1), sc, list(category_cols)
+    return pd.concat([_datas_std, _datas_category, _datas_aggregates], axis=1), sc, list(category_cols)
 
 
 def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = None) -> pd.DataFrame:
