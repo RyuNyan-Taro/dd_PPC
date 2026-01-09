@@ -6,10 +6,8 @@ __all__ = [
     'transform_isotonic_regression'
 ]
 
-import warnings
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.isotonic import IsotonicRegression
 import lightgbm as lgb
