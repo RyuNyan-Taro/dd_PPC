@@ -69,7 +69,7 @@ def fit_xgboost(x_train, y_train, seed: int = 42, params: dict | None = None) ->
 def fit_catboost(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[CatBoost, Any]:
     if params is None:
         params = dict(
-            iterations=200,
+            iterations=1100,
             learning_rate=0.03,
             depth=6,
             loss_function='RMSE'
