@@ -47,7 +47,7 @@ def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] =
 def fit_xgboost(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[xgb.XGBRegressor, np.ndarray]:
     if params is None:
         params = dict(
-            n_estimators=3000,
+            n_estimators=200,
             subsample=0.8
         )
     params['random_state'] = seed
