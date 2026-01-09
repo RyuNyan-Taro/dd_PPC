@@ -72,7 +72,8 @@ def fit_catboost(x_train, y_train, seed: int = 42, params: dict | None = None) -
             iterations=1100,
             learning_rate=0.03,
             depth=6,
-            loss_function='RMSE'
+            loss_function='RMSE',
+            verbose=0
         )
     params['random_seed'] = seed
 
