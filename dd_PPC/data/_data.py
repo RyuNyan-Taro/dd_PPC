@@ -26,16 +26,20 @@ def divide_value_types(df: pd.DataFrame) -> tuple[list[str], list[str]]:
     return two_categories, some_category_or_number
 
 
-def split_datas(dependent: pd.DataFrame, consumptions: pd.DataFrame, rates: pd.DataFrame
-                ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    _test_survey_ids = [300000]
+def split_datas(
+        dependent: pd.DataFrame, consumptions: pd.DataFrame, rates: pd.DataFrame,
+        test_survey_ids: list[int] | None = None
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
-    return (dependent[~dependent.survey_id.isin(_test_survey_ids)],
-            consumptions[~consumptions.survey_id.isin(_test_survey_ids)],
-            rates[~rates.survey_id.isin(_test_survey_ids)],
-            dependent[dependent.survey_id.isin(_test_survey_ids)],
-            consumptions[consumptions.survey_id.isin(_test_survey_ids)],
-            rates[rates.survey_id.isin(_test_survey_ids)],
+    if test_survey_ids is None:
+        test_survey_ids = [300000]
+
+    return (dependent[~dependent.survey_id.isin(test_survey_ids)],
+            consumptions[~consumptions.survey_id.isin(test_survey_ids)],
+            rates[~rates.survey_id.isin(test_survey_ids)],
+            dependent[dependent.survey_id.isin(test_survey_ids)],
+            consumptions[consumptions.survey_id.isin(test_survey_ids)],
+            rates[rates.survey_id.isin(test_survey_ids)],
             )
 
 
