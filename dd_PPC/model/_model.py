@@ -27,13 +27,13 @@ def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, seed:
 def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] = None, params: dict | None = None) -> tuple[lgb.LGBMRegressor, np.ndarray]:
     if params is None:
         params = dict(
-            random_state=seed,
             verbose=-1,
             n_estimators=3000,
             force_row_wise=True,
             bagging_fraction=0.8,
             bagging_freq=5
         )
+    params['random_state'] = seed
 
     model = lgb.LGBMRegressor(**params)
 
@@ -46,7 +46,11 @@ def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] =
 
 def fit_xgboost(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[xgb.XGBRegressor, np.ndarray]:
     if params is None:
-        params = dict(random_state=seed, n_estimators=3000, subsample=0.8)
+        params = dict(
+            n_estimators=3000,
+            subsample=0.8
+        )
+    params['random_state'] = seed
 
     model = xgb.XGBRegressor(**params)
 
