@@ -1,4 +1,4 @@
-__all__ = ['fit_and_predictions_model', 'pred_model', 'fit_and_test_model']
+__all__ = ['fit_and_predictions_model', 'pred_model', 'fit_and_test_model', 'preprocess_data']
 
 import random
 
@@ -22,7 +22,7 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
 
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
-        _x_train, sc, _ = _preprocess_data(train_x_)
+        _x_train, sc, _ = preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         models, pred_vals = [], []
@@ -47,7 +47,7 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
 
     def pred_data(test_x_, test_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
 
-        x_test, *_ = _preprocess_data(test_x_, sc)
+        x_test, *_ = preprocess_data(test_x_, sc)
         pred_cons_ys = _fitting_with_some_models(models, x_test, boxcox_lambda)
 
         pred_cons_y = np.mean(pred_cons_ys, axis=0)
@@ -118,7 +118,7 @@ def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
     _datas = file.get_datas()
 
     # learning
-    _x_train, _sc, _cat_cols = _preprocess_data(_datas['train'])
+    _x_train, _sc, _cat_cols = preprocess_data(_datas['train'])
     _y_train = _get_modified_target(_datas['target_consumption'])
 
     if model_name == 'lightgbm':
@@ -154,7 +154,7 @@ def pred_model(fit_model, sc: StandardScaler) -> np.ndarray:
     return fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
 
 
-def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
+def preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
     _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas, sc)
     _datas_category = preprocess.encoding_category_dataframe(datas)
 
