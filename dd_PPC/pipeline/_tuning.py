@@ -12,6 +12,7 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
 
     Args:
         model_name: learning model name
+        cv_params: custom validation parameters
 
     References:
         Base idea and the code: https://qiita.com/c60evaporator/items/a9a049c3469f6b4872c6
@@ -121,7 +122,8 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
         'learning_rate': 'log',
         'min_child_weight': 'linear',
         'max_depth': 'linear',
-        'gamma': 'log'
+        'gamma': 'log',
+        'boxcox_lambda': 'linear'
     }
 
     return model_params, scoring, cv_params, param_scales
