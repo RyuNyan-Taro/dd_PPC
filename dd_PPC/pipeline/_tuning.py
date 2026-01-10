@@ -29,7 +29,7 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
 
         _train_scores, _valid_scores = [], []
         for _val_i, _val in enumerate(v, start=1):
-            print(f'\nProcessing parameter: {k} {_val_i}/{len(v)}')
+            print(f'\nProcessing parameter: {k} {_val_i}/{len(v)} val: {_val}')
 
             _args = dict(
                 model_names=[model_name], display_result=False
