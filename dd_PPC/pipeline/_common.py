@@ -18,6 +18,7 @@ def fit_and_test_model(
         model_names: list[str],
         model_params: dict | None = None,
         boxcox_lambda: float | None = None,
+        seed_list: list[int] | None = None,
         display_result: bool = True,
 ) -> list[dict[str, float]]:
     """Fits and tests the selected_model; evaluates competition score"""
@@ -184,12 +185,15 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
     return calc.apply_boxcox_transform(targets.loc[:, 'cons_ppp17'], boxcox_lambda)[0]
 
 
-def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_train, y_train, boxcox_lambda: float) -> tuple[list, list[np.ndarray]]:
-    random.seed(0)
-    _seeds_length = 2
+def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_train, y_train, boxcox_lambda: float, seed_list: list[int] | None = None) -> tuple[list, list[np.ndarray]]:
 
-    seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
-    # seed_list = [123]
+    if seed_list is None:
+        random.seed(0)
+        _seeds_length = 2
+
+        seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
+        # seed_list = [123]
+
     model_with_preds = [
         getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params)
         for _seed in tqdm(seed_list, desc=f'{model_name}: modeling with some seeds')
