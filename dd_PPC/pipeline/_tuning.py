@@ -114,15 +114,15 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
                 'booster': 'gbtree',
                 'objective': 'reg:squarederror',
                 'random_state': 123,
-                'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+                'n_estimators': trial.suggest_int('n_estimators', 100, 1500),
                 'max_depth': trial.suggest_int('max_depth', 3, 8),
                 'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.1, log=True),
                 'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 0.9),
-                'min_child_weight': trial.suggest_int('min_child_weight', 5, 9),
+                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.3, 0.9),
+                'min_child_weight': trial.suggest_int('min_child_weight', 1, 9),
                 'gamma': trial.suggest_float('gamma', 0.1, 1.0, log=True),
                 'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 1.0, log=True),
-                # 'reg_lambda': trial.suggest_float('reg_lambda', 0.0001, 1.0, log=True),
+                'reg_lambda': trial.suggest_float('reg_lambda', 0.0001, 1.0, log=True),
             }
         elif model_name == 'lightgbm':
             params = {
