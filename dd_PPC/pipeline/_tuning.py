@@ -92,12 +92,18 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
 
 def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
     # TODO: switch params per model_name
-    model_params = dict(
+    model_params = {'xgboost': dict(
         booster='gbtree',
         objective='reg:squarederror',
         random_state=42,
         n_estimators=100
-    )
+    ), 'lightgbm': dict(
+        boosting_type='gbdt',
+        objective='regression',
+        force_row_wise=True,
+        random_state=42,
+        n_estimators=100
+    )}[model_name]
 
     # Cross-validation setup
     scoring = 'neg_mean_squared_error'
