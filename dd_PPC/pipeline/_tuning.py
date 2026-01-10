@@ -110,7 +110,7 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
             boosting_type='Plain',
             loss_function='RMSE',
             random_state=42,
-            n_estimators=10
+            n_estimators=100
         )
     }[model_name]
 
