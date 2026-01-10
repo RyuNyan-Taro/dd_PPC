@@ -147,9 +147,9 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
                 'random_state': 42,
                 'verbose': False,
                 'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
-                'depth': trial.suggest_int('depth', 4, 10),
+                'depth': trial.suggest_int('depth', 3, 9),
                 'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
-                'l2_leaf_reg': trial.suggest_float('l2_leaf_reg', 1.0, 10.0),
+                'l2_leaf_reg': trial.suggest_float('l2_leaf_reg', 3.0, 9.0),
             }
         else:
             raise ValueError(f"Unknown model: {model_name}")
