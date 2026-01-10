@@ -92,18 +92,27 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
 
 def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
     # TODO: switch params per model_name
-    model_params = {'xgboost': dict(
-        booster='gbtree',
-        objective='reg:squarederror',
-        random_state=42,
-        n_estimators=100
-    ), 'lightgbm': dict(
-        boosting_type='gbdt',
-        objective='regression',
-        force_row_wise=True,
-        random_state=42,
-        n_estimators=100
-    )}[model_name]
+    model_params = {
+        'xgboost': dict(
+            booster='gbtree',
+            objective='reg:squarederror',
+            random_state=42,
+            n_estimators=100
+        ),
+        'lightgbm': dict(
+            boosting_type='gbdt',
+            objective='regression',
+            force_row_wise=True,
+            random_state=42,
+            n_estimators=100
+        ),
+        'catboost': dict(
+            boosting_type='Plain',
+            loss_function='RMSE',
+            random_state=42,
+            n_estimators=10
+        )
+    }[model_name]
 
     # Cross-validation setup
     scoring = 'neg_mean_squared_error'
@@ -151,6 +160,18 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
                 'subsample': 'linear',
                 'subsample_freq': 'linear',
                 'min_child_samples': 'linear'
+            },
+        ],
+        'catboost': [
+            {
+                'depth': [4, 7, 10],
+                'learning_rate': [0.001, 0.01, 0.1, 0.3],
+                'l2_leaf_reg': [1, 4, 9],
+            },
+            {
+                'depth': 'linear',
+                'learning_rate': 'log',
+                'l2_leaf_reg': 'linear'
             }
         ]
     }
