@@ -103,27 +103,52 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
     scoring = 'neg_mean_squared_error'
 
     # Fixed parameter ranges
-    cv_params = {
-        'subsample': [0.3, 0.5, 0.7, 0.9, 1.0],
-        'colsample_bytree': [0.3, 0.5, 0.7, 0.9, 1.0],
-        'reg_alpha': [0.0001, 0.001, 0.01, 0.1, 1.0],
-        'reg_lambda': [0.0001, 0.001, 0.01, 0.1, 1.0],
-        'learning_rate': [0.001, 0.01, 0.1, 0.3],
-        'min_child_weight': [1, 3, 5, 7, 10],
-        'max_depth': [3, 4, 5, 6, 7, 8],
-        'gamma': [0, 0.001, 0.01, 0.1, 1.0]
+    param_and_scales = {
+        'xgboost': [
+            {
+                'subsample': [0.3, 0.5, 0.7, 0.9, 1.0],
+                'colsample_bytree': [0.3, 0.5, 0.7, 0.9, 1.0],
+                'reg_alpha': [0.0001, 0.001, 0.01, 0.1, 1.0],
+                'reg_lambda': [0.0001, 0.001, 0.01, 0.1, 1.0],
+                'learning_rate': [0.001, 0.01, 0.1, 0.3],
+                'min_child_weight': [1, 3, 5, 7, 10],
+                'max_depth': [3, 4, 5, 6, 7, 8],
+                'gamma': [0, 0.001, 0.01, 0.1, 1.0]
+            },
+            {
+                'subsample': 'linear',
+                'colsample_bytree': 'linear',
+                'reg_alpha': 'log',
+                'reg_lambda': 'log',
+                'learning_rate': 'log',
+                'min_child_weight': 'linear',
+                'max_depth': 'linear',
+                'gamma': 'log',
+                'boxcox_lambda': 'linear'
+            }
+        ],
+        'lightgbm': [
+            {
+                'reg_alpha': [0, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10],
+                'reg_lambda': [0, 0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10],
+                'num_leaves': [2, 4, 8, 16, 32, 64, 96, 128, 160, 192, 224, 256],
+                'colsample_bytree': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                'subsample': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+                'subsample_freq': [0, 1, 2, 3, 4, 5, 6, 7],
+                'min_child_samples': [0, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+            },
+            {
+                'reg_alpha': 'log',
+                'reg_lambda': 'log',
+                'num_leaves': 'linear',
+                'colsample_bytree': 'linear',
+                'subsample': 'linear',
+                'subsample_freq': 'linear',
+                'min_child_samples': 'linear'
+            }
+        ]
     }
 
-    param_scales = {
-        'subsample': 'linear',
-        'colsample_bytree': 'linear',
-        'reg_alpha': 'log',
-        'reg_lambda': 'log',
-        'learning_rate': 'log',
-        'min_child_weight': 'linear',
-        'max_depth': 'linear',
-        'gamma': 'log',
-        'boxcox_lambda': 'linear'
-    }
+    cv_params, param_scales = param_and_scales[model_name]
 
     return model_params, scoring, cv_params, param_scales
