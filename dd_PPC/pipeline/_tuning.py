@@ -15,7 +15,8 @@ def validation_plot_parameters(model_name: str):
         print(f'\nProcessing parameter: {k}')
 
         _train_scores, _valid_scores = [], []
-        for _val in v:
+        for _val_i, _val in enumerate(v, start=1):
+            print(f'\nProcessing value: {_val_i}/{len(v)}')
             _params = _model_params.copy()
             _params[k] = _val
             _train_scores_per_survey_group, _valid_scores_per_survey_group = fit_and_test_model(model_names=[model_name], model_params=_params, display_result=False)
@@ -28,33 +29,40 @@ def validation_plot_parameters(model_name: str):
         print(f'Shape: {_train_scores.shape}, {_valid_scores.shape}')
         print(f'Valid scores - min: {np.min(_valid_scores):.3f}, max: {np.max(_valid_scores):.3f}')
 
-        # Calculate statistics
+        print('train_scores:', _train_scores)
+        print('valid_scores:', _valid_scores)
+
+        # Plot
+        fig, axes = plt.subplots(1, ncols=2, figsize=(10, 6), constrained_layout=True)
+
+        _ax = axes[0]
+        for _train, _valid, _c in zip(_train_scores.T, _valid_scores.T, ['gray', 'yellow', 'red']):
+            _ax.plot(v, _train, 'o-', color=_c)
+            _ax.plot(v, _valid, 's--', color=_c)
+        _ax.set_ylabel(_scoring, fontsize=12)
+
         train_means = np.mean(_train_scores, axis=1)
         train_stds = np.std(_train_scores, axis=1)
         valid_means = np.mean(_valid_scores, axis=1)
         valid_stds = np.std(_valid_scores, axis=1)
 
-        # Plot
-        plt.figure(figsize=(10, 6))
-        for train_mean, train_std, valid_mean, valid_std in zip(train_means, train_stds, valid_means, valid_stds):
-            plt.plot(v, train_mean, 'o-', color='blue', label='Training score')
-            plt.fill_between(v, train_mean - train_std, train_mean + train_std, alpha=0.2, color='blue')
-            plt.plot(v, valid_mean, 's--', color='green', label='CV score')
-            plt.fill_between(v, valid_mean - valid_std, valid_mean + valid_std, alpha=0.2, color='green')
+        _ax = axes[1]
+        _ax.plot(v, train_means, 'o-', color='blue', label='Training score')
+        _ax.fill_between(v, train_means - train_stds, train_means + train_stds, alpha=0.2, color='blue')
+        _ax.plot(v, valid_means, 's--', color='green', label='CV score')
+        _ax.fill_between(v, valid_means - valid_stds, valid_means + valid_stds, alpha=0.2, color='green')
+        _ax.legend(loc='upper left')
 
         # Set scale (skip log scale for gamma=0)
         if _param_scales[k] == 'log' and min(v) > 0:
-            plt.xscale('log')
+            for _ax in axes:
+                _ax.xscale('log')
 
-        plt.xlabel(k, fontsize=12)
-        plt.ylabel(_scoring, fontsize=12)
-        plt.title(f'Validation Curve: {k}', fontsize=14)
-        plt.legend(loc='best')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
+        for _ax in axes:
+            _ax.grid(True, alpha=0.3)
+
+        fig.suptitle(f'Validation Curve: {k}', fontsize=14)
         plt.show()
-
-        break
 
 
 def _get_validation_params(model_name: str):
