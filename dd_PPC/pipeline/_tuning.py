@@ -8,6 +8,15 @@ from ._common import fit_and_test_model
 
 
 def validation_plot_parameters(model_name: str):
+    """Plot validation curves for hyperparameter tuning of a machine learning model.
+
+    Args:
+        model_name: learning model name
+
+    References:
+        Base idea and the code: https://qiita.com/c60evaporator/items/a9a049c3469f6b4872c6
+
+    """
     _model_params, _scoring, _cv_params, _param_scales = _get_validation_params(model_name)
     _scoring = 'competition_score'
 
