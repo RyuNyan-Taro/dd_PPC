@@ -19,7 +19,7 @@ def fit_and_test_model(
         model_params: dict | None = None,
         boxcox_lambda: float | None = None,
         display_result: bool = True,
-):
+) -> list[dict[str, float]]:
     """Fits and tests the selected_model; evaluates competition score"""
 
     if boxcox_lambda is None:
