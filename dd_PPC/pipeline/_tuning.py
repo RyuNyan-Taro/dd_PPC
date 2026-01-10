@@ -137,8 +137,8 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
                 # 'subsample_freq': trial.suggest_int('subsample_freq', 0, 7),
                 'colsample_bytree': trial.suggest_float('colsample_bytree', 0.1, 1.0),
                 'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
-                'reg_alpha': trial.suggest_float('reg_alpha', 0.0, 10.0, log=True),
-                'reg_lambda': trial.suggest_float('reg_lambda', 0.0, 10.0, log=True),
+                'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 10.0, log=True),
+                'reg_lambda': trial.suggest_float('reg_lambda', 0.01, 10.0, log=True),
             }
         elif model_name == 'catboost':
             params = {
