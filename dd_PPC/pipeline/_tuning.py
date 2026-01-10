@@ -113,29 +113,29 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
             params = {
                 'booster': 'gbtree',
                 'objective': 'reg:squarederror',
-                'random_state': 42,
+                'random_state': 123,
                 'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
-                'max_depth': trial.suggest_int('max_depth', 3, 10),
-                'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
+                'max_depth': trial.suggest_int('max_depth', 3, 8),
+                'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.1, log=True),
                 'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
-                'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
-                'gamma': trial.suggest_float('gamma', 0.0, 1.0, log=True),
-                'reg_alpha': trial.suggest_float('reg_alpha', 0.0001, 1.0, log=True),
-                'reg_lambda': trial.suggest_float('reg_lambda', 0.0001, 1.0, log=True),
+                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 0.9),
+                'min_child_weight': trial.suggest_int('min_child_weight', 5, 9),
+                'gamma': trial.suggest_float('gamma', 0.1, 1.0, log=True),
+                'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 1.0, log=True),
+                # 'reg_lambda': trial.suggest_float('reg_lambda', 0.0001, 1.0, log=True),
             }
         elif model_name == 'lightgbm':
             params = {
                 'boosting_type': 'gbdt',
                 'objective': 'regression',
                 'force_row_wise': True,
-                'random_state': 42,
-                'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+                'random_state': 123,
+                'n_estimators': trial.suggest_int('n_estimators', 100, 1500),
                 'num_leaves': trial.suggest_int('num_leaves', 20, 256),
                 'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
-                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                'subsample_freq': trial.suggest_int('subsample_freq', 0, 7),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+                # 'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+                # 'subsample_freq': trial.suggest_int('subsample_freq', 0, 7),
+                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.1, 1.0),
                 'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
                 'reg_alpha': trial.suggest_float('reg_alpha', 0.0, 10.0, log=True),
                 'reg_lambda': trial.suggest_float('reg_lambda', 0.0, 10.0, log=True),
@@ -144,7 +144,7 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
             params = {
                 'boosting_type': 'Plain',
                 'loss_function': 'RMSE',
-                'random_state': 42,
+                'random_state': 123,
                 'verbose': False,
                 'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
                 'depth': trial.suggest_int('depth', 3, 9),
@@ -183,7 +183,7 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
     print(f'Starting Optuna optimization for {model_name}...')
     print(f'Trials: {n_trials}, Timeout: {timeout}s\n')
 
-    study.optimize(objective, n_trials=n_trials, timeout=timeout, show_progress_bar=True)
+    study.optimize(objective, n_trials=n_trials, timeout=timeout, show_progress_bar=False)
 
     # Results
     print('\n' + '=' * 60)
