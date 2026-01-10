@@ -39,7 +39,6 @@ def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] =
             bagging_freq=5
         )
     params['random_state'] = seed
-    print(params)
 
     model = lgb.LGBMRegressor(**params)
 
