@@ -7,7 +7,7 @@ import numpy as np
 from ._common import fit_and_test_model
 
 
-def validation_plot_parameters(model_name: str):
+def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
     """Plot validation curves for hyperparameter tuning of a machine learning model.
 
     Args:
@@ -18,6 +18,9 @@ def validation_plot_parameters(model_name: str):
 
     """
     _model_params, _scoring, _cv_params, _param_scales = _get_validation_params(model_name)
+
+    if isinstance(cv_params, dict):
+        _cv_params = cv_params
     _scoring = 'competition_score'
 
     # Validation curve - NO fit_params!
@@ -26,9 +29,18 @@ def validation_plot_parameters(model_name: str):
         _train_scores, _valid_scores = [], []
         for _val_i, _val in enumerate(v, start=1):
             print(f'\nProcessing parameter: {k} {_val_i}/{len(v)}')
+
+            _args = dict(
+                model_names=[model_name], display_result=False
+            )
             _params = _model_params.copy()
-            _params[k] = _val
-            _train_scores_per_survey_group, _valid_scores_per_survey_group = fit_and_test_model(model_names=[model_name], model_params=_params, display_result=False)
+            if k == 'boxcox_lambda':
+                _args['boxcox_lambda'] = _val
+            else:
+                _params[k] = _val
+            _params['model_params'] = _params
+
+            _train_scores_per_survey_group, _valid_scores_per_survey_group = fit_and_test_model(**_args)
             _train_scores.append([_scores[_scoring] for _scores in _train_scores_per_survey_group])
             _valid_scores.append([_scores[_scoring] for _scores in _valid_scores_per_survey_group])
             clear_output(wait=True)
@@ -73,11 +85,11 @@ def validation_plot_parameters(model_name: str):
 
         fig.suptitle(f'Validation Curve: {k}', fontsize=14)
 
-        plt.savefig(f'model_{model_name}_validation_curve_{k}.png', bbox_inches='tight')
+        plt.savefig(f'../plots/model_{model_name}_validation_curve_{k}.png', bbox_inches='tight')
         plt.show()
 
 
-def _get_validation_params(model_name: str):
+def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
     # TODO: switch params per model_name
     model_params = dict(
         booster='gbtree',
