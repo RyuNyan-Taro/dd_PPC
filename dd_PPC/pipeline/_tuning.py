@@ -66,7 +66,7 @@ def validation_plot_parameters(model_name: str):
         # Set scale (skip log scale for gamma=0)
         if _param_scales[k] == 'log' and min(v) > 0:
             for _ax in axes:
-                _ax.xscale('log')
+                _ax.set_xscale('log')
 
         for _ax in axes:
             _ax.grid(True, alpha=0.3)
