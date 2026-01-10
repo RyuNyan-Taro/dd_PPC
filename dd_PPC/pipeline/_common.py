@@ -14,7 +14,12 @@ from .. import file, preprocess, model, data, calc
 _GLOBAL_LAMBDA = 0.09
 
 
-def fit_and_test_model(model_names: list[str], model_params: dict | None = None, boxcox_lambda: float | None = None):
+def fit_and_test_model(
+        model_names: list[str],
+        model_params: dict | None = None,
+        boxcox_lambda: float | None = None,
+        display_result: bool = True,
+):
     """Fits and tests the selected_model; evaluates competition score"""
 
     if boxcox_lambda is None:
@@ -87,7 +92,7 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
         print(_scores_df)
 
     _datas = file.get_datas()
-    _scores = []
+    scores = []
 
     _k_fold_test_ids = [100000, 200000, 300000]
 
@@ -107,9 +112,12 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
 
         _metrics['test_survey_ids'] = _id
 
-        _scores.append(_metrics)
+        scores.append(_metrics)
 
-    show_metrics(_scores)
+    if display_result:
+        show_metrics(scores)
+
+    return scores
 
 
 def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
