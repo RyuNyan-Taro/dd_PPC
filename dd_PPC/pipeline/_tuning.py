@@ -1,4 +1,4 @@
-__all__ = ['validation_plot_parameters']
+__all__ = ['validation_plot_parameters', 'tuning_model']
 
 from IPython.display import clear_output
 import matplotlib.pyplot as plt
@@ -88,6 +88,121 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
 
         plt.savefig(f'../plots/model_{model_name}_validation_curve_{k}.png', bbox_inches='tight')
         plt.show()
+
+
+def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = None):
+    """Hyperparameter tuning using Optuna.
+
+    Args:
+        model_name: Name of the model to tune ('xgboost', 'lightgbm', or 'catboost')
+        n_trials: Number of optimization trials
+        timeout: Maximum time in seconds for optimization (None for no limit)
+
+    Returns:
+        best_params: Dictionary of best hyperparameters found
+        best_score: Best competition score achieved
+    """
+    import optuna
+    from optuna.samplers import TPESampler
+
+    def objective(trial):
+        """Optuna objective function."""
+
+        # Define hyperparameter search space based on model
+        if model_name == 'xgboost':
+            params = {
+                'booster': 'gbtree',
+                'objective': 'reg:squarederror',
+                'random_state': 42,
+                'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+                'max_depth': trial.suggest_int('max_depth', 3, 10),
+                'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
+                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+                'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
+                'gamma': trial.suggest_float('gamma', 0.0, 1.0, log=True),
+                'reg_alpha': trial.suggest_float('reg_alpha', 0.0001, 1.0, log=True),
+                'reg_lambda': trial.suggest_float('reg_lambda', 0.0001, 1.0, log=True),
+            }
+        elif model_name == 'lightgbm':
+            params = {
+                'boosting_type': 'gbdt',
+                'objective': 'regression',
+                'force_row_wise': True,
+                'random_state': 42,
+                'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+                'num_leaves': trial.suggest_int('num_leaves', 20, 256),
+                'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
+                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+                'subsample_freq': trial.suggest_int('subsample_freq', 0, 7),
+                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+                'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
+                'reg_alpha': trial.suggest_float('reg_alpha', 0.0, 10.0, log=True),
+                'reg_lambda': trial.suggest_float('reg_lambda', 0.0, 10.0, log=True),
+            }
+        elif model_name == 'catboost':
+            params = {
+                'boosting_type': 'Plain',
+                'loss_function': 'RMSE',
+                'random_state': 42,
+                'verbose': False,
+                'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+                'depth': trial.suggest_int('depth', 4, 10),
+                'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
+                'l2_leaf_reg': trial.suggest_float('l2_leaf_reg', 1.0, 10.0),
+            }
+        else:
+            raise ValueError(f"Unknown model: {model_name}")
+
+        # Optionally tune boxcox_lambda
+        # boxcox_lambda = trial.suggest_float('boxcox_lambda', 0.0, 0.3)
+
+        # Run cross-validation with these parameters
+        train_scores, test_scores = fit_and_test_model(
+            model_names=[model_name],
+            model_params=params,
+            display_result=False
+        )
+
+        clear_output(wait=True)
+
+        # Calculate mean competition score across folds
+        mean_score = np.mean([score['competition_score'] for score in test_scores])
+
+        # Optuna minimizes, but we want to minimize the competition score (lower is better)
+        return mean_score
+
+    # Create study
+    study = optuna.create_study(
+        direction='minimize',
+        sampler=TPESampler(seed=42),
+        study_name=f'{model_name}_tuning'
+    )
+
+    # Optimize
+    print(f'Starting Optuna optimization for {model_name}...')
+    print(f'Trials: {n_trials}, Timeout: {timeout}s\n')
+
+    study.optimize(objective, n_trials=n_trials, timeout=timeout, show_progress_bar=True)
+
+    # Results
+    print('\n' + '=' * 60)
+    print('Optimization Complete!')
+    print('=' * 60)
+    print(f'Best competition score: {study.best_value:.6f}')
+    print(f'Best parameters:')
+    for key, value in study.best_params.items():
+        print(f'  {key}: {value}')
+
+    # Save study results
+    try:
+        import joblib
+        joblib.dump(study, f'../models/optuna_study_{model_name}.pkl')
+        print(f'\nStudy saved to ../models/optuna_study_{model_name}.pkl')
+    except Exception as e:
+        print(f'\nWarning: Could not save study: {e}')
+
+    return study.best_params, study.best_value
 
 
 def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
