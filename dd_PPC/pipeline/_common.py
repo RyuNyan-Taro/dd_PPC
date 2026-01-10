@@ -44,9 +44,9 @@ def fit_and_test_model(
 
         ir = model.fit_isotonic_regression(pred_rate_y, train_rate_y_)
 
-        _transformed_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
+        pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
 
-        print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, _transformed_rate_y))
+        print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, pred_rate_y))
 
         return models, pred_vals, sc, ir, consumption, pred_rate_y, x_train
 
@@ -191,8 +191,8 @@ def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_trai
         random.seed(0)
         _seeds_length = 2
 
-        seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
-        # seed_list = [123]
+        # seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
+        seed_list = [123]
 
     model_with_preds = [
         getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params)
