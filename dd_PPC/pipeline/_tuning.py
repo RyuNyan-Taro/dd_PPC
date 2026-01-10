@@ -63,6 +63,8 @@ def validation_plot_parameters(model_name: str):
             _ax.grid(True, alpha=0.3)
 
         fig.suptitle(f'Validation Curve: {k}', fontsize=14)
+
+        plt.savefig(f'model_{model_name}_validation_curve_{k}.png', bbox_inches='tight')
         plt.show()
 
 
