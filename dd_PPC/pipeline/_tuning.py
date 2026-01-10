@@ -39,7 +39,7 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
                 _args['boxcox_lambda'] = _val
             else:
                 _params[k] = _val
-            _params['model_params'] = _params
+            _args['model_params'] = _params
 
             _train_scores_per_survey_group, _valid_scores_per_survey_group = fit_and_test_model(**_args)
             _train_scores.append([_scores[_scoring] for _scores in _train_scores_per_survey_group])
