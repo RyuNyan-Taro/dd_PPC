@@ -14,30 +14,33 @@ def validation_plot_parameters(model_name: str):
     for k, v in _cv_params.items():
         print(f'\nProcessing parameter: {k}')
 
-        _train_scores, _valid_scores = np.array([]), np.array([])
+        _train_scores, _valid_scores = [], []
         for _val in v:
             _params = _model_params.copy()
             _params[k] = _val
-            _train_score, _test_score = fit_and_test_model(model_names=[model_name], model_params=_params, display_result=False)
-            _train_scores = np.append(_train_scores, _train_score[_scoring])
-            _valid_scores = np.append(_valid_scores, _test_score[_scoring])
+            _train_scores_per_survey_group, _valid_scores_per_survey_group = fit_and_test_model(model_names=[model_name], model_params=_params, display_result=False)
+            _train_scores.append([_scores[_scoring] for _scores in _train_scores_per_survey_group])
+            _valid_scores.append([_scores[_scoring] for _scores in _valid_scores_per_survey_group])
 
+        _train_scores = np.array(_train_scores)
+        _valid_scores = np.array(_valid_scores)
         print(f'{k}: {v}')
         print(f'Shape: {_train_scores.shape}, {_valid_scores.shape}')
         print(f'Valid scores - min: {np.min(_valid_scores):.3f}, max: {np.max(_valid_scores):.3f}')
 
         # Calculate statistics
-        train_mean = np.mean(_train_scores, axis=1)
-        train_std = np.std(_train_scores, axis=1)
-        valid_mean = np.mean(_valid_scores, axis=1)
-        valid_std = np.std(_valid_scores, axis=1)
+        train_means = np.mean(_train_scores, axis=1)
+        train_stds = np.std(_train_scores, axis=1)
+        valid_means = np.mean(_valid_scores, axis=1)
+        valid_stds = np.std(_valid_scores, axis=1)
 
         # Plot
         plt.figure(figsize=(10, 6))
-        plt.plot(v, train_mean, 'o-', color='blue', label='Training score')
-        plt.fill_between(v, train_mean - train_std, train_mean + train_std, alpha=0.2, color='blue')
-        plt.plot(v, valid_mean, 's--', color='green', label='CV score')
-        plt.fill_between(v, valid_mean - valid_std, valid_mean + valid_std, alpha=0.2, color='green')
+        for train_mean, train_std, valid_mean, valid_std in zip(train_means, train_stds, valid_means, valid_stds):
+            plt.plot(v, train_mean, 'o-', color='blue', label='Training score')
+            plt.fill_between(v, train_mean - train_std, train_mean + train_std, alpha=0.2, color='blue')
+            plt.plot(v, valid_mean, 's--', color='green', label='CV score')
+            plt.fill_between(v, valid_mean - valid_std, valid_mean + valid_std, alpha=0.2, color='green')
 
         # Set scale (skip log scale for gamma=0)
         if _param_scales[k] == 'log' and min(v) > 0:
@@ -50,6 +53,8 @@ def validation_plot_parameters(model_name: str):
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
         plt.show()
+
+        break
 
 
 def _get_validation_params(model_name: str):

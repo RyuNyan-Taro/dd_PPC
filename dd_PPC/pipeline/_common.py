@@ -20,7 +20,7 @@ def fit_and_test_model(
         boxcox_lambda: float | None = None,
         seed_list: list[int] | None = None,
         display_result: bool = True,
-) -> list[dict[str, float]]:
+) -> tuple[list[dict[str, float]], list[dict[str, float]]]:
     """Fits and tests the selected_model; evaluates competition score"""
 
     if boxcox_lambda is None:
