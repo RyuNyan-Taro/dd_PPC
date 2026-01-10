@@ -47,7 +47,7 @@ def fit_and_test_model(
 
         print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, _transformed_rate_y))
 
-        return models, pred_vals, sc, ir
+        return models, pred_vals, sc, ir, consumption, pred_rate_y
 
 
     def pred_data(test_x_, test_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
@@ -68,11 +68,11 @@ def fit_and_test_model(
 
         return x_test, y_test, consumption, pred_cons_y, pred_rate_y
 
-    def calculate_metrics(pred_cons_y, y_test, pred_rate_y, consumption, models: list, x_test, test_rate_y_) -> dict[str, float]:
-        rmse = np.sqrt(np.mean((pred_cons_y - y_test) ** 2))
-        mae = np.mean(np.abs(pred_cons_y - y_test))
-        r2 = np.mean([_lb.score(x_test, y_test) for _lb in models])
-        competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, test_rate_y_)
+    def calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, models: list, X, target_rate_y) -> dict[str, float]:
+        rmse = np.sqrt(np.mean((pred_cons_y - y) ** 2))
+        mae = np.mean(np.abs(pred_cons_y - y))
+        r2 = np.mean([_lb.score(X, y) for _lb in models])
+        competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, target_rate_y)
 
         return dict(
             rmse=rmse,
@@ -81,9 +81,9 @@ def fit_and_test_model(
             competition_score=competition_score
         )
 
-    def show_metrics(scores: list[dict[str, float]]):
+    def show_metrics(scores_: list[dict[str, float]]):
 
-        _scores_df = pd.DataFrame(scores)
+        _scores_df = pd.DataFrame(scores_)
         print('\ntotal_score\n-----------')
         print(_scores_df.mean(axis=0))
         print('\nstd_score\n----------')
@@ -92,7 +92,8 @@ def fit_and_test_model(
         print(_scores_df)
 
     _datas = file.get_datas()
-    scores = []
+    train_scores = []
+    test_scores = []
 
     _k_fold_test_ids = [100000, 200000, 300000]
 
@@ -104,20 +105,24 @@ def fit_and_test_model(
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
-        _models, _pred_vals, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
+        _models, _pred_vals, _sc, _ir, _consumption, _pred_rate_y = fit_data(train_x, train_cons_y, train_rate_y)
+
+        _train_metrics = calculate_metrics(_consumption['cons_pred'].to_numpy(), train_cons_y, train_rate_y, _consumption, _models, train_x, train_rate_y)
 
         _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _models, _ir)
 
-        _metrics = calculate_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
+        _test_metrics = calculate_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
 
-        _metrics['test_survey_ids'] = _id
+        _train_metrics['survey_ids'] = set(_k_fold_test_ids) - {_id}
+        _test_metrics['survey_ids'] = _id
 
-        scores.append(_metrics)
+        train_scores.append(_train_metrics)
+        test_scores.append(_test_metrics)
 
     if display_result:
-        show_metrics(scores)
+        show_metrics(test_scores)
 
-    return scores
+    return train_scores, test_scores
 
 
 def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
