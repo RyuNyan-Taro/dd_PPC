@@ -28,12 +28,12 @@ def fit_and_test_model(
 
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
-        _x_train, sc, _ = preprocess_data(train_x_)
+        x_train, sc, _ = preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         models, pred_vals = [], []
         for _model in model_names:
-            _one_models, _one_pred_vals = _modeling_with_some_seeds(_model, model_params, _x_train, _y_train, boxcox_lambda)
+            _one_models, _one_pred_vals = _modeling_with_some_seeds(_model, model_params, x_train, _y_train, boxcox_lambda, seed_list=seed_list)
             models.extend(_one_models)
             pred_vals.extend(_one_pred_vals)
 
@@ -48,7 +48,7 @@ def fit_and_test_model(
 
         print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, _transformed_rate_y))
 
-        return models, pred_vals, sc, ir, consumption, pred_rate_y
+        return models, pred_vals, sc, ir, consumption, pred_rate_y, x_train
 
 
     def pred_data(test_x_, test_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
@@ -106,9 +106,9 @@ def fit_and_test_model(
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
-        _models, _pred_vals, _sc, _ir, _consumption, _pred_rate_y = fit_data(train_x, train_cons_y, train_rate_y)
+        _models, _pred_vals, _sc, _ir, _consumption, _pred_rate_y, _x_train = fit_data(train_x, train_cons_y, train_rate_y)
 
-        _train_metrics = calculate_metrics(_consumption['cons_pred'].to_numpy(), train_cons_y, train_rate_y, _consumption, _models, train_x, train_rate_y)
+        _train_metrics = calculate_metrics(_consumption['cons_pred'].to_numpy(), train_cons_y.loc[:, 'cons_ppp17'], _pred_rate_y, _consumption, _models, _x_train, train_rate_y)
 
         _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _models, _ir)
 
