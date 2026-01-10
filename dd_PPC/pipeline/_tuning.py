@@ -1,5 +1,6 @@
 __all__ = ['validation_plot_parameters']
 
+from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,16 +13,16 @@ def validation_plot_parameters(model_name: str):
 
     # Validation curve - NO fit_params!
     for k, v in _cv_params.items():
-        print(f'\nProcessing parameter: {k}')
 
         _train_scores, _valid_scores = [], []
         for _val_i, _val in enumerate(v, start=1):
-            print(f'\nProcessing value: {_val_i}/{len(v)}')
+            print(f'\nProcessing parameter: {k} {_val_i}/{len(v)}')
             _params = _model_params.copy()
             _params[k] = _val
             _train_scores_per_survey_group, _valid_scores_per_survey_group = fit_and_test_model(model_names=[model_name], model_params=_params, display_result=False)
             _train_scores.append([_scores[_scoring] for _scores in _train_scores_per_survey_group])
             _valid_scores.append([_scores[_scoring] for _scores in _valid_scores_per_survey_group])
+            clear_output(wait=True)
 
         _train_scores = np.array(_train_scores)
         _valid_scores = np.array(_valid_scores)
