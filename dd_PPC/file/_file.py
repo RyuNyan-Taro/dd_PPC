@@ -90,9 +90,9 @@ def load_best_params(model_name: str, params_file: str = None) -> dict:
 
     try:
         params = joblib.load(params_file)
-        print(f"Loaded parameters from {params_file}")
-        print(f"Parameters: {params}")
+
         return params.best_params
+
     except Exception as e:
         raise RuntimeError(f"Error loading parameters: {e}")
 
