@@ -28,12 +28,12 @@ def fit_and_test_model(
 
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
-        x_train, sc, _ = preprocess_data(train_x_)
+        x_train, sc, _cat_cols = preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         models, pred_vals = [], []
         for _model in model_names:
-            _one_models, _one_pred_vals = _modeling_with_some_seeds(_model, model_params, x_train, _y_train, boxcox_lambda, seed_list=seed_list)
+            _one_models, _one_pred_vals = _modeling_with_some_seeds(_model, model_params, x_train, _y_train, boxcox_lambda, seed_list=seed_list, category_columns=_cat_cols)
             models.extend(_one_models)
             pred_vals.extend(_one_pred_vals)
 
@@ -185,7 +185,7 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
     return calc.apply_boxcox_transform(targets.loc[:, 'cons_ppp17'], boxcox_lambda)[0]
 
 
-def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_train, y_train, boxcox_lambda: float, seed_list: list[int] | None = None) -> tuple[list, list[np.ndarray]]:
+def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_train, y_train, boxcox_lambda: float, seed_list: list[int] | None = None, category_columns: list[str] | None = None) -> tuple[list, list[np.ndarray]]:
 
     if seed_list is None:
         random.seed(0)
@@ -195,6 +195,8 @@ def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_trai
         seed_list = [123]
 
     model_with_preds = [
+        getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params, categorical_cols=category_columns)
+        if model_name == 'lightgbm' else
         getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params)
         for _seed in tqdm(seed_list, desc=f'{model_name}: modeling with some seeds')
     ]
