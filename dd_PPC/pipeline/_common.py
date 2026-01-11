@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn.isotonic import IsotonicRegression
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
+import category_encoders as ce
 
 from .. import file, preprocess, model, data, calc
 
@@ -28,7 +29,7 @@ def fit_and_test_model(
 
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
-        x_train, sc, _cat_cols = preprocess_data(train_x_, train_cons_y_.cons_ppp17.to_numpy())
+        x_train, sc, _cat_cols, te = preprocess_data(train_x_, train_cons_y_.cons_ppp17.to_numpy())
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         models, pred_vals = [], []
@@ -48,12 +49,12 @@ def fit_and_test_model(
 
         print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, pred_rate_y))
 
-        return models, pred_vals, sc, ir, consumption, pred_rate_y, x_train
+        return models, pred_vals, sc, ir, consumption, pred_rate_y, x_train, te
 
 
-    def pred_data(test_x_, test_cons_y_, train_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
+    def pred_data(test_x_, test_cons_y_, train_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression, te: ce.TargetEncoder):
 
-        x_test, *_ = preprocess_data(test_x_, train_cons_y_.cons_ppp17.to_numpy(), sc)
+        x_test, *_ = preprocess_data(test_x_, train_cons_y_.cons_ppp17.to_numpy(), sc, te)
         pred_cons_ys = _fitting_with_some_models(models, x_test, boxcox_lambda)
 
         pred_cons_y = np.mean(pred_cons_ys, axis=0)
@@ -106,11 +107,11 @@ def fit_and_test_model(
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
-        _models, _pred_vals, _sc, _ir, _consumption, _pred_rate_y, _x_train = fit_data(train_x, train_cons_y, train_rate_y)
+        _models, _pred_vals, _sc, _ir, _consumption, _pred_rate_y, _x_train, _te = fit_data(train_x, train_cons_y, train_rate_y)
 
         _train_metrics = calculate_metrics(_consumption['cons_pred'].to_numpy(), train_cons_y.loc[:, 'cons_ppp17'], _pred_rate_y, _consumption, _models, _x_train, train_rate_y)
 
-        _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, train_cons_y, _sc, _models, _ir)
+        _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, train_cons_y, _sc, _models, _ir, _te)
 
         _test_metrics = calculate_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
 
@@ -170,13 +171,13 @@ def pred_models(fit_models: list, sc: StandardScaler) -> np.ndarray:
     return np.mean([_fit_model.predict(_datas) for _fit_model in fit_models], axis=0)
 
 
-def preprocess_data(datas: pd.DataFrame, targets: np.ndarray, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
+def preprocess_data(datas: pd.DataFrame, targets: np.ndarray, sc: StandardScaler | None = None, te: ce.TargetEncoder | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str], ce.TargetEncoder]:
     _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas, sc)
-    _datas_category = preprocess.encoding_category_dataframe(datas, targets)
+    _datas_category, te = preprocess.encoding_category_dataframe(datas, targets, te)
 
     category_cols = _datas_category.columns
 
-    return pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1), sc, list(category_cols)
+    return pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1), sc, list(category_cols), te
 
 
 def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = None) -> pd.DataFrame:
