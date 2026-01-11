@@ -18,6 +18,9 @@ from sklearn.isotonic import IsotonicRegression
 import lightgbm as lgb
 import xgboost as xgb
 
+from .. import file
+
+
 def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, seed: int = 42) -> tuple[RandomForestRegressor, np.ndarray]:
     _verbose = 2 if show_fit_process else 0
 
@@ -31,13 +34,21 @@ def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, seed:
 
 def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] = None, params: dict | None = None) -> tuple[lgb.LGBMRegressor, np.ndarray]:
     if params is None:
-        params = dict(
-            verbose=-1,
-            n_estimators=3000,
-            force_row_wise=True,
-            bagging_fraction=0.8,
-            bagging_freq=5
-        )
+        # params = dict(
+        #     verbose=-1,
+        #     n_estimators=3000,
+        #     force_row_wise=True,
+        #     bagging_fraction=0.8,
+        #     bagging_freq=5
+        # )
+        print('loaded params:', params)
+
+        params = file.load_best_params('lightgbm')
+        params['objective'] = 'regression'
+        params['metric'] = 'rmse'
+        params['verbose'] = -1
+        print('modified params:', params)
+
     params['random_state'] = seed
 
     model = lgb.LGBMRegressor(**params)
@@ -51,10 +62,18 @@ def fit_lightgbm(x_train, y_train, seed: int = 42, categorical_cols: list[str] =
 
 def fit_xgboost(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[xgb.XGBRegressor, np.ndarray]:
     if params is None:
-        params = dict(
-            n_estimators=200,
-            subsample=0.8
-        )
+        # params = dict(
+        #     n_estimators=200,
+        #     subsample=0.8
+        # )
+        params = file.load_best_params('xgboost')
+        print('loaded params:', params)
+
+        params['objective'] = 'reg:squarederror'
+        params['eval_metric'] = 'rmse'
+        params['verbose'] = False
+        print('modified params:', params)
+
     params['random_state'] = seed
 
     model = xgb.XGBRegressor(**params)
@@ -68,13 +87,20 @@ def fit_xgboost(x_train, y_train, seed: int = 42, params: dict | None = None) ->
 
 def fit_catboost(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[CatBoost, Any]:
     if params is None:
-        params = dict(
-            iterations=1100,
-            learning_rate=0.03,
-            depth=6,
-            loss_function='RMSE',
-            verbose=0
-        )
+        # params = dict(
+        #     iterations=1100,
+        #     learning_rate=0.03,
+        #     depth=6,
+        #     loss_function='RMSE',
+        #     verbose=0
+        # )
+        params = file.load_best_params('catboost')
+
+        print('loaded params:', params)
+        params['verbose'] = 0
+        params['loss_function'] = 'RMSE'
+        print('modified params:', params)
+
     params['random_state'] = seed
 
     model = catboost.CatBoostRegressor(**params)
