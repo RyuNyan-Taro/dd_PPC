@@ -73,7 +73,7 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
     return x_train
 
 
-def encoding_category_dataframe(train: pd.DataFrame, targets: np.ndarray, te: ce.TargetEncoder | None = None) -> tuple[pd.DataFrame, ce.TargetEncoder]:
+def encoding_category_dataframe(train: pd.DataFrame, targets: np.ndarray) -> pd.DataFrame:
     """
     Encodes categorical columns in the input DataFrame by converting specific category values into
     binary indicators.
@@ -81,16 +81,15 @@ def encoding_category_dataframe(train: pd.DataFrame, targets: np.ndarray, te: ce
     Args:
         train: The training data.
         targets: The target values for target encoding.
-        te: TargetEncoder instance for target encoding. If None, a new instance is created.
 
     Returns:
         pd.DataFrame: New DataFrame containing binary-encoded values for the specified
             categorical columns.
     """
 
-    x_train, _columns, te = _category_encoding(train, targets, te)
+    x_train, _columns = _category_encoding(train, targets)
 
-    return pd.DataFrame(x_train, columns=_columns), te
+    return pd.DataFrame(x_train, columns=_columns)
 
 
 def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -124,7 +123,7 @@ def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, co
     return train_encoded[cols], test_encoded[cols]
 
 
-def _category_encoding(train: pd.DataFrame, targets: np.ndarray, encoder: ce.TargetEncoder | None = None) -> tuple[np.ndarray, list[str], ce.TargetEncoder]:
+def _category_encoding(train: pd.DataFrame, targets: np.ndarray) -> tuple[np.ndarray, list[str]]:
 
     _access_or_not = {'Access': 1, 'No access': 0}
     _already_number = {0: 0, 1: 1}
@@ -248,31 +247,15 @@ def _category_encoding(train: pd.DataFrame, targets: np.ndarray, encoder: ce.Tar
                                   index=x_train.index).astype(int)
 
 
+    _encoder = ce.TargetEncoder()
     _some_category_cols = [_key for _key, _values in _category_number_maps.items() if len(_values.keys()) > 2]
-    _decoders = {
-        _col: {_val: _key for _key, _val in _category_number_maps[_col].items()} for _col in _some_category_cols
-    }
-    _decodes = pd.concat([x_train[_col].map(_decoder) for _col, _decoder in _decoders.items()], axis=1)
 
-    _initialized_encoder = False
-    if encoder is None:
-        encoder = ce.TargetEncoder(cols=_some_category_cols)
-        _initialized_encoder = True
+    for _col in tqdm.tqdm(_some_category_cols, desc='target encoding'):
+        _decoder = {_val: _key for _key, _val in _category_number_maps[_col].items()}
+        _decoded = x_train[_col].map(_decoder)
+        x_train[_col] = _encoder.fit_transform(_decoded, targets)
 
-    if _initialized_encoder:
-            x_train[_some_category_cols] = encoder.fit_transform(_decodes, targets)
-    else:
-
-        print('transforming:')
-        print(_decodes.head())
-        x_train[_some_category_cols] = encoder.transform(_decodes)
-        print('finished transforming:')
-
-    for _col in _some_category_cols:
-        print(x_train[_col].value_counts())
-
-
-    return x_train[category_cols].to_numpy(), category_cols, encoder
+    return x_train[category_cols].to_numpy(), category_cols
 
 
 def create_new_features_array(df: pd.DataFrame) -> np.ndarray:
