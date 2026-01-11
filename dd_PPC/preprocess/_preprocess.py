@@ -10,7 +10,6 @@ __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','e
 import numpy as np
 import pandas as pd
 import tqdm
-import category_encoders as ce
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
@@ -73,21 +72,20 @@ def encoding_category(train: pd.DataFrame) -> np.ndarray:
     return x_train
 
 
-def encoding_category_dataframe(train: pd.DataFrame, targets: np.ndarray) -> pd.DataFrame:
+def encoding_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     """
     Encodes categorical columns in the input DataFrame by converting specific category values into
     binary indicators.
 
     Args:
         train: The training data.
-        targets: The target values for target encoding.
 
     Returns:
         pd.DataFrame: New DataFrame containing binary-encoded values for the specified
             categorical columns.
     """
 
-    x_train, _columns = _category_encoding(train, targets)
+    x_train, _columns = _category_encoding(train)
 
     return pd.DataFrame(x_train, columns=_columns)
 
@@ -123,7 +121,7 @@ def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, co
     return train_encoded[cols], test_encoded[cols]
 
 
-def _category_encoding(train: pd.DataFrame, targets: np.ndarray) -> tuple[np.ndarray, list[str]]:
+def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
     _access_or_not = {'Access': 1, 'No access': 0}
     _already_number = {0: 0, 1: 1}
@@ -245,12 +243,6 @@ def _category_encoding(train: pd.DataFrame, targets: np.ndarray) -> tuple[np.nda
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
         x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()),
                                   index=x_train.index).astype(int)
-
-    _some_category_cols = [_key for _key, _values in _category_number_maps.items() if len(_values.key()) > 2]
-
-    _encoder = ce.TargetEncoder()
-    for _col in tqdm.tqdm(_some_category_cols, desc='target encoding'):
-        x_train[_col] = _encoder.fit_transform(x_train[_col], targets)
 
     return x_train[category_cols].to_numpy(), category_cols
 
