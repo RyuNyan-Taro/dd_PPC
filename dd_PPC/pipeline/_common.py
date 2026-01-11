@@ -51,9 +51,9 @@ def fit_and_test_model(
         return models, pred_vals, sc, ir, consumption, pred_rate_y, x_train
 
 
-    def pred_data(test_x_, test_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
+    def pred_data(test_x_, test_cons_y_, train_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
 
-        x_test, *_ = preprocess_data(test_x_, sc)
+        x_test, *_ = preprocess_data(test_x_, train_cons_y_, sc)
         pred_cons_ys = _fitting_with_some_models(models, x_test, boxcox_lambda)
 
         pred_cons_y = np.mean(pred_cons_ys, axis=0)
@@ -110,7 +110,7 @@ def fit_and_test_model(
 
         _train_metrics = calculate_metrics(_consumption['cons_pred'].to_numpy(), train_cons_y.loc[:, 'cons_ppp17'], _pred_rate_y, _consumption, _models, _x_train, train_rate_y)
 
-        _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _models, _ir)
+        _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, train_cons_y, _sc, _models, _ir)
 
         _test_metrics = calculate_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
 
@@ -132,7 +132,7 @@ def fit_and_predictions_model(model_names: list[str], folder_prefix: str | None 
     _datas = file.get_datas()
 
     # learning
-    _x_train, _sc, _cat_cols = preprocess_data(_datas['train'])
+    _x_train, _sc, _cat_cols = preprocess_data(_datas['train'], _datas['target_consumption'])
     _y_train = _get_modified_target(_datas['target_consumption'])
 
     _models, pred_vals = [], []
@@ -162,7 +162,7 @@ def pred_models(fit_models: list, sc: StandardScaler) -> np.ndarray:
     _datas = file.get_datas()
 
     _datas_std, _ = preprocess.standardized_with_numbers_dataframe(_datas['test'], sc)
-    _datas_category = preprocess.encoding_category_dataframe(_datas['test'])
+    _datas_category = preprocess.encoding_category_dataframe(_datas['test'], _datas['target_consumption'])
 
     _datas = pd.concat([_datas_std, _datas_category], axis=1)
 
