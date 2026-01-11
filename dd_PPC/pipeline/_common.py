@@ -1,4 +1,4 @@
-__all__ = ['fit_and_predictions_model', 'pred_model', 'fit_and_test_model']
+__all__ = ['fit_and_predictions_model', 'pred_model', 'fit_and_test_model', 'preprocess_data']
 
 import random
 
@@ -14,7 +14,13 @@ from .. import file, preprocess, model, data, calc
 _GLOBAL_LAMBDA = 0.09
 
 
-def fit_and_test_model(model_names: list[str], model_params: dict | None = None, boxcox_lambda: float | None = None):
+def fit_and_test_model(
+        model_names: list[str],
+        model_params: dict | None = None,
+        boxcox_lambda: float | None = None,
+        seed_list: list[int] | None = None,
+        display_result: bool = True,
+) -> tuple[list[dict[str, float]], list[dict[str, float]]]:
     """Fits and tests the selected_model; evaluates competition score"""
 
     if boxcox_lambda is None:
@@ -22,12 +28,12 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
 
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
-        _x_train, sc, _ = _preprocess_data(train_x_)
+        x_train, sc, _cat_cols = preprocess_data(train_x_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         models, pred_vals = [], []
         for _model in model_names:
-            _one_models, _one_pred_vals = _modeling_with_some_seeds(_model, model_params, _x_train, _y_train, boxcox_lambda)
+            _one_models, _one_pred_vals = _modeling_with_some_seeds(_model, model_params, x_train, _y_train, boxcox_lambda, seed_list=seed_list, category_columns=_cat_cols)
             models.extend(_one_models)
             pred_vals.extend(_one_pred_vals)
 
@@ -38,16 +44,16 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
 
         ir = model.fit_isotonic_regression(pred_rate_y, train_rate_y_)
 
-        _transformed_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
+        pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
 
-        print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, _transformed_rate_y))
+        print('train comp score:', calc.weighted_average_of_consumption_and_poverty_rate(consumption, train_rate_y_, pred_rate_y))
 
-        return models, pred_vals, sc, ir
+        return models, pred_vals, sc, ir, consumption, pred_rate_y, x_train
 
 
     def pred_data(test_x_, test_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
 
-        x_test, *_ = _preprocess_data(test_x_, sc)
+        x_test, *_ = preprocess_data(test_x_, sc)
         pred_cons_ys = _fitting_with_some_models(models, x_test, boxcox_lambda)
 
         pred_cons_y = np.mean(pred_cons_ys, axis=0)
@@ -63,11 +69,11 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
 
         return x_test, y_test, consumption, pred_cons_y, pred_rate_y
 
-    def calculate_metrics(pred_cons_y, y_test, pred_rate_y, consumption, models: list, x_test, test_rate_y_) -> dict[str, float]:
-        rmse = np.sqrt(np.mean((pred_cons_y - y_test) ** 2))
-        mae = np.mean(np.abs(pred_cons_y - y_test))
-        r2 = np.mean([_lb.score(x_test, y_test) for _lb in models])
-        competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, test_rate_y_)
+    def calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, models: list, X, target_rate_y) -> dict[str, float]:
+        rmse = np.sqrt(np.mean((pred_cons_y - y) ** 2))
+        mae = np.mean(np.abs(pred_cons_y - y))
+        r2 = np.mean([_lb.score(X, y) for _lb in models])
+        competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, target_rate_y)
 
         return dict(
             rmse=rmse,
@@ -76,9 +82,9 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
             competition_score=competition_score
         )
 
-    def show_metrics(scores: list[dict[str, float]]):
+    def show_metrics(scores_: list[dict[str, float]]):
 
-        _scores_df = pd.DataFrame(scores)
+        _scores_df = pd.DataFrame(scores_)
         print('\ntotal_score\n-----------')
         print(_scores_df.mean(axis=0))
         print('\nstd_score\n----------')
@@ -87,7 +93,8 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
         print(_scores_df)
 
     _datas = file.get_datas()
-    _scores = []
+    train_scores = []
+    test_scores = []
 
     _k_fold_test_ids = [100000, 200000, 300000]
 
@@ -99,42 +106,48 @@ def fit_and_test_model(model_names: list[str], model_params: dict | None = None,
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
-        _models, _pred_vals, _sc, _ir = fit_data(train_x, train_cons_y, train_rate_y)
+        _models, _pred_vals, _sc, _ir, _consumption, _pred_rate_y, _x_train = fit_data(train_x, train_cons_y, train_rate_y)
+
+        _train_metrics = calculate_metrics(_consumption['cons_pred'].to_numpy(), train_cons_y.loc[:, 'cons_ppp17'], _pred_rate_y, _consumption, _models, _x_train, train_rate_y)
 
         _x_test, _y_test, _consumption, _pred_cons_y, _pred_rate_y = pred_data(test_x, test_cons_y, _sc, _models, _ir)
 
-        _metrics = calculate_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
+        _test_metrics = calculate_metrics(_pred_cons_y, _y_test, _pred_rate_y, _consumption, _models, _x_test, test_rate_y)
 
-        _metrics['test_survey_ids'] = _id
+        _train_metrics['survey_ids'] = set(_k_fold_test_ids) - {_id}
+        _test_metrics['survey_ids'] = _id
 
-        _scores.append(_metrics)
+        train_scores.append(_train_metrics)
+        test_scores.append(_test_metrics)
 
-    show_metrics(_scores)
+    if display_result:
+        show_metrics(test_scores)
+
+    return train_scores, test_scores
 
 
-def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
+def fit_and_predictions_model(model_names: list[str], folder_prefix: str | None = None):
     """Fits the model; predicts consumption; saves the submission format"""
 
     _datas = file.get_datas()
 
     # learning
-    _x_train, _sc, _cat_cols = _preprocess_data(_datas['train'])
+    _x_train, _sc, _cat_cols = preprocess_data(_datas['train'])
     _y_train = _get_modified_target(_datas['target_consumption'])
 
-    if model_name == 'lightgbm':
-        _model, _cons_pred = getattr(model, f'fit_{model_name}')(_x_train, _y_train, categorical_cols=_cat_cols)
-    else:
-        _model, _cons_pred = getattr(model, f'fit_{model_name}')(_x_train, _y_train)
-
-    _cons_pred = calc.inverse_boxcox_transform(_cons_pred, _GLOBAL_LAMBDA)
+    _models, pred_vals = [], []
+    for _model in model_names:
+        _one_models, _one_pred_vals = _modeling_with_some_seeds(model_name=_model, model_params=None, x_train=_x_train, y_train=_y_train, boxcox_lambda=_GLOBAL_LAMBDA, category_columns=_cat_cols)
+        _models.extend(_one_models)
+        pred_vals.extend(_one_pred_vals)
 
     _consumption = _datas['target_consumption']
-    _consumption['cons_pred'] = _cons_pred
+    _consumption['cons_pred'] = np.mean(pred_vals, axis=0)
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
     ir = model.fit_isotonic_regression(pred_rate_y, _datas['target_rate'])
 
     # prediction
-    _predicted_coxbox = pred_model(_model, _sc)
+    _predicted_coxbox = pred_models(_models, _sc)
     _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, _GLOBAL_LAMBDA)
 
     _consumption, _ = file.get_submission_formats('../results')
@@ -145,16 +158,19 @@ def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
     file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)
 
 
-def pred_model(fit_model, sc: StandardScaler) -> np.ndarray:
+def pred_models(fit_models: list, sc: StandardScaler) -> np.ndarray:
     _datas = file.get_datas()
 
     _datas_std, _ = preprocess.standardized_with_numbers_dataframe(_datas['test'], sc)
     _datas_category = preprocess.encoding_category_dataframe(_datas['test'])
 
-    return fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
+    _datas = pd.concat([_datas_std, _datas_category], axis=1)
 
 
-def _preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
+    return np.mean([_fit_model.predict(_datas) for _fit_model in fit_models], axis=0)
+
+
+def preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
     _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas, sc)
     _datas_category = preprocess.encoding_category_dataframe(datas)
 
@@ -171,13 +187,18 @@ def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = No
     return calc.apply_boxcox_transform(targets.loc[:, 'cons_ppp17'], boxcox_lambda)[0]
 
 
-def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_train, y_train, boxcox_lambda: float) -> tuple[list, list[np.ndarray]]:
-    random.seed(0)
-    _seeds_length = 2
+def _modeling_with_some_seeds(model_name: str, model_params: dict | None, x_train, y_train, boxcox_lambda: float, seed_list: list[int] | None = None, category_columns: list[str] | None = None) -> tuple[list, list[np.ndarray]]:
 
-    seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
-    # seed_list = [123]
+    if seed_list is None:
+        random.seed(0)
+        _seeds_length = 2
+
+        # seed_list = [123] + random.sample(range(1, 1000), _seeds_length)
+        seed_list = [123]
+
     model_with_preds = [
+        getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params, categorical_cols=category_columns)
+        if model_name == 'lightgbm' else
         getattr(model, f'fit_{model_name}')(x_train, y_train, seed=_seed, params=model_params)
         for _seed in tqdm(seed_list, desc=f'{model_name}: modeling with some seeds')
     ]
