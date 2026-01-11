@@ -52,7 +52,7 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - model ansamble
   - 5.524771423370167 (xgboost) -> 4.996441241862218 (xgboost, lightgbm and catboost)
 - hyper parameter tuning
-  - 8.582353 (ansamble and k-fold mean) -> 6.990600 (xgboost, lightgbm and catboost)
+  - 8.582353 (ensemble and k-fold mean) -> 6.990600 (xgboost, lightgbm and catboost)
   - Not used some seeds: some seeds are not good for reducing the score.
 - Target encoding
   - It was very worse the score (37.428473)
