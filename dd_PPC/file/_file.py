@@ -80,7 +80,7 @@ def load_best_params(model_name: str, params_file: str = None) -> dict:
     """
 
     if params_file is None:
-        params_file = f'../models/best_params_{model_name}.pkl'
+        params_file = f'../models/optuna_study_{model_name}.pkl'
 
     if not os.path.exists(params_file):
         raise FileNotFoundError(
