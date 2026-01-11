@@ -28,7 +28,7 @@ def fit_and_test_model(
 
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
-        x_train, sc, _cat_cols = preprocess_data(train_x_)
+        x_train, sc, _cat_cols = preprocess_data(train_x_, train_cons_y_)
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         models, pred_vals = [], []
@@ -170,9 +170,9 @@ def pred_models(fit_models: list, sc: StandardScaler) -> np.ndarray:
     return np.mean([_fit_model.predict(_datas) for _fit_model in fit_models], axis=0)
 
 
-def preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
+def preprocess_data(datas: pd.DataFrame, targets: np.ndarray, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
     _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas, sc)
-    _datas_category = preprocess.encoding_category_dataframe(datas)
+    _datas_category = preprocess.encoding_category_dataframe(datas, targets)
 
     category_cols = _datas_category.columns
 
