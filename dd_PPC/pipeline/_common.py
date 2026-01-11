@@ -126,7 +126,7 @@ def fit_and_test_model(
     return train_scores, test_scores
 
 
-def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
+def fit_and_predictions_model(model_names: list[str], folder_prefix: str | None = None):
     """Fits the model; predicts consumption; saves the submission format"""
 
     _datas = file.get_datas()
@@ -135,20 +135,19 @@ def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
     _x_train, _sc, _cat_cols = preprocess_data(_datas['train'])
     _y_train = _get_modified_target(_datas['target_consumption'])
 
-    if model_name == 'lightgbm':
-        _model, _cons_pred = getattr(model, f'fit_{model_name}')(_x_train, _y_train, categorical_cols=_cat_cols)
-    else:
-        _model, _cons_pred = getattr(model, f'fit_{model_name}')(_x_train, _y_train)
-
-    _cons_pred = calc.inverse_boxcox_transform(_cons_pred, _GLOBAL_LAMBDA)
+    _models, pred_vals = [], []
+    for _model in model_names:
+        _one_models, _one_pred_vals = _modeling_with_some_seeds(model_name=_model, model_params=None, x_train=_x_train, y_train=_y_train, boxcox_lambda=_GLOBAL_LAMBDA, category_columns=_cat_cols)
+        _models.extend(_one_models)
+        pred_vals.extend(_one_pred_vals)
 
     _consumption = _datas['target_consumption']
-    _consumption['cons_pred'] = _cons_pred
+    _consumption['cons_pred'] = np.mean(pred_vals, axis=0)
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
     ir = model.fit_isotonic_regression(pred_rate_y, _datas['target_rate'])
 
     # prediction
-    _predicted_coxbox = pred_model(_model, _sc)
+    _predicted_coxbox = pred_models(_models, _sc)
     _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, _GLOBAL_LAMBDA)
 
     _consumption, _ = file.get_submission_formats('../results')
@@ -159,13 +158,16 @@ def fit_and_predictions_model(model_name, folder_prefix: str | None = None):
     file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)
 
 
-def pred_model(fit_model, sc: StandardScaler) -> np.ndarray:
+def pred_models(fit_models: list, sc: StandardScaler) -> np.ndarray:
     _datas = file.get_datas()
 
     _datas_std, _ = preprocess.standardized_with_numbers_dataframe(_datas['test'], sc)
     _datas_category = preprocess.encoding_category_dataframe(_datas['test'])
 
-    return fit_model.predict(pd.concat([_datas_std, _datas_category], axis=1))
+    _datas = pd.concat([_datas_std, _datas_category], axis=1)
+
+
+    return np.mean([_fit_model.predict(_datas) for _fit_model in fit_models], axis=0)
 
 
 def preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str]]:
