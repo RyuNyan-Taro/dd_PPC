@@ -1,4 +1,4 @@
-__all__ = ['fit_and_predictions_model', 'pred_model', 'fit_and_test_model', 'preprocess_data']
+__all__ = ['fit_and_predictions_model', 'pred_models', 'fit_and_test_model', 'preprocess_data']
 
 import random
 
