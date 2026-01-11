@@ -28,7 +28,7 @@ def fit_and_test_model(
 
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
-        x_train, sc, _cat_cols = preprocess_data(train_x_, train_cons_y_)
+        x_train, sc, _cat_cols = preprocess_data(train_x_, train_cons_y_.cons_ppp17.to_numpy())
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         models, pred_vals = [], []
@@ -53,7 +53,7 @@ def fit_and_test_model(
 
     def pred_data(test_x_, test_cons_y_, train_cons_y_, sc: StandardScaler, models: list, ir: IsotonicRegression):
 
-        x_test, *_ = preprocess_data(test_x_, train_cons_y_, sc)
+        x_test, *_ = preprocess_data(test_x_, train_cons_y_.cons_ppp17.to_numpy(), sc)
         pred_cons_ys = _fitting_with_some_models(models, x_test, boxcox_lambda)
 
         pred_cons_y = np.mean(pred_cons_ys, axis=0)
