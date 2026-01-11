@@ -172,16 +172,12 @@ def pred_models(fit_models: list, sc: StandardScaler) -> np.ndarray:
 
 
 def preprocess_data(datas: pd.DataFrame, targets: np.ndarray, sc: StandardScaler | None = None, te: ce.TargetEncoder | None = None) -> tuple[pd.DataFrame, StandardScaler, list[str], ce.TargetEncoder]:
-    _datas = datas.copy().reset_index(drop=True)
-    _encoded_cat_cols = ['water_source', 'sanitation_source', 'dweltyp', 'educ_max', 'sector1d']
+    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas, sc)
+    _datas_category, te = preprocess.encoding_category_dataframe(datas, targets, te)
 
-    _datas_category, te = preprocess.encoding_category_dataframe(_datas, targets, te)
-    _datas = pd.concat([_datas.drop(columns=_encoded_cat_cols), _datas_category[_encoded_cat_cols]], axis=1)
-    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(_datas, sc)
+    category_cols = _datas_category.columns
 
-    category_cols = set(_datas_category.columns) - set(_encoded_cat_cols)
-
-    return pd.concat([_datas_std.reset_index(drop=True), _datas_category.drop(columns=_encoded_cat_cols).reset_index(drop=True)], axis=1), sc, list(category_cols), te
+    return pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1), sc, list(category_cols), te
 
 
 def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = None) -> pd.DataFrame:
