@@ -1,6 +1,7 @@
-__all__ = ['get_datas', 'save_to_submission_format', 'get_submission_formats']
+__all__ = ['get_datas', 'save_to_submission_format', 'get_submission_formats', 'load_best_params']
 
 import os
+import joblib
 import datetime
 import numpy as np
 import pandas as pd
@@ -60,6 +61,40 @@ def get_submission_formats(dir_path) -> tuple[pd.DataFrame, pd.DataFrame]:
         dir_path + '/Poverty_Prediction_Challenge_-_Submission_format/predicted_poverty_distribution.csv')
 
     return consumption_format, poverty_distribution_format
+
+
+def load_best_params(model_name: str, params_file: str = None) -> dict:
+    """Load best parameters from a saved pickle file.
+
+    Args:
+        model_name: Name of the model ('xgboost', 'lightgbm', or 'catboost')
+        params_file: Path to the pickle file. If None, uses default path.
+
+    Returns:
+        Dictionary of model parameters
+
+    Example:
+        >>> params = load_best_params('xgboost')
+        >>> # Use with fit functions
+        >>> model, pred = fit_xgboost(x_train, y_train, params=params)
+    """
+
+    if params_file is None:
+        params_file = f'../models/best_params_{model_name}.pkl'
+
+    if not os.path.exists(params_file):
+        raise FileNotFoundError(
+            f"Parameter file not found: {params_file}\n"
+            f"Run tuning_model('{model_name}') first to generate the parameters."
+        )
+
+    try:
+        params = joblib.load(params_file)
+        print(f"Loaded parameters from {params_file}")
+        print(f"Parameters: {params}")
+        return params
+    except Exception as e:
+        raise RuntimeError(f"Error loading parameters: {e}")
 
 
 # internals for save_to_submission_format
