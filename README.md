@@ -54,6 +54,10 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - hyper parameter tuning
   - 8.582353 (ansamble and k-fold mean) -> 6.990600 (xgboost, lightgbm and catboost)
   - Not used some seeds: some seeds are not good for reducing the score.
+- Target encoding
+  - It was very worse the score (37.428473)
+  - Standardization is not good for the score
+- GroupKFold
 - AI next action
 1. Robust Feature Engineering (Survey-Level Aggregates)
 Poverty is often relative to the local community. Your current model mostly looks at individual households. Creating features that compare a household to its neighbors (same survey_id) can be very powerful.
