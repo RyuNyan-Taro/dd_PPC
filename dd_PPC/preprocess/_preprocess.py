@@ -246,7 +246,7 @@ def _category_encoding(train: pd.DataFrame, targets: np.ndarray) -> tuple[np.nda
         x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()),
                                   index=x_train.index).astype(int)
 
-    _some_category_cols = [_key for _key, _values in _category_number_maps.items() if len(_values.keys()) > 2]
+    _some_category_cols = [_key for _key, _values in _category_number_maps.items() if len(_values.key()) > 2]
 
     _encoder = ce.TargetEncoder()
     for _col in tqdm.tqdm(_some_category_cols, desc='target encoding'):
