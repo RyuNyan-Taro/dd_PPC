@@ -85,10 +85,10 @@ def fit_and_test_pipeline():
             Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
         ('knn', Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(n_neighbors=20))])),
-        # (
-        #     'lasso',
-        #     Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
-        # ),
+        (
+            'lasso',
+            Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
+        ),
         (
             'clf_low',
             Pipeline([('prep', preprocessor), (
@@ -103,13 +103,13 @@ def fit_and_test_pipeline():
                                            boxcox_threshold=get_bc_threshold(9.87, boxcox_lambda))
             )])
         ),
-        (
-            'clf_high',
-            Pipeline([('prep', preprocessor), (
-                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-                                           boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
-            )])
-        ),
+        # (
+        #     'clf_high',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
+        #     )])
+        # ),
         (
             'clf_very_high',
             Pipeline([('prep', preprocessor), (
@@ -121,8 +121,8 @@ def fit_and_test_pipeline():
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
-        # final_estimator=Ridge(random_state=123, max_iter=10000),
-        final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
+        final_estimator=Ridge(random_state=123, max_iter=10000),
+        # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
         n_jobs=-1

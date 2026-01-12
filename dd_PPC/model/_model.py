@@ -5,6 +5,7 @@ __all__ = [
     'fit_catboost',
     'fit_ridge',
     'fit_lasso',
+    'fit_kneighbors',
     'fit_isotonic_regression',
     'transform_isotonic_regression'
 ]
@@ -20,6 +21,7 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import Ridge, Lasso
 import lightgbm as lgb
 import xgboost as xgb
+from sklearn.neighbors import KNeighborsRegressor
 
 from .. import file
 
@@ -117,6 +119,23 @@ def fit_lasso(x_train, y_train, seed: int = 42, params: dict | None = None) -> t
     pred_rid = pred_y.predict(x_train)
 
     return pred_y, pred_rid
+
+
+def fit_kneighbors(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[KNeighborsRegressor, np.ndarray]:
+    if params is None:
+        params = {}
+
+    params['random_state'] = seed
+
+    model = KNeighborsRegressor(**params)
+
+    pred_y = model.fit(x_train, y_train)
+
+    pred_rid = pred_y.predict(x_train)
+
+    return pred_y, pred_rid
+
+
 
 
 def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) -> IsotonicRegression:
