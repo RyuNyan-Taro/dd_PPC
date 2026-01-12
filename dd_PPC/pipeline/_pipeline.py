@@ -60,7 +60,13 @@ def fit_and_test_pipeline():
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
         final_estimator=Ridge(random_state=123),
-        n_jobs=-1
+        n_jobs=3
+    )
+
+    lgb_stacking_regressor = StackingRegressor(
+        estimators=model_pipelines,
+        final_estimator=lgb.LGBMRegressor(objective='regression', metric='rmse', verbose=-1, random_state=123),
+        n_jobs=3
     )
 
     _datas = file.get_datas()
@@ -98,12 +104,13 @@ def fit_and_test_pipeline():
 
         train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
         stacking_regressor.fit(train_x, train_y)
+        lgb_stacking_regressor.fit(train_x, train_y)
 
-        y_train_pred = stacking_regressor.predict(train_x)
-        y_test_pred = stacking_regressor.predict(test_x)
+        y_train_preds = [_regressor.predict(train_x) for _regressor in [stacking_regressor, lgb_stacking_regressor]]
+        y_test_preds = [_regressor.predict(test_x) for _regressor in [stacking_regressor, lgb_stacking_regressor]]
 
-        _y_train_mean_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
-        _y_test_mean_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
+        _y_train_mean_pred = np.mean([calc.inverse_boxcox_transform(_y_train_pred, boxcox_lambda) for _y_train_pred in y_train_preds], axis=0)
+        _y_test_mean_pred = np.mean([calc.inverse_boxcox_transform(_y_test_pred, boxcox_lambda) for _y_test_pred in y_test_preds], axis=0)
 
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
