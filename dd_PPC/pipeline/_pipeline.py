@@ -67,8 +67,7 @@ def fit_and_test_pipeline():
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
-        # final_estimator=Ridge(random_state=123),
-        final_estimator=catboost.CatBoostRegressor(**model_params['catboost']),
+        final_estimator=Ridge(random_state=123),
         n_jobs=-1
     )
 
