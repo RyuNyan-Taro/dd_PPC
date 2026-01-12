@@ -69,9 +69,9 @@ def fit_and_test_pipeline():
         (
             'lgb', Pipeline([('prep', preprocessor), ('model', lgb.LGBMRegressor(**model_params['lightgbm']))])
         ),
-        # (
-        #     'xgb', Pipeline([('prep', preprocessor), ('model', xgb.XGBRegressor(**model_params['xgboost']))])
-        # ),
+        (
+            'xgb', Pipeline([('prep', preprocessor), ('model', xgb.XGBRegressor(**model_params['xgboost']))])
+        ),
         (
             'catboost',
             Pipeline([('prep', preprocessor), ('model', catboost.CatBoostRegressor(**model_params['catboost']))])
@@ -80,10 +80,10 @@ def fit_and_test_pipeline():
             'ridge',
             Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
-        # (
-        #     'lasso',
-        #     Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
-        # ),
+        (
+            'lasso',
+            Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
+        ),
     ]
 
     stacking_regressor = StackingRegressor(
