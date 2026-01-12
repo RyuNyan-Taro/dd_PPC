@@ -4,7 +4,7 @@ __all__ = ['fit_and_test_pipeline']
 import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
-from sklearn.linear_model import Ridge, Lasso
+from sklearn.linear_model import Ridge, Lasso, HuberRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -67,7 +67,8 @@ def fit_and_test_pipeline():
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
-        final_estimator=Ridge(random_state=123, max_iter=10000),
+        # final_estimator=Ridge(random_state=123, max_iter=10000),
+        final_estimator=HuberRegressor(max_iter=10000),
         n_jobs=-1
     )
 
