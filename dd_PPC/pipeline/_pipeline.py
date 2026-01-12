@@ -68,6 +68,8 @@ def fit_and_test_pipeline():
     _k_fold_test_ids = [100000, 200000, 300000]
 
     for _i, _id in enumerate(_k_fold_test_ids):
+        print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
+
         train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
