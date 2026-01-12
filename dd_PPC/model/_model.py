@@ -91,7 +91,7 @@ def fit_catboost(x_train, y_train, seed: int = 42, params: dict | None = None) -
 
 def fit_ridge(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[Ridge, Any]:
     if params is None:
-        params = {}
+        params = file.load_best_params('ridge')
 
     params['random_state'] = seed
 
@@ -106,7 +106,7 @@ def fit_ridge(x_train, y_train, seed: int = 42, params: dict | None = None) -> t
 
 def fit_lasso(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[Ridge, Any]:
     if params is None:
-        params = {}
+        params = file.load_best_params('lasso')
 
     params['random_state'] = seed
 

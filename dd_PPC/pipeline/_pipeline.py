@@ -57,7 +57,7 @@ def fit_and_test_pipeline():
         ),
         (
             'ridge',
-            Pipeline([('prep', preprocessor), ('model', Ridge(random_state=123))])
+            Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
     ]
 
@@ -266,7 +266,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':
