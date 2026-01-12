@@ -68,7 +68,8 @@ def fit_and_test_pipeline():
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
         # final_estimator=Ridge(random_state=123, max_iter=10000),
-        final_estimator=HuberRegressor(max_iter=10000),
+        # final_estimator=HuberRegressor(random_state=123, max_iter=10000),
+        final_estimator=Lasso(**model_params['lasso']),
         n_jobs=-1
     )
 
