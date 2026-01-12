@@ -59,6 +59,10 @@ def fit_and_test_pipeline():
             'ridge',
             Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
+        (
+            'lasso',
+            Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['lasso']))])
+        ),
     ]
 
     stacking_regressor = StackingRegressor(
@@ -266,7 +270,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':
