@@ -55,6 +55,10 @@ def fit_and_test_pipeline():
             'catboost',
             Pipeline([('prep', preprocessor), ('model', catboost.CatBoostRegressor(**model_params['catboost']))])
         ),
+        (
+            'ridge',
+            Pipeline([('prep', preprocessor), ('model', Ridge(random_state=123))])
+        ),
     ]
 
     stacking_regressor = StackingRegressor(
