@@ -5,7 +5,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
-from sklearn.linear_model import Ridge, Lasso, HuberRegressor
+from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
@@ -83,6 +84,7 @@ def fit_and_test_pipeline():
             'ridge',
             Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
+        ('knn', Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(n_neighbors=20))])),
         # (
         #     'lasso',
         #     Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
@@ -108,6 +110,7 @@ def fit_and_test_pipeline():
         # final_estimator=Ridge(random_state=123, max_iter=10000),
         final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=Lasso(**model_params['lasso']),
+        # final_estimator=QuantileRegressor(quantile=0.5),
         n_jobs=-1
     )
 
