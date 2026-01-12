@@ -78,28 +78,7 @@ def fit_and_test_pipeline():
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
-        y_test_preds = []
-        y_train_preds = []
         set_config(transform_output="pandas")
-
-        # for name, pipeline in model_pipelines:
-        #     print(f"Training {name}...")
-        #     train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
-        #     pipeline.fit(train_x, train_y)
-        #
-        #     # Make predictions
-        #
-        #     y_train_pred = pipeline.predict(train_x)
-        #     y_train_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
-        #     y_train_preds.append(y_train_pred)
-        #
-        #     y_test_pred = pipeline.predict(test_x)
-        #     y_test_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
-        #     y_test_preds.append(y_test_pred)
-        #
-        # _y_train_mean_pred = np.mean(y_train_preds, axis=0)
-        # _y_test_mean_pred = np.mean(y_test_preds, axis=0)
-
         train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
         stacking_regressor.fit(train_x, train_y)
 
