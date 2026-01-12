@@ -42,8 +42,8 @@ def fit_and_test_pipeline():
             9.87, 10.70, 11.62, 12.69, 14.03, 15.64, 17.76, 20.99, 27.37
         ]
         for t in _poverty_thresholds:
-            plt.axvline(t / 100, color='green', linestyle=':', alpha=0.5)
-            plt.axhline(t / 100, color='green', linestyle=':', alpha=0.5)
+            plt.axvline(t, color='green', linestyle=':', alpha=0.5)
+            plt.axhline(t, color='green', linestyle=':', alpha=0.5)
 
         plt.xlabel('True Consumption')
         plt.ylabel('Predicted Consumption')
