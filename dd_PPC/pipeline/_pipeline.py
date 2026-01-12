@@ -2,6 +2,7 @@ __all__ = ['fit_and_test_pipeline']
 
 
 import numpy as np
+from matplotlib import pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor
@@ -29,6 +30,27 @@ def fit_and_test_pipeline():
             mae=mae,
             competition_score=competition_score
         )
+
+    def plot_model_bias(y_true, y_pred, model_name):
+        plt.figure(figsize=(8, 6))
+        plt.scatter(y_true, y_pred, alpha=0.3, s=10)
+        plt.plot([0, 50], [0, 50], '--', color='red')  # 理想線
+
+        # 指標で使われている重要な閾値（例: 3.17, 10.70, 27.37）を描画
+        _poverty_thresholds = [
+            3.17, 3.94, 4.60, 5.26, 5.88, 6.47, 7.06, 7.70, 8.40, 9.13,
+            9.87, 10.70, 11.62, 12.69, 14.03, 15.64, 17.76, 20.99, 27.37
+        ]
+        for t in _poverty_thresholds:
+            plt.axvline(t / 100, color='green', linestyle=':', alpha=0.5)
+            plt.axhline(t / 100, color='green', linestyle=':', alpha=0.5)
+
+        plt.xlabel('True Consumption')
+        plt.ylabel('Predicted Consumption')
+        plt.title(f'Bias Analysis: {model_name}')
+        plt.xlim(0, 50);
+        plt.ylim(0, 50)
+        plt.show()
 
     boxcox_lambda = 0.09
 
@@ -88,6 +110,44 @@ def fit_and_test_pipeline():
         train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
         stacking_regressor.fit(train_x, train_y)
 
+        # --- stacking_regressor.fit(train_x, train_y) の直後に追加 ---
+
+        # 1. 基底モデルの予測値(Box-Cox空間)を取得
+        # train_xに対するOOF予測ではなく、学習済みモデルによる単純予測が得られます
+        train_base_preds = stacking_regressor.transform(train_x)
+        test_base_preds = stacking_regressor.transform(test_x)
+
+        # 2. 各モデルの名前を取得
+        model_names = [name for name, _ in model_pipelines]
+
+        # 3. 逆Box-Cox変換して元の消費額スケールに戻す
+        # base_predsは (サンプル数, モデル数) の行列
+        train_base_cons = np.array([calc.inverse_boxcox_transform(train_base_preds[:, i], boxcox_lambda)
+                                    for i in range(len(model_names))]).T
+        test_base_cons = np.array([calc.inverse_boxcox_transform(test_base_preds[:, i], boxcox_lambda)
+                                   for i in range(len(model_names))]).T
+
+        # --- 分析用：各モデル単体での competition_score を計算 ---
+        for i, name in enumerate(model_names):
+            # 各モデル単体の消費額予測
+            m_test_cons = test_base_cons[:, i]
+
+            # 貧困率の算出と等単調回帰（ir）の適用
+            m_cons_df = test_cons_y.copy()
+            m_cons_df['cons_pred'] = m_test_cons
+            m_rate_y = calc.poverty_rates_from_consumption(m_cons_df, 'cons_pred')
+            m_rate_y_calibrated = model.transform_isotonic_regression(m_rate_y, ir)
+
+            m_metrics = calculate_metrics(m_test_cons, test_cons_y.cons_ppp17,
+                                          m_rate_y_calibrated, m_cons_df,
+                                          model_pipelines, test_x, test_rate_y)
+            print(f"  - Model [{name:>=10}]: Competition Score = {m_metrics['competition_score']:.4f}")
+
+        # fitの後に実行
+        weights = stacking_regressor.final_estimator_.coef_
+        for name, weight in zip(model_names, weights):
+            print(f"Model: {name}, Weight: {weight:.4f}")
+
         y_train_pred = stacking_regressor.predict(train_x)
         y_test_pred = stacking_regressor.predict(test_x)
 
@@ -114,6 +174,8 @@ def fit_and_test_pipeline():
 
         print(_train_metrics)
         print(_test_metrics)
+
+        plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
 
 
 class CustomCategoryMapper(BaseEstimator, TransformerMixin):
