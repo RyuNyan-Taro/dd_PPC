@@ -8,7 +8,7 @@ from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
 from sklearn import set_config
 import lightgbm as lgb
@@ -19,6 +19,9 @@ from .. import file, model, data, calc
 
 
 def fit_and_test_pipeline():
+
+    def get_bc_threshold(original_val, lam):
+        return calc.apply_boxcox_transform(np.array([original_val]), lam)[0][0]
 
     def calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, model_pipelines: list, X, target_rate_y) -> dict[str, float]:
         rmse = np.sqrt(np.mean((pred_cons_y - y) ** 2))
@@ -84,6 +87,10 @@ def fit_and_test_pipeline():
             'lasso',
             Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
         ),
+        (
+            'clf_low',
+            ClassifierWrapper(lgb.LGBMClassifier(), boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda))
+        )
     ]
 
     stacking_regressor = StackingRegressor(
@@ -178,6 +185,21 @@ class CustomCategoryMapper(BaseEstimator, TransformerMixin):
 
     def get_feature_names_out(self, input_features=None):
         return self.columns
+
+
+class ClassifierWrapper(BaseEstimator, RegressorMixin):
+    def __init__(self, classifier, boxcox_threshold=9.87):
+        self.classifier = classifier
+        self.threshold = boxcox_threshold
+
+    def fit(self, X, y):
+        y_bin = (y < self.threshold).astype(int)
+        self.classifier.fit(X, y_bin)
+        return self
+
+    def predict(self, X):
+
+        return self.classifier.predict_proba(X)[:, 1]
 
 
 def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
