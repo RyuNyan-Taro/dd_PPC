@@ -50,7 +50,7 @@ def fit_and_test_pipeline():
         plt.xlabel('True Consumption')
         plt.ylabel('Predicted Consumption')
         plt.title(f'Bias Analysis: {model_name}')
-        plt.xlim(0, 50);
+        plt.xlim(0, 50)
         plt.ylim(0, 50)
         plt.show()
 
@@ -92,6 +92,13 @@ def fit_and_test_pipeline():
             Pipeline([('prep', preprocessor), (
                 'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose = -1, force_row_wise=True),
                                            boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda))
+            )])
+        ),
+        (
+            'clf_middle',
+            Pipeline([('prep', preprocessor), (
+                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+                                           boxcox_threshold=get_bc_threshold(9.87, boxcox_lambda))
             )])
         )
     ]
