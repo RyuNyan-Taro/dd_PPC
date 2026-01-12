@@ -110,40 +110,8 @@ def fit_and_test_pipeline():
         train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
         stacking_regressor.fit(train_x, train_y)
 
-        # --- stacking_regressor.fit(train_x, train_y) の直後に追加 ---
-
-        # 1. 基底モデルの予測値(Box-Cox空間)を取得
-        # train_xに対するOOF予測ではなく、学習済みモデルによる単純予測が得られます
-        train_base_preds = stacking_regressor.transform(train_x)
-        test_base_preds = stacking_regressor.transform(test_x)
-
-        # 2. 各モデルの名前を取得
-        model_names = [name for name, _ in model_pipelines]
-
-        # 3. 逆Box-Cox変換して元の消費額スケールに戻す
-        # base_predsは (サンプル数, モデル数) の行列
-        train_base_cons = np.array([calc.inverse_boxcox_transform(train_base_preds[:, i], boxcox_lambda)
-                                    for i in range(len(model_names))]).T
-        test_base_cons = np.array([calc.inverse_boxcox_transform(test_base_preds[:, i], boxcox_lambda)
-                                   for i in range(len(model_names))]).T
-
-        # --- 分析用：各モデル単体での competition_score を計算 ---
-        for i, name in enumerate(model_names):
-            # 各モデル単体の消費額予測
-            m_test_cons = test_base_cons[:, i]
-
-            # 貧困率の算出と等単調回帰（ir）の適用
-            m_cons_df = test_cons_y.copy()
-            m_cons_df['cons_pred'] = m_test_cons
-            m_rate_y = calc.poverty_rates_from_consumption(m_cons_df, 'cons_pred')
-            m_rate_y_calibrated = model.transform_isotonic_regression(m_rate_y, ir)
-
-            m_metrics = calculate_metrics(m_test_cons, test_cons_y.cons_ppp17,
-                                          m_rate_y_calibrated, m_cons_df,
-                                          model_pipelines, test_x, test_rate_y)
-            print(f"  - Model [{name:>=10}]: Competition Score = {m_metrics['competition_score']:.4f}")
-
         # fitの後に実行
+        model_names = [name for name, _ in model_pipelines]
         weights = stacking_regressor.final_estimator_.coef_
         for name, weight in zip(model_names, weights):
             print(f"Model: {name}, Weight: {weight:.4f}")
