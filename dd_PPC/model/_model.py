@@ -3,6 +3,8 @@ __all__ = [
     'fit_lightgbm',
     'fit_xgboost',
     'fit_catboost',
+    'fit_ridge',
+    'fit_lasso',
     'fit_isotonic_regression',
     'transform_isotonic_regression'
 ]
@@ -15,6 +17,7 @@ import pandas as pd
 from catboost import CatBoost
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.isotonic import IsotonicRegression
+from sklearn.linear_model import Ridge, Lasso
 import lightgbm as lgb
 import xgboost as xgb
 
@@ -84,6 +87,36 @@ def fit_catboost(x_train, y_train, seed: int = 42, params: dict | None = None) -
     pred_cat = pred_y.predict(x_train)
 
     return pred_y, pred_cat
+
+
+def fit_ridge(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[Ridge, Any]:
+    if params is None:
+        params = {}
+
+    params['random_state'] = seed
+
+    model = Ridge(**params)
+
+    pred_y = model.fit(x_train, y_train)
+
+    pred_rid = pred_y.predict(x_train)
+
+    return pred_y, pred_rid
+
+
+def fit_lasso(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[Ridge, Any]:
+    if params is None:
+        params = {}
+
+    params['random_state'] = seed
+
+    model = Lasso(**params)
+
+    pred_y = model.fit(x_train, y_train)
+
+    pred_rid = pred_y.predict(x_train)
+
+    return pred_y, pred_rid
 
 
 def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) -> IsotonicRegression:
