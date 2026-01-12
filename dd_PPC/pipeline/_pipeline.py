@@ -191,10 +191,10 @@ class ClassifierWrapper(RegressorMixin, BaseEstimator):
 
     def __init__(self, classifier, boxcox_threshold=9.87):
         self.classifier = classifier
-        self.threshold = boxcox_threshold
+        self.boxcox_threshold = boxcox_threshold
 
     def fit(self, X, y):
-        y_bin = (y < self.threshold).astype(int)
+        y_bin = (y < self.boxcox_threshold).astype(int)
         self.classifier.fit(X, y_bin)
         return self
 
