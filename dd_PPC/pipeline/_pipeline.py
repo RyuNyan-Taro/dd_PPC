@@ -36,10 +36,9 @@ def fit_and_test_pipeline():
         plt.scatter(y_true, y_pred, alpha=0.3, s=10)
         plt.plot([0, 50], [0, 50], '--', color='red')  # 理想線
 
-        # 指標で使われている重要な閾値（例: 3.17, 10.70, 27.37）を描画
+        # 指標で使われている重要な閾値を描画
         _poverty_thresholds = [
-            3.17, 3.94, 4.60, 5.26, 5.88, 6.47, 7.06, 7.70, 8.40, 9.13,
-            9.87, 10.70, 11.62, 12.69, 14.03, 15.64, 17.76, 20.99, 27.37
+            3.17, 9.13, 9.87, 10.70, 27.37
         ]
         for t in _poverty_thresholds:
             plt.axvline(t, color='green', linestyle=':', alpha=0.5)
