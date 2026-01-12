@@ -83,10 +83,10 @@ def fit_and_test_pipeline():
             'ridge',
             Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
-        (
-            'lasso',
-            Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
-        ),
+        # (
+        #     'lasso',
+        #     Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
+        # ),
         (
             'clf_low',
             Pipeline([('prep', preprocessor), (
@@ -105,8 +105,8 @@ def fit_and_test_pipeline():
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
-        final_estimator=Ridge(random_state=123, max_iter=10000),
-        # final_estimator=HuberRegressor(random_state=123, max_iter=10000),
+        # final_estimator=Ridge(random_state=123, max_iter=10000),
+        final_estimator=HuberRegressor(max_iter=10000),
         # final_estimator=Lasso(**model_params['lasso']),
         n_jobs=-1
     )
