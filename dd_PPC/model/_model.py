@@ -125,8 +125,6 @@ def fit_kneighbors(x_train, y_train, seed: int = 42, params: dict | None = None)
     if params is None:
         params = {}
 
-    params['random_state'] = seed
-
     model = KNeighborsRegressor(**params)
 
     pred_y = model.fit(x_train, y_train)
