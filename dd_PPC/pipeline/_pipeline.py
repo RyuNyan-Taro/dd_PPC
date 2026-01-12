@@ -102,6 +102,20 @@ def fit_and_test_pipeline():
                 'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
                                            boxcox_threshold=get_bc_threshold(9.87, boxcox_lambda))
             )])
+        ),
+        (
+            'clf_high',
+            Pipeline([('prep', preprocessor), (
+                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+                                           boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
+            )])
+        ),
+        (
+            'clf_very_high',
+            Pipeline([('prep', preprocessor), (
+                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+                                           boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
+            )])
         )
     ]
 
