@@ -89,7 +89,7 @@ def fit_and_test_pipeline():
         ),
         (
             'clf_low',
-            ClassifierWrapper(lgb.LGBMClassifier(), boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda))
+            Pipeline([('prep', preprocessor), ('model', ClassifierWrapper(lgb.LGBMClassifier(), boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda)))])
         )
     ]
 
