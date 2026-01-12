@@ -165,11 +165,9 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
             }
         elif model_name == 'kneighbors':
             params = {
-                'n_neighbors': trial.suggest_int('n_neighbors', 1, 30),
+                'n_neighbors': trial.suggest_int('n_neighbors', 5, 30),
                 'weights': trial.suggest_categorical('weights', ['uniform', 'distance']),
-                'algorithm': trial.suggest_categorical('algorithm', ['auto', 'ball_tree', 'kd_tree', 'brute']),
-                'leaf_size': trial.suggest_int('leaf_size', 10, 50),
-                'p': trial.suggest_int('p', 1, 2)  # 1: マンハッタン距離, 2: ユークリッド距離
+                'p': trial.suggest_int('p', 1, 2),
             }
         else:
             raise ValueError(f"Unknown model: {model_name}")
@@ -195,7 +193,7 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
     # Create study
     study = optuna.create_study(
         direction='minimize',
-        sampler=TPESampler(seed=42),
+        sampler=TPESampler(seed=42, multivariate=True),
         study_name=f'{model_name}_tuning'
     )
 
@@ -248,7 +246,7 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
             n_estimators=100
         ),
         'ridge': dict(randome_state=42),
-        'kneighbors': dict(random_state=42),
+        'kneighbors': dict(random_state=42, n_jobs=-1),
     }[model_name]
 
     # Cross-validation setup
