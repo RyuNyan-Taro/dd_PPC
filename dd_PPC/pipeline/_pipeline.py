@@ -187,7 +187,8 @@ class CustomCategoryMapper(BaseEstimator, TransformerMixin):
         return self.columns
 
 
-class ClassifierWrapper(BaseEstimator, RegressorMixin):
+class ClassifierWrapper(RegressorMixin, BaseEstimator):
+
     def __init__(self, classifier, boxcox_threshold=9.87):
         self.classifier = classifier
         self.threshold = boxcox_threshold
