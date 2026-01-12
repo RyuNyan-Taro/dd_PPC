@@ -3,6 +3,8 @@ __all__ = ['fit_and_test_pipeline']
 
 import numpy as np
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import StackingRegressor
+from sklearn.linear_model import Ridge
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -20,13 +22,11 @@ def fit_and_test_pipeline():
     def calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, model_pipelines: list, X, target_rate_y) -> dict[str, float]:
         rmse = np.sqrt(np.mean((pred_cons_y - y) ** 2))
         mae = np.mean(np.abs(pred_cons_y - y))
-        r2 = np.mean([_lb[1].model.score(X, y) for _lb in model_pipelines])
         competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, target_rate_y)
 
         return dict(
             rmse=rmse,
             mae=mae,
-            r2=r2,
             competition_score=competition_score
         )
 
@@ -57,6 +57,12 @@ def fit_and_test_pipeline():
         ),
     ]
 
+    stacking_regressor = StackingRegressor(
+        estimators=model_pipelines,
+        final_estimator=Ridge(),
+        n_jobs=-1
+    )
+
     _datas = file.get_datas()
 
     _k_fold_test_ids = [100000, 200000, 300000]
@@ -70,23 +76,32 @@ def fit_and_test_pipeline():
         y_train_preds = []
         set_config(transform_output="pandas")
 
-        for name, pipeline in model_pipelines:
-            print(f"Training {name}...")
-            train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
-            pipeline.fit(train_x, train_y)
+        # for name, pipeline in model_pipelines:
+        #     print(f"Training {name}...")
+        #     train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
+        #     pipeline.fit(train_x, train_y)
+        #
+        #     # Make predictions
+        #
+        #     y_train_pred = pipeline.predict(train_x)
+        #     y_train_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
+        #     y_train_preds.append(y_train_pred)
+        #
+        #     y_test_pred = pipeline.predict(test_x)
+        #     y_test_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
+        #     y_test_preds.append(y_test_pred)
+        #
+        # _y_train_mean_pred = np.mean(y_train_preds, axis=0)
+        # _y_test_mean_pred = np.mean(y_test_preds, axis=0)
 
-            # Make predictions
+        train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
+        stacking_regressor.fit(train_x, train_y)
 
-            y_train_pred = pipeline.predict(train_x)
-            y_train_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
-            y_train_preds.append(y_train_pred)
+        y_train_pred = stacking_regressor.predict(train_x)
+        y_test_pred = stacking_regressor.predict(test_x)
 
-            y_test_pred = pipeline.predict(test_x)
-            y_test_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
-            y_test_preds.append(y_test_pred)
-
-        _y_train_mean_pred = np.mean(y_train_preds, axis=0)
-        _y_test_mean_pred = np.mean(y_test_preds, axis=0)
+        _y_train_mean_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
+        _y_test_mean_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
 
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
