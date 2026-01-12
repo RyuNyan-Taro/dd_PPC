@@ -151,6 +151,18 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
                 'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
                 'l2_leaf_reg': trial.suggest_float('l2_leaf_reg', 3.0, 9.0),
             }
+        elif model_name == 'ridge':
+            params = {
+                'random_state': 123,
+                'alpha': trial.suggest_float('alpha', 0.0001, 1.0, log=True),
+                'max_iter': 10000,
+            }
+        elif model_name == 'lasso':
+            params = {
+                'random_state': 123,
+                'alpha': trial.suggest_float('alpha', 0.0001, 1.0, log=True),
+                'max_iter': 10000,
+            }
         else:
             raise ValueError(f"Unknown model: {model_name}")
 
@@ -226,7 +238,8 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
             loss_function='RMSE',
             random_state=42,
             n_estimators=100
-        )
+        ),
+        'ridge': dict(randome_state=42),
     }[model_name]
 
     # Cross-validation setup
@@ -287,6 +300,22 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
                 'depth': 'linear',
                 'learning_rate': 'log',
                 'l2_leaf_reg': 'linear'
+            }
+        ],
+        'ridge': [
+            {
+                'alpha': [0.0001, 0.001, 0.01, 0.1, 1.0]
+            },
+            {
+                'alpha': 'log'
+            }
+        ],
+        'lasso': [
+            {
+                'alpha': [0.0001, 0.001, 0.01, 0.1, 1.0]
+            },
+            {
+                'alpha': 'log'
             }
         ]
     }
