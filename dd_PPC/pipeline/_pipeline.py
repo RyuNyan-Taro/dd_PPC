@@ -110,7 +110,6 @@ def fit_and_test_pipeline():
         print(_test_metrics)
 
 
-
 class CustomCategoryMapper(BaseEstimator, TransformerMixin):
     def __init__(self, mapping_dict, columns):
         self.mapping_dict = mapping_dict
