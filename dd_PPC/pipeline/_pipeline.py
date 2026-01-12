@@ -86,9 +86,9 @@ def fit_and_test_pipeline():
 
         set_config(transform_output="pandas")
         train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
-        stacking_regressor.fit(train_x, train_y)
+        oof_base_preds = stacking_regressor.fit_transform(train_x, train_y)
 
-        y_train_pred = stacking_regressor.predict(train_x)
+        y_train_pred = stacking_regressor.final_estimator_.predict(oof_base_preds)
         y_test_pred = stacking_regressor.predict(test_x)
 
         _y_train_mean_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
