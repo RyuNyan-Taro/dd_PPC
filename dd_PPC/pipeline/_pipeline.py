@@ -370,6 +370,10 @@ def _get_model_params() -> dict[str, dict]:
             case 'catboost':
                 _model_param['verbose'] = 0
                 _model_param['loss_function'] = 'RMSE'
+            case 'lasso':
+                _model_param['max_iter'] = 10000
+            case 'ridge':
+                _model_param['max_iter'] = 10000
 
         if _model != 'kneighbors':
             _model_param['random_state'] = 123
