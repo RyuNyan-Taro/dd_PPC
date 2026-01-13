@@ -88,9 +88,10 @@ def fit_and_test_pipeline():
             'ridge',
             Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
-        (
-            'knn',
-            Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])),
+        # (
+        #     'knn',
+        #     Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])
+        # ),
         (
             'lasso',
             Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
