@@ -2,12 +2,14 @@ __all__ = ['fit_and_test_pipeline']
 
 
 import numpy as np
+from matplotlib import pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
 from sklearn import set_config
 import lightgbm as lgb
@@ -18,6 +20,9 @@ from .. import file, model, data, calc
 
 
 def fit_and_test_pipeline():
+
+    def get_bc_threshold(original_val, lam):
+        return calc.apply_boxcox_transform(np.array([original_val]), lam)[0][0]
 
     def calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, model_pipelines: list, X, target_rate_y) -> dict[str, float]:
         rmse = np.sqrt(np.mean((pred_cons_y - y) ** 2))
@@ -30,10 +35,34 @@ def fit_and_test_pipeline():
             competition_score=competition_score
         )
 
+    def plot_model_bias(y_true, y_pred, model_name):
+        plt.figure(figsize=(8, 6))
+        plt.scatter(y_true, y_pred, alpha=0.3, s=10)
+        plt.plot([0, 50], [0, 50], '--', color='red')  # 理想線
+
+        # 指標で使われている重要な閾値を描画
+        _poverty_thresholds = [
+            3.17, 9.13, 9.87, 10.70, 27.37
+        ]
+        for t in _poverty_thresholds:
+            plt.axvline(t, color='green', linestyle=':', alpha=0.5)
+            plt.axhline(t, color='green', linestyle=':', alpha=0.5)
+
+        plt.xlabel('True Consumption')
+        plt.ylabel('Predicted Consumption')
+        plt.title(f'Bias Analysis: {model_name}')
+        plt.xlim(0, 50)
+        plt.ylim(0, 50)
+        plt.show()
+
     boxcox_lambda = 0.09
 
     num_cols, category_cols, category_number_maps = _get_columns()
     model_params = _get_model_params()
+
+    for _model, _params in model_params.items():
+        print('model:', _model)
+        print('params:', _params)
 
     preprocessor = ColumnTransformer(
         transformers=[
@@ -57,13 +86,52 @@ def fit_and_test_pipeline():
         ),
         (
             'ridge',
-            Pipeline([('prep', preprocessor), ('model', Ridge(random_state=123))])
+            Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
+        # (
+        #     'knn',
+        #     Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])
+        # ),
+        (
+            'lasso',
+            Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
+        ),
+        # (
+        #     'clf_low',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose = -1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda))
+        #     )])
+        # ),
+        # (
+        #     'clf_middle',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(9.87, boxcox_lambda))
+        #     )])
+        # ),
+        # (
+        #     'clf_high',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
+        #     )])
+        # ),
+        # (
+        #     'clf_very_high',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
+        #     )])
+        # )
     ]
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
-        final_estimator=Ridge(random_state=123),
+        final_estimator=Ridge(random_state=123, max_iter=10000),
+        # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
+        # final_estimator=Lasso(**model_params['lasso']),
+        # final_estimator=QuantileRegressor(quantile=0.5),
         n_jobs=-1
     )
 
@@ -78,30 +146,15 @@ def fit_and_test_pipeline():
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
-        y_test_preds = []
-        y_train_preds = []
         set_config(transform_output="pandas")
-
-        # for name, pipeline in model_pipelines:
-        #     print(f"Training {name}...")
-        #     train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
-        #     pipeline.fit(train_x, train_y)
-        #
-        #     # Make predictions
-        #
-        #     y_train_pred = pipeline.predict(train_x)
-        #     y_train_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
-        #     y_train_preds.append(y_train_pred)
-        #
-        #     y_test_pred = pipeline.predict(test_x)
-        #     y_test_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
-        #     y_test_preds.append(y_test_pred)
-        #
-        # _y_train_mean_pred = np.mean(y_train_preds, axis=0)
-        # _y_test_mean_pred = np.mean(y_test_preds, axis=0)
-
         train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
         stacking_regressor.fit(train_x, train_y)
+
+        # fitの後に実行
+        model_names = [name for name, _ in model_pipelines]
+        weights = stacking_regressor.final_estimator_.coef_
+        for name, weight in zip(model_names, weights):
+            print(f"Model: {name}, Weight: {weight:.4f}")
 
         y_train_pred = stacking_regressor.predict(train_x)
         y_test_pred = stacking_regressor.predict(test_x)
@@ -130,6 +183,7 @@ def fit_and_test_pipeline():
         print(_train_metrics)
         print(_test_metrics)
 
+        plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
 
 
 class CustomCategoryMapper(BaseEstimator, TransformerMixin):
@@ -165,6 +219,22 @@ class CustomCategoryMapper(BaseEstimator, TransformerMixin):
 
     def get_feature_names_out(self, input_features=None):
         return self.columns
+
+
+class ClassifierWrapper(RegressorMixin, BaseEstimator):
+
+    def __init__(self, classifier, boxcox_threshold=9.87):
+        self.classifier = classifier
+        self.boxcox_threshold = boxcox_threshold
+
+    def fit(self, X, y):
+        y_bin = (y < self.boxcox_threshold).astype(int)
+        self.classifier.fit(X, y_bin)
+        return self
+
+    def predict(self, X):
+
+        return self.classifier.predict_proba(X)[:, 1]
 
 
 def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
@@ -288,7 +358,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'kneighbors']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':
@@ -301,7 +371,13 @@ def _get_model_params() -> dict[str, dict]:
             case 'catboost':
                 _model_param['verbose'] = 0
                 _model_param['loss_function'] = 'RMSE'
-        _model_param['random_state'] = 123
+            case 'lasso':
+                _model_param['max_iter'] = 10000
+            case 'ridge':
+                _model_param['max_iter'] = 10000
+
+        if _model != 'kneighbors':
+            _model_param['random_state'] = 123
         model_params[_model] = _model_param
 
     return model_params
