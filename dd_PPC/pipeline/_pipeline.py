@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
-from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor
+from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -124,6 +124,10 @@ def fit_and_test_pipeline():
         #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
         #     )])
         # )
+        (
+            'elasticnet',
+            Pipeline(['prep', preprocessor, 'model', ElasticNet(random_state=123)]),
+        )
     ]
 
     stacking_regressor = StackingRegressor(
