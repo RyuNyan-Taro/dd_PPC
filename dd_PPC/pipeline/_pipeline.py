@@ -123,11 +123,11 @@ def fit_and_test_pipeline():
         #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
         #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
         #     )])
+        # ),
+        # (
+        #     'elasticnet',
+        #     Pipeline([('prep', preprocessor), ('model', ElasticNet(random_state=123))]),
         # )
-        (
-            'elasticnet',
-            Pipeline(['prep', preprocessor, 'model', ElasticNet(random_state=123)]),
-        )
     ]
 
     stacking_regressor = StackingRegressor(
