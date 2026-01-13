@@ -60,6 +60,10 @@ def fit_and_test_pipeline():
     num_cols, category_cols, category_number_maps = _get_columns()
     model_params = _get_model_params()
 
+    for _model, _params in model_params.items():
+        print('model:', _model)
+        print('params:', _params)
+
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), num_cols),
