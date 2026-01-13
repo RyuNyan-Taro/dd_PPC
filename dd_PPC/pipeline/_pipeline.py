@@ -366,7 +366,9 @@ def _get_model_params() -> dict[str, dict]:
             case 'catboost':
                 _model_param['verbose'] = 0
                 _model_param['loss_function'] = 'RMSE'
-        _model_param['random_state'] = 123
+
+        if _model != 'kneighbors':
+            _model_param['random_state'] = 123
         model_params[_model] = _model_param
 
     return model_params
