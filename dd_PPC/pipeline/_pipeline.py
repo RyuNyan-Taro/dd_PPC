@@ -84,25 +84,27 @@ def fit_and_test_pipeline():
             'ridge',
             Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
-        ('knn', Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(n_neighbors=20))])),
+        (
+            'knn',
+            Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])),
         (
             'lasso',
             Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
         ),
-        (
-            'clf_low',
-            Pipeline([('prep', preprocessor), (
-                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose = -1, force_row_wise=True),
-                                           boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda))
-            )])
-        ),
-        (
-            'clf_middle',
-            Pipeline([('prep', preprocessor), (
-                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-                                           boxcox_threshold=get_bc_threshold(9.87, boxcox_lambda))
-            )])
-        ),
+        # (
+        #     'clf_low',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose = -1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda))
+        #     )])
+        # ),
+        # (
+        #     'clf_middle',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(9.87, boxcox_lambda))
+        #     )])
+        # ),
         # (
         #     'clf_high',
         #     Pipeline([('prep', preprocessor), (
@@ -110,13 +112,13 @@ def fit_and_test_pipeline():
         #                                    boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
         #     )])
         # ),
-        (
-            'clf_very_high',
-            Pipeline([('prep', preprocessor), (
-                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-                                           boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
-            )])
-        )
+        # (
+        #     'clf_very_high',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
+        #     )])
+        # )
     ]
 
     stacking_regressor = StackingRegressor(
@@ -351,7 +353,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'kneighbors']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':
