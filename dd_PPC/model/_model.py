@@ -153,6 +153,8 @@ def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None) ->
     cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
     emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
 
+    torch.manual_seed(seed)
+
     model = NeuralNetRegressor(
         module=TabularNN,
         module__n_cont=num_features,
@@ -161,7 +163,6 @@ def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None) ->
         criterion=nn.MSELoss,
         optimizer=torch.optim.Adam,
         train_split=None,
-        random_state=seed,
         device='cuda' if torch.cuda.is_available() else 'cpu',
         **params
     )
