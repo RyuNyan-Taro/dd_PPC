@@ -147,9 +147,9 @@ from sklearn.preprocessing import StandardScaler, OrdinalEncoder
 
 import numpy as np
 
-def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None):
+def fit_tabular(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
     if params is None:
-        params = dict(lr=0.001, max_epochs=10, batch_size=64)
+        params = dict(lr=0.001, max_epochs=1, batch_size=64)
 
     num_features = len(NUMBER_COLUMNS)
     cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
@@ -174,7 +174,7 @@ def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None):
         ('regressor', regressor)
     ])
 
-    y_train_clean = y_train.astype(np.float32).flatten()
+    y_train_clean = y_train.to_numpy().astype(np.float32).flatten()
     pipe.fit(x_train, y_train_clean)
 
     pred_y = pipe.predict(x_train)
