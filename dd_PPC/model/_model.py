@@ -168,7 +168,7 @@ def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None) ->
     )
 
     _x_train = x_train.to_numpy().astype(np.float32)
-    _y_train = y_train.to_numpy().astype(np.float32).reshape(-1, 1)
+    _y_train = y_train.to_numpy().astype(np.float32).flatten()
 
     model.fit(_x_train, _y_train)
 
