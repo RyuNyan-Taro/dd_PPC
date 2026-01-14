@@ -55,6 +55,7 @@ def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:
         criterion=nn.MSELoss,
         optimizer=torch.optim.Adam,
         train_split=None,
+        verbose=0,
         device='cuda' if torch.cuda.is_available() else 'cpu',
         **params
     )

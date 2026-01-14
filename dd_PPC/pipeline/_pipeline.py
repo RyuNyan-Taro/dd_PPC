@@ -144,7 +144,8 @@ def fit_and_test_pipeline():
         # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
-        n_jobs=-1
+        n_jobs=3,
+        verbose=1
     )
 
     _datas = file.get_datas()
