@@ -150,7 +150,7 @@ def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None) ->
         )
 
     num_features = len(NUMBER_COLUMNS)
-    cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
+    cat_features_dims = [len(CATEGORY_NUMBER_MAPS[_col]) + 1 for _col in x_train.columns[num_features:]]
     emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
 
     torch.manual_seed(seed)
@@ -167,9 +167,12 @@ def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None) ->
         **params
     )
 
-    model.fit(x_train, y_train)
+    _x_train = x_train.to_numpy().astype(np.float32)
+    _y_train = y_train.to_numpy().astype(np.float32).reshape(-1, 1)
 
-    pred_y = model.predict(x_train)
+    model.fit(_x_train, _y_train)
+
+    pred_y = model.predict(_x_train)
 
     return model, pred_y
 
