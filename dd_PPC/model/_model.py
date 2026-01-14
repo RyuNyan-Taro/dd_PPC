@@ -149,10 +149,10 @@ import numpy as np
 
 def fit_tabular(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
     if params is None:
-        params = dict(lr=0.001, max_epochs=1, batch_size=64)
+        params = dict(lr=0.001, max_epochs=2, batch_size=32)
 
     num_features = len(NUMBER_COLUMNS)
-    cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
+    cat_features_dims = [len(CATEGORY_NUMBER_MAPS[_col]) + 1 for _col in x_train.columns[num_features:]]
     emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
 
     # 3. skorch Regressor の定義
