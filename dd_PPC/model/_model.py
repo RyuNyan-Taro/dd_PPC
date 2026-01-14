@@ -29,7 +29,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from torch import nn
 
 from .. import file
-from ._nn import TabularNN
+from ._nn import TabularNN, Float32Transformer
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 
 
@@ -141,21 +141,23 @@ def fit_kneighbors(x_train, y_train, seed: int = 42, params: dict | None = None)
     return pred_y, pred_rid
 
 
-def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[NeuralNetRegressor, np.ndarray]:
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+
+import numpy as np
+
+def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None):
     if params is None:
-        params = dict(
-            lr=0.001,
-            max_epochs=50,
-            batch_size=64,
-        )
+        params = dict(lr=0.001, max_epochs=10, batch_size=64)
 
     num_features = len(NUMBER_COLUMNS)
-    cat_features_dims = [len(CATEGORY_NUMBER_MAPS[_col]) + 1 for _col in x_train.columns[num_features:]]
+    cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
     emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
 
+    # 3. skorch Regressor の定義
     torch.manual_seed(seed)
-
-    model = NeuralNetRegressor(
+    regressor = NeuralNetRegressor(
         module=TabularNN,
         module__n_cont=num_features,
         module__cat_dims=cat_features_dims,
@@ -167,14 +169,17 @@ def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None) ->
         **params
     )
 
-    _x_train = x_train.to_numpy().astype(np.float32)
-    _y_train = y_train.to_numpy().astype(np.float32).flatten()
+    pipe = Pipeline([
+        ('float32', Float32Transformer()),
+        ('regressor', regressor)
+    ])
 
-    model.fit(_x_train, _y_train)
+    y_train_clean = y_train.astype(np.float32).flatten()
+    pipe.fit(x_train, y_train_clean)
 
-    pred_y = model.predict(_x_train)
+    pred_y = pipe.predict(x_train)
 
-    return model, pred_y
+    return pipe, pred_y
 
 
 def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) -> IsotonicRegression:
