@@ -151,7 +151,7 @@ def fit_and_test_pipeline():
         )
 
         set_config(transform_output="pandas")
-        train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
+        train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda)[0]
         stacking_regressor.fit(train_x, train_y)
 
         # fitの後に実行
