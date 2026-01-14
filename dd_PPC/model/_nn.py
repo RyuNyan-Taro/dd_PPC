@@ -1,5 +1,7 @@
+import numpy as np
 import torch
 import torch.nn as nn
+from sklearn.base import BaseEstimator, TransformerMixin
 
 class TabularNN(nn.Module):
     def __init__(self, n_cont, cat_dims, emb_dims):
@@ -33,4 +35,13 @@ class TabularNN(nn.Module):
 
         # 3. 結合して全結合層へ
         x = torch.cat([x_cont, x_emb], dim=1)
+
         return self.fc(x).squeeze(-1) # 出力を (batch_size,) に
+
+
+class Float32Transformer(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None): return self
+
+    def transform(self, X):
+
+        return X.astype(np.float32)
