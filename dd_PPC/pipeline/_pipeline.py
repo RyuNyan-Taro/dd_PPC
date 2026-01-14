@@ -96,6 +96,14 @@ def fit_and_test_pipeline():
             'lasso',
             Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
         ),
+        (
+            'tabular',
+            Pipeline([
+                ('prep', preprocessor),
+                ('convert', model.Float32Transformer()),
+                ('model', model.get_tabular_nn_regressor(model_params['tabular']))
+            ])
+        )
         # (
         #     'clf_low',
         #     Pipeline([('prep', preprocessor), (
@@ -362,7 +370,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'kneighbors']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':
@@ -383,5 +391,7 @@ def _get_model_params() -> dict[str, dict]:
         if _model != 'kneighbors':
             _model_param['random_state'] = 123
         model_params[_model] = _model_param
+
+    model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
 
     return model_params
