@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -43,5 +44,7 @@ class Float32Transformer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None): return self
 
     def transform(self, X):
+
+        if isinstance(X, pd.DataFrame): X = X.to_numpy()
 
         return X.astype(np.float32)
