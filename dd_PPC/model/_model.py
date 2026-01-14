@@ -6,11 +6,15 @@ __all__ = [
     'fit_ridge',
     'fit_lasso',
     'fit_kneighbors',
+    'fit_tabular',
     'fit_isotonic_regression',
     'transform_isotonic_regression'
 ]
 
 from typing import Any
+
+import torch
+from skorch import NeuralNetRegressor
 
 import catboost
 import numpy as np
@@ -22,8 +26,11 @@ from sklearn.linear_model import Ridge, Lasso
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.neighbors import KNeighborsRegressor
+from torch import nn
 
 from .. import file
+from ._nn import TabularNN
+from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 
 
 def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, seed: int = 42) -> tuple[RandomForestRegressor, np.ndarray]:
@@ -134,6 +141,36 @@ def fit_kneighbors(x_train, y_train, seed: int = 42, params: dict | None = None)
     return pred_y, pred_rid
 
 
+def fit_tabular(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[NeuralNetRegressor, np.ndarray]:
+    if params is None:
+        params = dict(
+            lr=0.001,
+            max_epochs=50,
+            batch_size=64,
+        )
+
+    num_features = len(NUMBER_COLUMNS)
+    cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
+    emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
+
+    model = NeuralNetRegressor(
+        module=TabularNN,
+        module__n_cont=num_features,
+        module__cat_dims=cat_features_dims,
+        module__emb_dims=emb_dims,
+        criterion=nn.MSELoss,
+        optimizer=torch.optim.Adam,
+        train_split=None,
+        random_state=seed,
+        device='cuda' if torch.cuda.is_available() else 'cpu',
+        **params
+    )
+
+    model.fit(x_train, y_train)
+
+    pred_y = model.predict(x_train)
+
+    return model, pred_y
 
 
 def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) -> IsotonicRegression:
