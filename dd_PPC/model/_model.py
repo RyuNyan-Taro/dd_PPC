@@ -149,7 +149,7 @@ import numpy as np
 
 def fit_tabular(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
     if params is None:
-        params = dict(lr=0.001, max_epochs=2, batch_size=32)
+        params = dict(lr=0.01, max_epochs=4, batch_size=32)
 
     num_features = len(NUMBER_COLUMNS)
     cat_features_dims = [len(CATEGORY_NUMBER_MAPS[_col]) + 1 for _col in x_train.columns[num_features:]]
