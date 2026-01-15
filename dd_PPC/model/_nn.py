@@ -98,7 +98,7 @@ def get_mlp_nn_regressor(params: dict) -> NeuralNetRegressor:
         module__n_cont=num_features,
         module__cat_dims=cat_features_dims,
         module__emb_dims=emb_dims,
-        criterion=nn.MSELoss,
+        criterion=nn.SmoothL1Loss,
         optimizer=torch.optim.Adam,
         train_split=None,
         verbose=0,
