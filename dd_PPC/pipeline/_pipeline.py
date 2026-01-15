@@ -163,13 +163,13 @@ def fit_and_test_pipeline():
         #                                    boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
         #     )])
         # ),
-        (
-            'clf_very_high',
-            Pipeline([('prep', preprocessor), (
-                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-                                           boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
-            )])
-        ),
+        # (
+        #     'clf_very_high',
+        #     Pipeline([('prep', preprocessor), (
+        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
+        #     )])
+        # ),
         # (
         #     'elasticnet',
         #     Pipeline([('prep', preprocessor), ('model', ElasticNet(**model_params['elasticnet']))]),
@@ -178,8 +178,8 @@ def fit_and_test_pipeline():
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
-        final_estimator=Ridge(random_state=123, max_iter=10000),
-        # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
+        # final_estimator=Ridge(random_state=123, max_iter=10000),
+        final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
         n_jobs=2,
