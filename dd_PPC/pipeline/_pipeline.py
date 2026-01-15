@@ -66,6 +66,9 @@ def fit_and_test_pipeline():
         print('model:', _model)
         print('params:', _params)
 
+    def drop_unused_columns(X):
+        return X.drop(columns=['hhid', 'com', 'utl_exp_ppp17', 'share_secondary', 'survey_id'])
+
     category_stage = ColumnTransformer(
         transformers=[
             ('cat_encode', CustomCategoryMapper(category_number_maps, category_cols), category_cols)
@@ -75,6 +78,8 @@ def fit_and_test_pipeline():
     )
 
     preprocessor = Pipeline([
+        ('drop_unused', FunctionTransformer(drop_unused_columns)),
+
         ('category_encoding', category_stage),
 
         ('svd_gen', SVDFeatureGenerator()),
@@ -94,9 +99,9 @@ def fit_and_test_pipeline():
         (
             'lgb', Pipeline([('prep', preprocessor), ('model', lgb.LGBMRegressor(**model_params['lightgbm']))])
         ),
-        (
-            'xgb', Pipeline([('prep', preprocessor), ('model', xgb.XGBRegressor(**model_params['xgboost']))])
-        ),
+        # (
+        #     'xgb', Pipeline([('prep', preprocessor), ('model', xgb.XGBRegressor(**model_params['xgboost']))])
+        # ),
         (
             'catboost',
             Pipeline([('prep', preprocessor), ('model', catboost.CatBoostRegressor(**model_params['catboost']))])
@@ -109,10 +114,10 @@ def fit_and_test_pipeline():
         #     'knn',
         #     Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])
         # ),
-        (
-            'lasso',
-            Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
-        ),
+        # (
+        #     'lasso',
+        #     Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
+        # ),
         # (
         #     'tabular',
         #     Pipeline([
@@ -169,7 +174,7 @@ def fit_and_test_pipeline():
         # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
-        n_jobs=3,
+        n_jobs=2,
         verbose=1
     )
 
