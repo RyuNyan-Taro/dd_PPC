@@ -135,6 +135,9 @@ def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | N
 
 
 def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
+    _strata_mean = train.groupby('strata')['svd_consumed_1'].transform('mean')
+    _strata_std = train.groupby('strata')['svd_consumed_1'].transform('std')
+
     _complex_numbers = {
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
         'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
@@ -144,6 +147,9 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
         'urban_sanitation': train['urban'] * train['sanitation_source'],
         # 'dependency_interaction': train['num_children5'] + train['num_children10'] + train['num_elderly'] / (train['hsize'] + 1),
+        'rel_consumed_to_strata': train['svd_consumed_1'] / (_strata_mean + 1e-6),
+        'diff_consumed_to_strata': train['svd_consumed_1'] - (_strata_mean + 1e-6),
+        'zscore_consumed_to_strata': (train['svd_consumed_1'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
     }
 
     return pd.DataFrame(_complex_numbers)
