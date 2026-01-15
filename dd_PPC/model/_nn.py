@@ -1,4 +1,4 @@
-__all__ = ['get_tabular_nn_regressor', 'TabularNN', 'EntityEmbeddingMLP', 'Float32Transformer']
+__all__ = ['get_tabular_nn_regressor', 'get_mlp_nn_regressor', 'TabularNN', 'EntityEmbeddingMLP', 'Float32Transformer']
 
 import numpy as np
 import pandas as pd
@@ -61,6 +61,53 @@ def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:
     )
 
     return regressor
+
+
+def get_mlp_nn_regressor(params: dict) -> NeuralNetRegressor:
+    """
+    Creates and configures a multi-layer perceptron (MLP) based neural network regressor using PyTorch and the
+    NeuralNetRegressor wrapper from the skorch library. This regressor leverages categorical embedding layers for
+    handling categorical features alongside continuous features.
+
+    Args:
+        params (dict): A dictionary of parameters to configure the regressor. If not provided, default values
+            are used. The dictionary may include:
+            - 'lr' (float): Learning rate for the optimizer.
+            - 'max_epochs' (int): Number of training epochs.
+            - 'batch_size' (int): Size of the training batches.
+            - 'seed' (int, optional): Random seed for reproducibility. If provided, it will set the PyTorch
+              random seed and will be removed from the dictionary before configuring the regressor.
+
+    Returns:
+        NeuralNetRegressor: A configured NeuralNetRegressor instance, ready for training and evaluation.
+    """
+
+    if params is None:
+        params = dict(lr=0.001, max_epochs=7, batch_size=32)
+
+    if 'seed' in params:
+        torch.manual_seed(params['seed'])
+        del params['seed']
+
+    num_features = len(NUMBER_COLUMNS)
+    cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
+    emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
+
+    regressor = NeuralNetRegressor(
+        module=EntityEmbeddingMLP,
+        module__n_cont=num_features,
+        module__cat_dims=cat_features_dims,
+        module__emb_dims=emb_dims,
+        criterion=nn.MSELoss,
+        optimizer=torch.optim.Adam,
+        train_split=None,
+        verbose=0,
+        device='cuda' if torch.cuda.is_available() else 'cpu',
+        **params
+    )
+
+    return regressor
+
 
 class TabularNN(nn.Module):
     def __init__(self, n_cont, cat_dims, emb_dims):
