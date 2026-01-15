@@ -95,3 +95,29 @@ def inverse_boxcox_transform(transformed_data: np.ndarray, lambda_param: float):
     """Inverse Box-Cox transformation"""
 
     return inv_boxcox(transformed_data, lambda_param)
+
+
+import torch
+import torch.nn as nn
+
+
+class CustomCompetitionLoss(nn.Module):
+    def __init__(self, poverty_weights):
+        super().__init__()
+        # 貧困率の各階級に対する重みをTensorで保持 (19次元など)
+        self.register_buffer('p_weights', torch.tensor(poverty_weights, dtype=torch.float32))
+
+    def forward(self, cons_pred, cons_target, pov_pred, pov_target):
+        eps = 1e-8  # ゼロ除算防止
+
+        # 1. Consumptionの誤差 (MAPEベース)
+        # 評価関数の "10 / len * sum(abs(t-p)/t)" に対応
+        cons_loss = 10 * torch.mean(torch.abs(cons_target - cons_pred) / (cons_target + eps))
+
+        # 2. Poverty Rateの誤差 (重み付きMAPEベース)
+        # 評価関数の "90 / sum(weights) * sum(weight * abs(t-p)/t)" に対応
+        pov_diff = torch.abs(pov_target - pov_pred) / (pov_target + eps)
+        weighted_pov_diff = self.p_weights * pov_diff
+        pov_loss = (90 / self.p_weights.sum()) * torch.mean(torch.sum(weighted_pov_diff, dim=1))
+
+        return cons_loss + pov_loss

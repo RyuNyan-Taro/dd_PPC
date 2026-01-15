@@ -5,7 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
-from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor
+from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -97,6 +97,22 @@ def fit_and_test_pipeline():
             Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
         ),
         # (
+        #     'tabular',
+        #     Pipeline([
+        #         ('prep', preprocessor),
+        #         ('convert', model.Float32Transformer()),
+        #         ('model', model.get_tabular_nn_regressor(model_params['tabular']))
+        #     ])
+        # )
+        # (
+        #     'mlp',
+        #     Pipeline([
+        #         ('prep', preprocessor),
+        #         ('convert', model.Float32Transformer()),
+        #         ('model', model.get_mlp_nn_regressor(model_params['mlp']))
+        #     ])
+        # )
+        # (
         #     'clf_low',
         #     Pipeline([('prep', preprocessor), (
         #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose = -1, force_row_wise=True),
@@ -123,6 +139,10 @@ def fit_and_test_pipeline():
         #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
         #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
         #     )])
+        # ),
+        # (
+        #     'elasticnet',
+        #     Pipeline([('prep', preprocessor), ('model', ElasticNet(**model_params['elasticnet']))]),
         # )
     ]
 
@@ -132,7 +152,8 @@ def fit_and_test_pipeline():
         # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
-        n_jobs=-1
+        n_jobs=3,
+        verbose=1
     )
 
     _datas = file.get_datas()
@@ -147,8 +168,8 @@ def fit_and_test_pipeline():
         )
 
         set_config(transform_output="pandas")
-        train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17, boxcox_lambda)[0]
-        stacking_regressor.fit(train_x, train_y)
+        train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda)[0]
+        stacking_regressor.fit(train_x, train_y.astype(np.float32).flatten())
 
         # fitの後に実行
         model_names = [name for name, _ in model_pipelines]
@@ -358,7 +379,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'kneighbors']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':
@@ -375,9 +396,14 @@ def _get_model_params() -> dict[str, dict]:
                 _model_param['max_iter'] = 10000
             case 'ridge':
                 _model_param['max_iter'] = 10000
+            case 'elasticnet':
+                _model_param['max_iter'] = 10000
 
         if _model != 'kneighbors':
             _model_param['random_state'] = 123
         model_params[_model] = _model_param
+
+    model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
+    model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
 
     return model_params

@@ -6,11 +6,17 @@ __all__ = [
     'fit_ridge',
     'fit_lasso',
     'fit_kneighbors',
+    'fit_elasticnet',
+    'fit_tabular',
+    'fit_mlp',
     'fit_isotonic_regression',
     'transform_isotonic_regression'
 ]
 
 from typing import Any
+
+import torch
+from skorch import NeuralNetRegressor
 
 import catboost
 import numpy as np
@@ -18,12 +24,16 @@ import pandas as pd
 from catboost import CatBoost
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.isotonic import IsotonicRegression
-from sklearn.linear_model import Ridge, Lasso
+from sklearn.linear_model import Ridge, Lasso, ElasticNet
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.neighbors import KNeighborsRegressor
+from torch import nn
+from sklearn.pipeline import Pipeline
 
 from .. import file
+from ._nn import TabularNN, EntityEmbeddingMLP, Float32Transformer, get_mlp_nn_regressor, get_tabular_nn_regressor
+from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 
 
 def fit_random_forest(x_train_std, y_train, show_fit_process: bool = True, seed: int = 42) -> tuple[RandomForestRegressor, np.ndarray]:
@@ -134,6 +144,59 @@ def fit_kneighbors(x_train, y_train, seed: int = 42, params: dict | None = None)
     return pred_y, pred_rid
 
 
+def fit_elasticnet(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[ElasticNet, Any]:
+    if params is None:
+        params = file.load_best_params('elasticnet')
+
+    model = ElasticNet(**params)
+
+    model.fit(x_train, y_train)
+
+    pred_eln = model.predict(x_train)
+
+    return model, pred_eln
+
+
+def fit_tabular(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
+    if params is None:
+        params = {'seed': seed}
+    elif 'seed' not in params:
+        params['seed'] = seed
+
+    regressor = get_tabular_nn_regressor(params)
+
+    pipe = Pipeline([
+        ('float32', Float32Transformer()),
+        ('regressor', regressor)
+    ])
+
+    y_train_clean = y_train.to_numpy().astype(np.float32).flatten()
+    pipe.fit(x_train, y_train_clean)
+
+    pred_y = pipe.predict(x_train)
+
+    return pipe, pred_y
+
+
+def fit_mlp(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
+    if params is None:
+        params = {'seed': seed}
+    elif 'seed' not in params:
+        params['seed'] = seed
+
+    regressor = get_mlp_nn_regressor(params)
+
+    pipe = Pipeline([
+        ('float32', Float32Transformer()),
+        ('regressor', regressor)
+    ])
+
+    y_train_clean = y_train.to_numpy().astype(np.float32).flatten()
+    pipe.fit(x_train, y_train_clean)
+
+    pred_y = pipe.predict(x_train)
+
+    return pipe, pred_y
 
 
 def fit_isotonic_regression(pred_rate: pd.DataFrame, target_rate: pd.DataFrame) -> IsotonicRegression:
