@@ -16,8 +16,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 
 
-def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
-    x_train_std, _num_cols = _standardized(train, fit_model)
+def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None, add_columns: list[str] | None = None) -> tuple[pd.DataFrame, StandardScaler]:
+    x_train_std, _num_cols = _standardized(train, fit_model, add_columns)
 
     return pd.DataFrame(x_train_std, columns=_num_cols), fit_model
 
@@ -38,11 +38,14 @@ def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | N
     return x_train_std, fit_model
 
 
-def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[np.ndarray, list[str]]:
+def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None, add_columns: list[str] | None = None) -> tuple[np.ndarray, list[str]]:
 
     num_cols = ['weight', 'strata', 'hsize', 'age',
                  'num_children5', 'num_children10', 'num_children18',
                  'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
+
+    if add_columns is not None:
+        num_cols = num_cols + add_columns
 
     x_train = train[num_cols]
 

@@ -172,15 +172,15 @@ def pred_models(fit_models: list, sc: StandardScaler) -> np.ndarray:
 
 
 def preprocess_data(datas: pd.DataFrame, sc: StandardScaler | None = None, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, StandardScaler, TruncatedSVD, list[str]]:
-    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(datas, sc)
     _datas_category = preprocess.encoding_category_dataframe(datas)
     _datas_truncated, svd = preprocess.truncated_svd_dataframe(_datas_category, svd=svd)
 
-    print(_datas_truncated)
+    _new_datas = pd.concat([datas.copy().reset_index(drop=True), _datas_truncated.reset_index(drop=True)], axis=1)
+    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(_new_datas, sc, add_columns=_datas_truncated.columns.tolist())
 
     category_cols = _datas_category.columns
 
-    return pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True), _datas_truncated.reset_index(drop=True)], axis=1), sc, svd, list(category_cols)
+    return pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1), sc, svd, list(category_cols)
 
 
 def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = None) -> pd.DataFrame:
