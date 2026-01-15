@@ -187,14 +187,17 @@ def preprocess_data(
     _datas_infrastructure, infra_svd = preprocess.infrastructure_svd_dataframe(_datas_category, svd=infra_svd)
 
     _new_datas = pd.concat([datas.copy().reset_index(drop=True), _datas_consumed.reset_index(drop=True), _datas_infrastructure.reset_index(drop=True)], axis=1)
-    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(_new_datas, sc, add_columns=_datas_consumed.columns.tolist() + _datas_infrastructure.columns.tolist())
+    _datas_num_and_category = pd.concat([_new_datas.drop(columns=_datas_category.columns).reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1)
 
-    _datas_std_and_category = pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1)
-    _datas_complex = preprocess.complex_numbers_dataframe(_datas_std_and_category)
+    _datas_complex = preprocess.complex_numbers_dataframe(_datas_num_and_category)
+    _new_datas = pd.concat([_new_datas.reset_index(drop=True), _datas_complex.reset_index(drop=True)], axis=1)
+    _datas_std, sc = preprocess.standardized_with_numbers_dataframe(
+        _new_datas, sc,
+        add_columns=_datas_consumed.columns.tolist() + _datas_infrastructure.columns.tolist() + _datas_complex.columns.tolist())
 
     category_cols = _datas_category.columns
 
-    return pd.concat([_datas_std.reset_index(drop=True), _datas_complex.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1), sc, consumed_svd, infra_svd, list(category_cols)
+    return pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1), sc, consumed_svd, infra_svd, list(category_cols)
 
 
 def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = None) -> pd.DataFrame:
