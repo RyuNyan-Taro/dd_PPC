@@ -47,7 +47,7 @@ def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None, 
     if add_columns is not None:
         num_cols = num_cols + add_columns
 
-    x_train = train[num_cols]
+    x_train = train[num_cols].copy()
 
     for _col in num_cols:
         if x_train[_col].isnull().sum() > 0:
