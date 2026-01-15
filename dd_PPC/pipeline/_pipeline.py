@@ -66,33 +66,24 @@ def fit_and_test_pipeline():
         print('model:', _model)
         print('params:', _params)
 
-    def drop_unused_columns(X):
-        return X.drop(columns=['hhid', 'com', 'share_secondary', 'survey_id'])
-
-    def handle_null_numbers(X):
-        X = X.copy()
-        X['utl_exp_ppp17'] = X['utl_exp_ppp17'].fillna(X['utl_exp_ppp17'].mean())
-
-        return X
-
     category_stage = ColumnTransformer(
         transformers=[
-            ('cat_encode', CustomCategoryMapper(category_number_maps, category_cols), category_cols)
+            ('cat_encode', _CustomCategoryMapper(category_number_maps, category_cols), category_cols)
         ],
         remainder='passthrough',
         verbose_feature_names_out=False
     )
 
     preprocessor = Pipeline([
-        ('drop_unused', FunctionTransformer(drop_unused_columns)),
+        ('drop_unused', FunctionTransformer(_drop_unused_columns)),
 
-        ('handle_null_numbers', FunctionTransformer(handle_null_numbers)),
+        ('handle_null_numbers', FunctionTransformer(_handle_null_numbers)),
 
         ('category_encoding', category_stage),
 
-        ('svd_gen', SVDFeatureGenerator()),
+        ('svd_gen', _SVDFeatureGenerator()),
 
-        ('complex_gen', FunctionTransformer(complex_feature_wrapper)),
+        ('complex_gen', FunctionTransformer(_complex_feature_wrapper)),
 
         ('final_scaler', ColumnTransformer(
             transformers=[
@@ -237,7 +228,26 @@ def fit_and_test_pipeline():
         plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
 
 
-class CustomCategoryMapper(BaseEstimator, TransformerMixin):
+# sub functions for preprocessing
+def _drop_unused_columns(X):
+    return X.drop(columns=['hhid', 'com', 'share_secondary', 'survey_id'])
+
+
+def _handle_null_numbers(X):
+    X = X.copy()
+    X['utl_exp_ppp17'] = X['utl_exp_ppp17'].fillna(X['utl_exp_ppp17'].mean())
+
+    return X
+
+
+def _complex_feature_wrapper(X):
+    df_complex = complex_numbers_dataframe(X)
+
+    df_complex.index = X.index
+    return pd.concat([X, df_complex], axis=1)
+
+
+class _CustomCategoryMapper(BaseEstimator, TransformerMixin):
     def __init__(self, mapping_dict, columns):
         self.mapping_dict = mapping_dict
         self.columns = columns
@@ -272,7 +282,7 @@ class CustomCategoryMapper(BaseEstimator, TransformerMixin):
         return self.columns
 
 
-class SVDFeatureGenerator(BaseEstimator, TransformerMixin):
+class _SVDFeatureGenerator(BaseEstimator, TransformerMixin):
     def __init__(self, consumed_svd=None, infra_svd=None):
         self.consumed_svd = consumed_svd
         self.infra_svd = infra_svd
@@ -293,12 +303,6 @@ class SVDFeatureGenerator(BaseEstimator, TransformerMixin):
         df_infra.index = X.index
 
         return pd.concat([X, df_cons, df_infra], axis=1)
-
-def complex_feature_wrapper(X):
-    df_complex = complex_numbers_dataframe(X)
-
-    df_complex.index = X.index
-    return pd.concat([X, df_complex], axis=1)
 
 
 class ClassifierWrapper(RegressorMixin, BaseEstimator):
