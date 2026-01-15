@@ -101,7 +101,10 @@ def encoding_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 def consumed_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
     latent_feats, svd, columns = _consumed_svd(train, n_components, svd)
 
-    return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+    if isinstance(latent_feats, pd.DataFrame):
+        return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+
+    return pd.DataFrame(latent_feats, columns=columns), svd
 
 def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
     consumed_cols = [c for c in train.columns if 'consumed' in c]
@@ -120,7 +123,10 @@ def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = 
 def infrastructure_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
     latent_feats, svd, columns = _infrastructure_svd(train, n_components, svd)
 
-    return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+    if isinstance(latent_feats, pd.DataFrame):
+        return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+
+    return pd.DataFrame(latent_feats, columns=columns), svd
 
 def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
     infrastructure_cols = [
