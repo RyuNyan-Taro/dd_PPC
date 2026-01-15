@@ -113,14 +113,14 @@ def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = 
     return latent_feats, svd, columns
 
 
-def infrastructure_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+def infrastructure_svd_dataframe(train: pd.DataFrame, n_components: int = 5, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
     latent_feats, svd, columns = _infrastructure_svd(train, n_components, svd)
 
     return pd.DataFrame(latent_feats, columns=columns), svd
 
 def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
     infrastructure_cols = [
-        'water', 'toilet', 'sewer', 'elect', 'water_source', 'sector1d'
+        'water', 'toilet', 'sewer', 'elect', 'water_source', 'sanitation_source'
     ]
 
     if svd is None:
