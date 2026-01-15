@@ -5,11 +5,12 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates']
+           'target_encode', 'create_survey_aggregates', 'truncated_svd']
 
 import numpy as np
 import pandas as pd
 import tqdm
+from sklearn.decomposition import TruncatedSVD
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
@@ -89,6 +90,13 @@ def encoding_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 
     return pd.DataFrame(x_train, columns=_columns)
 
+def truncated_svd(train: pd.DataFrame, n_components: int = 10) -> tuple[pd.DataFrame, TruncatedSVD]:
+    consumed_cols = [c for c in train.columns if 'consumed' in c]
+
+    svd = TruncatedSVD(n_components=5, random_state=123)
+    latent_feats = svd.fit_transform(train[consumed_cols])
+
+    return latent_feats, svd
 
 def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Apply Target Encoding to categorical columns.
