@@ -104,6 +104,14 @@ def fit_and_test_pipeline():
         #         ('model', model.get_tabular_nn_regressor(model_params['tabular']))
         #     ])
         # )
+        (
+            'mlp',
+            Pipeline([
+                ('prep', preprocessor),
+                ('convert', model.Float32Transformer()),
+                ('model', model.get_mlp_nn_regressor(model_params['mlp']))
+            ])
+        )
         # (
         #     'clf_low',
         #     Pipeline([('prep', preprocessor), (
@@ -396,5 +404,6 @@ def _get_model_params() -> dict[str, dict]:
         model_params[_model] = _model_param
 
     model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
+    model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
 
     return model_params
