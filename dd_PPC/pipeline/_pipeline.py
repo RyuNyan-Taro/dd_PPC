@@ -13,16 +13,6 @@ def fit_and_test_pipeline():
     def get_bc_threshold(original_val, lam):
         return calc.apply_boxcox_transform(np.array([original_val]), lam)[0][0]
 
-    def calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, model_pipelines: list, X, target_rate_y) -> dict[str, float]:
-        rmse = np.sqrt(np.mean((pred_cons_y - y) ** 2))
-        mae = np.mean(np.abs(pred_cons_y - y))
-        competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, target_rate_y)
-
-        return dict(
-            rmse=rmse,
-            mae=mae,
-            competition_score=competition_score
-        )
 
     def plot_model_bias(y_true, y_pred, model_name):
         plt.figure(figsize=(8, 6))
@@ -83,7 +73,7 @@ def fit_and_test_pipeline():
 
         train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
 
-        _train_metrics = calculate_metrics(_y_train_mean_pred, train_cons_y.cons_ppp17, train_pred_rate_y, consumption, model_pipelines, train_x, train_rate_y)
+        _train_metrics = _calculate_metrics(_y_train_mean_pred, train_cons_y.cons_ppp17, train_pred_rate_y, consumption, model_pipelines, train_x, train_rate_y)
 
         consumption = test_cons_y.copy()
         consumption['cons_pred'] = _y_test_mean_pred
@@ -91,9 +81,21 @@ def fit_and_test_pipeline():
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
-        _test_metrics = calculate_metrics(_y_test_mean_pred, test_cons_y.cons_ppp17, test_pred_rate_y, consumption, model_pipelines, test_x, test_rate_y)
+        _test_metrics = _calculate_metrics(_y_test_mean_pred, test_cons_y.cons_ppp17, test_pred_rate_y, consumption, model_pipelines, test_x, test_rate_y)
 
         print(_train_metrics)
         print(_test_metrics)
 
         plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
+
+# common subfunctions for pipelines
+def _calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, model_pipelines: list, X, target_rate_y) -> dict[str, float]:
+    rmse = np.sqrt(np.mean((pred_cons_y - y) ** 2))
+    mae = np.mean(np.abs(pred_cons_y - y))
+    competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, target_rate_y)
+
+    return dict(
+        rmse=rmse,
+        mae=mae,
+        competition_score=competition_score
+    )
