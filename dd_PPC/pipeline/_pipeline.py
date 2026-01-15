@@ -104,14 +104,14 @@ def fit_and_test_pipeline():
         #         ('model', model.get_tabular_nn_regressor(model_params['tabular']))
         #     ])
         # )
-        (
-            'mlp',
-            Pipeline([
-                ('prep', preprocessor),
-                ('convert', model.Float32Transformer()),
-                ('model', model.get_mlp_nn_regressor(model_params['mlp']))
-            ])
-        )
+        # (
+        #     'mlp',
+        #     Pipeline([
+        #         ('prep', preprocessor),
+        #         ('convert', model.Float32Transformer()),
+        #         ('model', model.get_mlp_nn_regressor(model_params['mlp']))
+        #     ])
+        # )
         # (
         #     'clf_low',
         #     Pipeline([('prep', preprocessor), (
