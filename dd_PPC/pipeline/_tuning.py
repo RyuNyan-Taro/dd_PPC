@@ -359,7 +359,7 @@ def _get_tuning_params(model_name: str, trial: optuna.trial.Trial) -> dict:
         return {
             'random_state': 123,
             'alpha': trial.suggest_float('alpha', 0.0001, 0.5, log=True),
-            'l1_ratio': trial.suggest_float('l1_ratio', 0.0, 0.15),
+            # 'l1_ratio': trial.suggest_float('l1_ratio', 0.0, 0.15),
             'max_iter': 10000,
         }
     else:
