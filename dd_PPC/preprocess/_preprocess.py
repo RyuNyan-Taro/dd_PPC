@@ -40,7 +40,7 @@ def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | N
 
 def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None, add_columns: list[str] | None = None) -> tuple[np.ndarray, list[str]]:
 
-    num_cols = ['weight', 'strata', 'hsize', 'age',
+    num_cols = ['weight', 'strata', 'hsize', 'age', 'utl_exp_ppp17',
                  'num_children5', 'num_children10', 'num_children18',
                  'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
@@ -48,6 +48,10 @@ def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None, 
         num_cols = num_cols + add_columns
 
     x_train = train[num_cols]
+
+    for _col in num_cols:
+        if x_train[_col].isnull().sum() > 0:
+            x_train[_col] = x_train[_col].fillna(x_train[_col].mean())
 
     if fit_model is None:
         fit_model = StandardScaler()
@@ -97,7 +101,7 @@ def encoding_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 def consumed_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
     latent_feats, svd, columns = _consumed_svd(train, n_components, svd)
 
-    return pd.DataFrame(latent_feats, columns=columns), svd
+    return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
 
 def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
     consumed_cols = [c for c in train.columns if 'consumed' in c]
@@ -116,7 +120,7 @@ def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = 
 def infrastructure_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
     latent_feats, svd, columns = _infrastructure_svd(train, n_components, svd)
 
-    return pd.DataFrame(latent_feats, columns=columns), svd
+    return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
 
 def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
     infrastructure_cols = [
