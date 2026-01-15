@@ -5,7 +5,7 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates', 'truncated_svd_dataframe']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe']
 
 import numpy as np
 import pandas as pd
@@ -94,12 +94,12 @@ def encoding_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(x_train, columns=_columns)
 
 
-def truncated_svd_dataframe(train: pd.DataFrame, n_components: int = 5, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
-    latent_feats, svd, columns = _truncated_svd(train, n_components, svd)
+def consumed_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+    latent_feats, svd, columns = _consumed_svd(train, n_components, svd)
 
     return pd.DataFrame(latent_feats, columns=columns), svd
 
-def _truncated_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
+def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
     consumed_cols = [c for c in train.columns if 'consumed' in c]
 
     if svd is None:
