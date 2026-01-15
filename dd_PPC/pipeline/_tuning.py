@@ -1,5 +1,6 @@
 __all__ = ['validation_plot_parameters', 'tuning_model']
 
+import optuna
 from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import numpy as np
@@ -108,70 +109,7 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
     def objective(trial):
         """Optuna objective function."""
 
-        # Define hyperparameter search space based on model
-        if model_name == 'xgboost':
-            params = {
-                'booster': 'gbtree',
-                'objective': 'reg:squarederror',
-                'random_state': 123,
-                'n_estimators': trial.suggest_int('n_estimators', 100, 1500),
-                'max_depth': trial.suggest_int('max_depth', 3, 8),
-                'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.1, log=True),
-                'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.3, 0.9),
-                'min_child_weight': trial.suggest_int('min_child_weight', 1, 9),
-                'gamma': trial.suggest_float('gamma', 0.1, 1.0, log=True),
-                'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 1.0, log=True),
-                'reg_lambda': trial.suggest_float('reg_lambda', 0.0001, 1.0, log=True),
-            }
-        elif model_name == 'lightgbm':
-            params = {
-                'boosting_type': 'gbdt',
-                'objective': 'regression',
-                'force_row_wise': True,
-                'random_state': 123,
-                'n_estimators': trial.suggest_int('n_estimators', 100, 1500),
-                'num_leaves': trial.suggest_int('num_leaves', 20, 256),
-                'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
-                # 'subsample': trial.suggest_float('subsample', 0.5, 1.0),
-                # 'subsample_freq': trial.suggest_int('subsample_freq', 0, 7),
-                'colsample_bytree': trial.suggest_float('colsample_bytree', 0.1, 1.0),
-                'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
-                'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 10.0, log=True),
-                'reg_lambda': trial.suggest_float('reg_lambda', 0.01, 10.0, log=True),
-            }
-        elif model_name == 'catboost':
-            params = {
-                'boosting_type': 'Plain',
-                'loss_function': 'RMSE',
-                'random_state': 123,
-                'verbose': False,
-                'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
-                'depth': trial.suggest_int('depth', 3, 9),
-                'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
-                'l2_leaf_reg': trial.suggest_float('l2_leaf_reg', 3.0, 9.0),
-            }
-        elif model_name == 'ridge':
-            params = {
-                'random_state': 123,
-                'alpha': trial.suggest_float('alpha', 0.0001, 1.0, log=True),
-                'max_iter': 10000,
-            }
-        elif model_name == 'lasso':
-            params = {
-                'random_state': 123,
-                'alpha': trial.suggest_float('alpha', 0.0001, 1.0, log=True),
-                'max_iter': 10000,
-            }
-        elif model_name == 'kneighbors':
-            params = {
-                'n_neighbors': trial.suggest_int('n_neighbors', 5, 30),
-                'weights': trial.suggest_categorical('weights', ['uniform', 'distance']),
-                'p': trial.suggest_int('p', 1, 2),
-            }
-        else:
-            raise ValueError(f"Unknown model: {model_name}")
-
+        params = _get_tuning_params(model_name, trial=trial)
         # Optionally tune boxcox_lambda
         # boxcox_lambda = trial.suggest_float('boxcox_lambda', 0.0, 0.3)
 
@@ -353,3 +291,76 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
     cv_params, param_scales = param_and_scales[model_name]
 
     return model_params, scoring, cv_params, param_scales
+
+
+def _get_tuning_params(model_name: str, trial: optuna.trial.Trial) -> dict:
+    # Define hyperparameter search space based on model
+    if model_name == 'xgboost':
+        return {
+            'booster': 'gbtree',
+            'objective': 'reg:squarederror',
+            'random_state': 123,
+            'n_estimators': trial.suggest_int('n_estimators', 100, 1500),
+            'max_depth': trial.suggest_int('max_depth', 3, 8),
+            'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.1, log=True),
+            'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.3, 0.9),
+            'min_child_weight': trial.suggest_int('min_child_weight', 1, 9),
+            'gamma': trial.suggest_float('gamma', 0.1, 1.0, log=True),
+            'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 1.0, log=True),
+            'reg_lambda': trial.suggest_float('reg_lambda', 0.0001, 1.0, log=True),
+        }
+    elif model_name == 'lightgbm':
+        return {
+            'boosting_type': 'gbdt',
+            'objective': 'regression',
+            'force_row_wise': True,
+            'random_state': 123,
+            'n_estimators': trial.suggest_int('n_estimators', 100, 1500),
+            'num_leaves': trial.suggest_int('num_leaves', 20, 256),
+            'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
+            # 'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+            # 'subsample_freq': trial.suggest_int('subsample_freq', 0, 7),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.1, 1.0),
+            'min_child_samples': trial.suggest_int('min_child_samples', 5, 100),
+            'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 10.0, log=True),
+            'reg_lambda': trial.suggest_float('reg_lambda', 0.01, 10.0, log=True),
+        }
+    elif model_name == 'catboost':
+        return {
+            'boosting_type': 'Plain',
+            'loss_function': 'RMSE',
+            'random_state': 123,
+            'verbose': False,
+            'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+            'depth': trial.suggest_int('depth', 3, 9),
+            'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
+            'l2_leaf_reg': trial.suggest_float('l2_leaf_reg', 3.0, 9.0),
+        }
+    elif model_name == 'ridge':
+        return {
+            'random_state': 123,
+            'alpha': trial.suggest_float('alpha', 0.0001, 1.0, log=True),
+            'max_iter': 10000,
+        }
+    elif model_name == 'lasso':
+        return {
+            'random_state': 123,
+            'alpha': trial.suggest_float('alpha', 0.0001, 1.0, log=True),
+            'max_iter': 10000,
+        }
+    elif model_name == 'kneighbors':
+        return {
+            'n_neighbors': trial.suggest_int('n_neighbors', 5, 30),
+            'weights': trial.suggest_categorical('weights', ['uniform', 'distance']),
+            'p': trial.suggest_int('p', 1, 2),
+        }
+    elif model_name == 'elasticnet':
+        return {
+            'random_state': 123,
+            'alpha': trial.suggest_float('alpha', 0.0001, 0.5, log=True),
+            'l1_ratio': trial.suggest_float('l1_ratio', 0.0, 0.15),
+            'max_iter': 10000,
+        }
+    else:
+        raise ValueError(f"Unknown model: {model_name}")
