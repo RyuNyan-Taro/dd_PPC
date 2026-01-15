@@ -6,6 +6,7 @@ __all__ = [
     'fit_ridge',
     'fit_lasso',
     'fit_kneighbors',
+    'fit_elasticnet',
     'fit_tabular',
     'fit_isotonic_regression',
     'transform_isotonic_regression'
@@ -22,11 +23,12 @@ import pandas as pd
 from catboost import CatBoost
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.isotonic import IsotonicRegression
-from sklearn.linear_model import Ridge, Lasso
+from sklearn.linear_model import Ridge, Lasso, ElasticNet
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.neighbors import KNeighborsRegressor
 from torch import nn
+from sklearn.pipeline import Pipeline
 
 from .. import file
 from ._nn import TabularNN, Float32Transformer
@@ -141,11 +143,18 @@ def fit_kneighbors(x_train, y_train, seed: int = 42, params: dict | None = None)
     return pred_y, pred_rid
 
 
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+def fit_elasticnet(x_train, y_train, seed: int = 42, params: dict | None = None) -> tuple[ElasticNet, Any]:
+    if params is None:
+        params = file.load_best_params('elasticnet')
 
-import numpy as np
+    model = ElasticNet(**params)
+
+    model.fit(x_train, y_train)
+
+    pred_eln = model.predict(x_train)
+
+    return model, pred_eln
+
 
 def fit_tabular(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
     if params is None:
