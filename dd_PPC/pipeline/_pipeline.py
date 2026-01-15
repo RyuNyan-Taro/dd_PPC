@@ -88,22 +88,22 @@ def fit_and_test_pipeline():
             'ridge',
             Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
         ),
-        # (
-        #     'knn',
-        #     Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])
-        # ),
+        (
+            'knn',
+            Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])
+        ),
         (
             'lasso',
             Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
         ),
-        (
-            'tabular',
-            Pipeline([
-                ('prep', preprocessor),
-                ('convert', model.Float32Transformer()),
-                ('model', model.get_tabular_nn_regressor(model_params['tabular']))
-            ])
-        )
+        # (
+        #     'tabular',
+        #     Pipeline([
+        #         ('prep', preprocessor),
+        #         ('convert', model.Float32Transformer()),
+        #         ('model', model.get_tabular_nn_regressor(model_params['tabular']))
+        #     ])
+        # )
         # (
         #     'clf_low',
         #     Pipeline([('prep', preprocessor), (
@@ -132,10 +132,10 @@ def fit_and_test_pipeline():
         #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
         #     )])
         # ),
-        # (
-        #     'elasticnet',
-        #     Pipeline([('prep', preprocessor), ('model', ElasticNet(random_state=123))]),
-        # )
+        (
+            'elasticnet',
+            Pipeline([('prep', preprocessor), ('model', ElasticNet(random_state=123))]),
+        )
     ]
 
     stacking_regressor = StackingRegressor(
@@ -371,7 +371,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'kneighbors']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':
