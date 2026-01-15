@@ -135,10 +135,13 @@ def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | N
 
 
 def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
-    _strata_times_infra = train['strata'] * train['svd_infrastructure_0']
-    _sanitation_and_consumed = (train['sanitation_source'] + 1) * train['svd_consumed_1']
+    _complex_numbers = {
+        'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
+        'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
+        'consumed_per_hsize': train['svd_consumed_1'] / (train['hsize'] + 1)
+    }
 
-    return pd.DataFrame({'strata_times_infra': _strata_times_infra, 'sanitation_and_consumed': _sanitation_and_consumed})
+    return pd.DataFrame(_complex_numbers)
 
 
 def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:
