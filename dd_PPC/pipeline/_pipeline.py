@@ -163,13 +163,13 @@ def fit_and_test_pipeline():
         #                                    boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
         #     )])
         # ),
-        # (
-        #     'clf_very_high',
-        #     Pipeline([('prep', preprocessor), (
-        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-        #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
-        #     )])
-        # ),
+        (
+            'clf_very_high',
+            Pipeline([('prep', preprocessor), (
+                'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+                                           boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
+            )])
+        ),
         # (
         #     'elasticnet',
         #     Pipeline([('prep', preprocessor), ('model', ElasticNet(**model_params['elasticnet']))]),
@@ -447,7 +447,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':
