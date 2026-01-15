@@ -67,7 +67,13 @@ def fit_and_test_pipeline():
         print('params:', _params)
 
     def drop_unused_columns(X):
-        return X.drop(columns=['hhid', 'com', 'utl_exp_ppp17', 'share_secondary', 'survey_id'])
+        return X.drop(columns=['hhid', 'com', 'share_secondary', 'survey_id'])
+
+    def handle_null_numbers(X):
+        X = X.copy()
+        X['utl_exp_ppp17'] = X['utl_exp_ppp17'].fillna(X['utl_exp_ppp17'].mean())
+
+        return X
 
     category_stage = ColumnTransformer(
         transformers=[
@@ -79,6 +85,8 @@ def fit_and_test_pipeline():
 
     preprocessor = Pipeline([
         ('drop_unused', FunctionTransformer(drop_unused_columns)),
+
+        ('handle_null_numbers', FunctionTransformer(handle_null_numbers)),
 
         ('category_encoding', category_stage),
 
@@ -421,7 +429,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
         'consumed4900', 'consumed5000',
     ]
 
-    num_cols = ['weight', 'strata', 'hsize', 'age',
+    num_cols = ['weight', 'strata', 'hsize', 'age', 'utl_exp_ppp17',
                 'num_children5', 'num_children10', 'num_children18',
                 'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
