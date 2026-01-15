@@ -138,8 +138,11 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     _complex_numbers = {
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
         'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
-        'urban_times_consumed': (train['urban'] + 1) * train['svd_consumed_1'],
-        'consumed_per_hsize': train['svd_consumed_1'] / (train['hsize'] + 1)
+        # 'urban_times_consumed': (train['urban'] + 1) * train['svd_consumed_1'],
+        'consumed_per_hsize': train['svd_consumed_1'] / (train['hsize'] + 1),
+        'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
+        'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
+        'urban_sanitation': train['urban'] * train['sanitation_source']
     }
 
     return pd.DataFrame(_complex_numbers)
