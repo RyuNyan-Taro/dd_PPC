@@ -5,7 +5,7 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe']
 
 import numpy as np
 import pandas as pd
@@ -111,6 +111,28 @@ def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = 
     columns = [f'svd_consumed_{_i}' for _i in range(n_components)]
 
     return latent_feats, svd, columns
+
+
+def infrastructure_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+    latent_feats, svd, columns = _infrastructure_svd(train, n_components, svd)
+
+    return pd.DataFrame(latent_feats, columns=columns), svd
+
+def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
+    infrastructure_cols = [
+        'water', 'toilet', 'sewer', 'elect', 'water_source', 'sector1d'
+    ]
+
+    if svd is None:
+        svd = TruncatedSVD(n_components=n_components, random_state=123)
+        svd.fit(train[infrastructure_cols])
+
+    latent_feats = svd.transform(train[infrastructure_cols])
+
+    columns = [f'svd_infrastructure_{_i}' for _i in range(n_components)]
+
+    return latent_feats, svd, columns
+
 
 def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Apply Target Encoding to categorical columns.
