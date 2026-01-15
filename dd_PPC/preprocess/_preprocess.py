@@ -142,7 +142,8 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'consumed_per_hsize': train['svd_consumed_1'] / (train['hsize'] + 1),
         'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
         'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
-        'urban_sanitation': train['urban'] * train['sanitation_source']
+        'urban_sanitation': train['urban'] * train['sanitation_source'],
+        'dependency_interaction': train['num_children5'] + train['num_children10'] + train['num_elderly'] / (train['hsize'] + 1),
     }
 
     return pd.DataFrame(_complex_numbers)
