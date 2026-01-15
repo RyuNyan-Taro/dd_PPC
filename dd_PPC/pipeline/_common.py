@@ -126,7 +126,7 @@ def fit_and_test_model(
     if display_result:
         show_metrics(test_scores)
 
-    return train_scores, test_scores, learned_models, train_x.columns.tolist()
+    return train_scores, test_scores, learned_models, _x_train.columns.tolist()
 
 
 def fit_and_predictions_model(model_names: list[str], folder_prefix: str | None = None):
