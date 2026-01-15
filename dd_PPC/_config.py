@@ -1,5 +1,5 @@
 NUMBER_COLUMNS = [
-    'weight', 'strata', 'hsize', 'age',
+    'weight', 'strata', 'hsize', 'age', 'utl_exp_ppp17',
     'num_children5', 'num_children10', 'num_children18',
     'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh'
 ]
