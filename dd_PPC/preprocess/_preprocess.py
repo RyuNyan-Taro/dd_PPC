@@ -279,7 +279,6 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'consumed4100': _yes_no, 'consumed4200': _yes_no, 'consumed4300': _yes_no, 'consumed4400': _yes_no,
         'consumed4500': _yes_no, 'consumed4600': _yes_no, 'consumed4700': _yes_no, 'consumed4800': _yes_no,
         'consumed4900': _yes_no, 'consumed5000': _yes_no,
-
     }
 
     category_cols = [
@@ -302,6 +301,29 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'consumed4500', 'consumed4600', 'consumed4700', 'consumed4800',
         'consumed4900', 'consumed5000',
     ]
+    #
+    # _custom_maps = {
+    #     'strata_urban': {
+    #         '1_0': 0, '1_1': 1,
+    #         '2_0': 2, '2_1': 3,
+    #         '3_0': 4, '3_1': 5,
+    #         '4_0': 6, '4_1': 7,
+    #         '5_0': 8, '5_1': 9,
+    #         '6_0': 10, '6_1': 11,
+    #         '7_0': 12, '7_1': 13,
+    #         '8_0': 14, '8_1': 15,
+    #     },
+    #     'strata_sanitation': {
+    #         '1_0': 0, '1_1': 1, '1_2': 2, '1_3': 3, '1_4': 4, '1_5': 5,
+    #         '2_0': 6, '2_1': 7, '2_2': 8, '2_3': 9, '2_4': 10, '2_5': 11,
+    #         '3_0': 12, '3_1': 13, '3_2': 14, '3_3': 15, '3_4': 16, '3_5': 17,
+    #         '4_0': 18, '4_1': 19, '4_2': 20, '4_3': 21, '4_4': 22, '4_5': 23,
+    #         '5_0': 24, '5_1': 25, '5_2': 26, '5_3': 27, '5_4': 28, '5_5': 29,
+    #         '6_0': 30, '6_1': 31, '6_2': 32, '6_3': 33, '6_4': 34, '6_5': 35,
+    #         '7_0': 36, '7_1': 37, '7_2': 38, '7_3': 39, '7_4': 40, '7_5': 41,
+    #         '8_0': 42, '8_1': 43, '8_2': 44, '8_3': 45, '8_4': 46, '8_5': 47,
+    #     }
+    # }
 
     x_train = train.copy()
     _imputer = SimpleImputer(strategy='most_frequent')
@@ -312,6 +334,11 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
         x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()),
                                   index=x_train.index).astype(int)
+
+    # x_train['strata_urban'] = (x_train['strata'].astype(str) + "_" + x_train['urban'].astype(str)).apply(lambda x: _custom_maps['strata_urban'][x])
+    # x_train['strata_sanitation'] = (x_train['strata'].astype(str) + "_" + x_train['sanitation_source'].astype(str)).apply(lambda x: _custom_maps['strata_sanitation'][x]) / 2
+
+    category_cols = category_cols + ['strata_urban']
 
     return x_train[category_cols].to_numpy(), category_cols
 
