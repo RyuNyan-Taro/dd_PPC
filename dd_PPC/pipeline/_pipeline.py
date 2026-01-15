@@ -84,18 +84,18 @@ def fit_and_test_pipeline():
             'catboost',
             Pipeline([('prep', preprocessor), ('model', catboost.CatBoostRegressor(**model_params['catboost']))])
         ),
-        # (
-        #     'ridge',
-        #     Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
-        # ),
+        (
+            'ridge',
+            Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
+        ),
         # (
         #     'knn',
         #     Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])
         # ),
-        # (
-        #     'lasso',
-        #     Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
-        # ),
+        (
+            'lasso',
+            Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
+        ),
         # (
         #     'tabular',
         #     Pipeline([
@@ -132,10 +132,10 @@ def fit_and_test_pipeline():
         #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
         #     )])
         # ),
-        (
-            'elasticnet',
-            Pipeline([('prep', preprocessor), ('model', ElasticNet(**model_params['elasticnet']))]),
-        )
+        # (
+        #     'elasticnet',
+        #     Pipeline([('prep', preprocessor), ('model', ElasticNet(**model_params['elasticnet']))]),
+        # )
     ]
 
     stacking_regressor = StackingRegressor(
