@@ -158,9 +158,11 @@ def fit_elasticnet(x_train, y_train, seed: int = 42, params: dict | None = None)
 
 
 def fit_tabular(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
-
-    if 'seed' not in params:
+    if params is None:
+        params = {'seed': seed}
+    elif 'seed' not in params:
         params['seed'] = seed
+
     regressor = get_tabular_nn_regressor(params)
 
     pipe = Pipeline([
@@ -177,7 +179,9 @@ def fit_tabular(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, param
 
 
 def fit_mlp(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
-    if 'seed' not in params:
+    if params is None:
+        params = {'seed': seed}
+    elif 'seed' not in params:
         params['seed'] = seed
 
     regressor = get_mlp_nn_regressor(params)
