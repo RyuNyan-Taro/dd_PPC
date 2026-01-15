@@ -111,7 +111,7 @@ def get_mlp_nn_regressor(params: dict) -> NeuralNetRegressor:
         criterion=nn.SmoothL1Loss,
         optimizer=torch.optim.Adam,
         train_split=None,
-        verbose=0,
+        verbose=1,
         device='cuda' if torch.cuda.is_available() else 'cpu',
         **params
     )
