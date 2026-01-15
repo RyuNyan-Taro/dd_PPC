@@ -2,13 +2,14 @@ __all__ = ['fit_and_test_pipeline']
 
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, FunctionTransformer
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
 from sklearn import set_config
@@ -17,6 +18,7 @@ import xgboost as xgb
 import catboost
 
 from .. import file, model, data, calc
+from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
 
 def fit_and_test_pipeline():
@@ -64,14 +66,22 @@ def fit_and_test_pipeline():
         print('model:', _model)
         print('params:', _params)
 
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', StandardScaler(), num_cols),
+    preprocessor = Pipeline([
+        # 手順: SVD列の追加
+        ('svd_gen', SVDFeatureGenerator()),
 
-            ('cat', CustomCategoryMapper(category_number_maps, category_cols), category_cols)
-        ],
-        remainder='drop'
-    )
+        # 手順: Complex列の追加
+        ('complex_gen', FunctionTransformer(complex_feature_wrapper)),
+
+        # 手順: 最終的な型整理とスケーリング
+        ('final_processor', ColumnTransformer(
+            transformers=[
+                ('num', StandardScaler(), num_cols),
+                ('cat', CustomCategoryMapper(category_number_maps, category_cols), category_cols)
+            ],
+            remainder='drop'
+        ))
+    ])
 
     model_pipelines = [
         (
@@ -242,6 +252,31 @@ class CustomCategoryMapper(BaseEstimator, TransformerMixin):
         return self.columns
 
 
+class SVDFeatureGenerator(BaseEstimator, TransformerMixin):
+    def __init__(self, consumed_svd=None, infra_svd=None):
+        self.consumed_svd = consumed_svd
+        self.infra_svd = infra_svd
+
+    def fit(self, X, y=None):
+        # 学習時（Train）にSVDをfitさせる
+        _, self.consumed_svd = consumed_svd_dataframe(X, svd=self.consumed_svd)
+        _, self.infra_svd = infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+
+        # SVD適用
+        df_cons, _ = consumed_svd_dataframe(X, svd=self.consumed_svd)
+        df_infra, _ = infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        # 元のデータに結合
+        return pd.concat([X.reset_index(drop=True), df_cons, df_infra], axis=1)
+
+def complex_feature_wrapper(X):
+    df_complex = complex_numbers_dataframe(X)
+    return pd.concat([X.reset_index(drop=True), df_complex], axis=1)
+
+
 class ClassifierWrapper(RegressorMixin, BaseEstimator):
 
     def __init__(self, classifier, boxcox_threshold=9.87):
@@ -374,7 +409,16 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
                 'num_children5', 'num_children10', 'num_children18',
                 'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
-    return num_cols, category_cols, category_number_maps
+    _complex_input_cols = num_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1']
+
+    complex_output_cols = list(complex_numbers_dataframe(pd.DataFrame(
+        [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
+        columns=_complex_input_cols)).columns)
+    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
+
+    final_num_cols = num_cols + svd_cols + complex_output_cols
+
+    return final_num_cols, category_cols, category_number_maps
 
 
 def _get_model_params() -> dict[str, dict]:
