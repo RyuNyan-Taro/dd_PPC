@@ -247,6 +247,7 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
         ),
         'ridge': dict(randome_state=42),
         'kneighbors': dict(random_state=42, n_jobs=-1),
+        'elasticnet': dict(random_state=42, max_iter=10000),
     }[model_name]
 
     # Cross-validation setup
@@ -336,7 +337,17 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
                 'leaf_size': 'linear',
                 'p': 'linear',
             }
-        ]
+        ],
+        'elasticnet': [
+            {
+                'alpha': [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0],
+                'l1_ratio': [0.0, 0.1, 0.3, 0.5, 0.7, 0.9, 0.95, 0.99, 1.0]
+            },
+            {
+                'alpha': 'log',
+                'l1_ratio': 'linear'
+            }
+        ],
     }
 
     cv_params, param_scales = param_and_scales[model_name]
