@@ -21,7 +21,7 @@ def fit_and_test_model(
         boxcox_lambda: float | None = None,
         seed_list: list[int] | None = None,
         display_result: bool = True,
-) -> tuple[list[dict[str, float]], list[dict[str, float]]]:
+) -> tuple[list[dict[str, float]], list[dict[str, float]], list]:
     """Fits and tests the selected_model; evaluates competition score"""
 
     if boxcox_lambda is None:
@@ -94,6 +94,7 @@ def fit_and_test_model(
         print(_scores_df)
 
     _datas = file.get_datas()
+    learned_models = []
     train_scores = []
     test_scores = []
 
@@ -120,11 +121,12 @@ def fit_and_test_model(
 
         train_scores.append(_train_metrics)
         test_scores.append(_test_metrics)
+        learned_models.append(_models)
 
     if display_result:
         show_metrics(test_scores)
 
-    return train_scores, test_scores
+    return train_scores, test_scores, learned_models
 
 
 def fit_and_predictions_model(model_names: list[str], folder_prefix: str | None = None):
