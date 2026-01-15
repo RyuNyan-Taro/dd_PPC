@@ -180,21 +180,18 @@ def preprocess_data(
         infra_svd: TruncatedSVD | None = None
 ) -> tuple[pd.DataFrame, StandardScaler, TruncatedSVD, TruncatedSVD, list[str]]:
     """Transforms input; returns normalized data and fitted objects"""
-
-    _drop_columns = [
-        'consumed100', 'consumed1100', 'consumed1200', 'consumed1300', 'consumed1400', 'consumed1500',
-        'consumed1600', 'consumed1700', 'consumed1800', 'consumed1900',
-        'consumed200', 'consumed2000', 'consumed2100', 'consumed2200', 'consumed2300', 'consumed2400', 'consumed2500',
-        'consumed2700', 'consumed2800', 'consumed2900',
-        'consumed300', 'consumed3000', 'consumed3100', 'consumed3200', 'consumed3300', 'consumed3400', 'consumed3500',
-        'consumed3600', 'consumed3700', 'consumed3800', 'consumed3900',
-        'consumed400', 'consumed4000', 'consumed4100', 'consumed4200', 'consumed4300', 'consumed4400', 'consumed4500',
-        'consumed4700', 'consumed4800', 'consumed4900', 'consumed500', 'consumed5000',
-        'consumed600',
-        'consumed700',
-        'consumed800',
-        'consumed900'
-    ]
+    #
+    # _drop_columns = [
+    #     'consumed100',
+    #     'consumed1100',
+    #     'consumed1600',
+    #     'consumed2200',
+    #     'consumed2700',
+    #     'consumed3200',
+    #     'consumed3400',
+    #     'consumed3600',
+    #     'consumed500'
+    # ]
 
     _datas_category = preprocess.encoding_category_dataframe(datas)
     _datas_consumed, consumed_svd = preprocess.consumed_svd_dataframe(_datas_category, svd=consumed_svd)
@@ -209,11 +206,12 @@ def preprocess_data(
         _new_datas, sc,
         add_columns=_datas_consumed.columns.tolist() + _datas_infrastructure.columns.tolist() + _datas_complex.columns.tolist())
 
-    category_cols = list(set(_datas_category.columns) - set(_drop_columns))
+    # category_cols = list(set(_datas_category.columns) - set(_drop_columns))
+    category_cols = list(_datas_category.columns)
 
     preprocessed = pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1)
 
-    preprocessed = preprocessed.drop(columns=_drop_columns)
+    # preprocessed = preprocessed.drop(columns=_drop_columns)
 
     return preprocessed, sc, consumed_svd, infra_svd, list(category_cols)
 
