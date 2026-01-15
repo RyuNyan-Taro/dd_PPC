@@ -94,12 +94,12 @@ def encoding_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(x_train, columns=_columns)
 
 
-def truncated_svd_dataframe(train: pd.DataFrame, n_components: int = 10, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+def truncated_svd_dataframe(train: pd.DataFrame, n_components: int = 5, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
     latent_feats, svd, columns = _truncated_svd(train, n_components, svd)
 
     return pd.DataFrame(latent_feats, columns=columns), svd
 
-def _truncated_svd(train: pd.DataFrame, n_components: int = 10, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
+def _truncated_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
     consumed_cols = [c for c in train.columns if 'consumed' in c]
 
     if svd is None:
