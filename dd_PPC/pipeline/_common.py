@@ -30,6 +30,7 @@ def fit_and_test_model(
     def fit_data(train_x_, train_cons_y_, train_rate_y_):
 
         x_train, sc, consumed_svd, infra_svd, _cat_cols = preprocess_data(train_x_)
+        print(x_train.columns.tolist())
         _y_train = _get_modified_target(train_cons_y_, boxcox_lambda)
 
         models, pred_vals = [], []
@@ -188,9 +189,12 @@ def preprocess_data(
     _new_datas = pd.concat([datas.copy().reset_index(drop=True), _datas_consumed.reset_index(drop=True), _datas_infrastructure.reset_index(drop=True)], axis=1)
     _datas_std, sc = preprocess.standardized_with_numbers_dataframe(_new_datas, sc, add_columns=_datas_consumed.columns.tolist() + _datas_infrastructure.columns.tolist())
 
+    _datas_std_and_category = pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1)
+    _datas_complex = preprocess.complex_numbers_dataframe(_datas_std_and_category)
+
     category_cols = _datas_category.columns
 
-    return pd.concat([_datas_std.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1), sc, consumed_svd, infra_svd, list(category_cols)
+    return pd.concat([_datas_std.reset_index(drop=True), _datas_complex.reset_index(drop=True), _datas_category.reset_index(drop=True)], axis=1), sc, consumed_svd, infra_svd, list(category_cols)
 
 
 def _get_modified_target(targets: pd.DataFrame, boxcox_lambda: float | None = None) -> pd.DataFrame:

@@ -5,7 +5,7 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe']
 
 import numpy as np
 import pandas as pd
@@ -132,6 +132,13 @@ def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | N
     columns = [f'svd_infrastructure_{_i}' for _i in range(n_components)]
 
     return latent_feats, svd, columns
+
+
+def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
+    _strata_times_infra = train['strata'] * train['svd_infrastructure_0']
+    _sanitation_and_consumed = (train['sanitation_source'] + 1) * train['svd_consumed_1']
+
+    return pd.DataFrame({'strata_times_infra': _strata_times_infra, 'sanitation_and_consumed': _sanitation_and_consumed})
 
 
 def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:
