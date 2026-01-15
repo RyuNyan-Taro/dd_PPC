@@ -8,6 +8,7 @@ __all__ = [
     'fit_kneighbors',
     'fit_elasticnet',
     'fit_tabular',
+    'fit_mlp',
     'fit_isotonic_regression',
     'transform_isotonic_regression'
 ]
@@ -31,7 +32,7 @@ from torch import nn
 from sklearn.pipeline import Pipeline
 
 from .. import file
-from ._nn import TabularNN, Float32Transformer
+from ._nn import TabularNN, EntityEmbeddingMLP, Float32Transformer
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 
 
@@ -168,6 +169,41 @@ def fit_tabular(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, param
     torch.manual_seed(seed)
     regressor = NeuralNetRegressor(
         module=TabularNN,
+        module__n_cont=num_features,
+        module__cat_dims=cat_features_dims,
+        module__emb_dims=emb_dims,
+        criterion=nn.MSELoss,
+        optimizer=torch.optim.Adam,
+        train_split=None,
+        device='cuda' if torch.cuda.is_available() else 'cpu',
+        **params
+    )
+
+    pipe = Pipeline([
+        ('float32', Float32Transformer()),
+        ('regressor', regressor)
+    ])
+
+    y_train_clean = y_train.to_numpy().astype(np.float32).flatten()
+    pipe.fit(x_train, y_train_clean)
+
+    pred_y = pipe.predict(x_train)
+
+    return pipe, pred_y
+
+
+def fit_mlp(x_train: pd.DataFrame, y_train: pd.Series, seed: int = 42, params: dict | None = None):
+    if params is None:
+        params = dict(lr=0.01, max_epochs=4, batch_size=32)
+
+    num_features = len(NUMBER_COLUMNS)
+    cat_features_dims = [len(CATEGORY_NUMBER_MAPS[_col]) + 1 for _col in x_train.columns[num_features:]]
+    emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
+
+    # 3. skorch Regressor の定義
+    torch.manual_seed(seed)
+    regressor = NeuralNetRegressor(
+        module=EntityEmbeddingMLP,
         module__n_cont=num_features,
         module__cat_dims=cat_features_dims,
         module__emb_dims=emb_dims,

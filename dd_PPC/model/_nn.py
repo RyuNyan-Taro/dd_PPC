@@ -1,4 +1,4 @@
-__all__ = ['get_tabular_nn_regressor', 'TabularNN', 'Float32Transformer']
+__all__ = ['get_tabular_nn_regressor', 'TabularNN', 'EntityEmbeddingMLP', 'Float32Transformer']
 
 import numpy as np
 import pandas as pd
@@ -96,6 +96,41 @@ class TabularNN(nn.Module):
         x = torch.cat([x_cont, x_emb], dim=1)
 
         return self.fc(x).squeeze(-1) # 出力を (batch_size,) に
+
+
+class EntityEmbeddingMLP(nn.Module):
+    def __init__(self, n_cont, cat_dims, emb_dims):
+        super().__init__()
+        self.n_cont = n_cont
+        # 各カテゴリ変数ごとの埋め込み層
+        self.embeddings = nn.ModuleList([
+            nn.Embedding(num_embeddings=d, embedding_dim=e)
+            for d, e in zip(cat_dims, emb_dims)
+        ])
+
+        # 入力サイズ = 数値変数の数 + 埋め込みベクトルの合計サイズ
+        total_input_dim = n_cont + sum(emb_dims)
+
+        self.mlp = nn.Sequential(
+            nn.Linear(total_input_dim, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1)
+        )
+
+    def forward(self, X):
+        x_cont = X[:, :self.n_cont].float()
+        x_cat = X[:, self.n_cont:].long()
+
+        x_emb = [emb(x_cat[:, i]) for i, emb in enumerate(self.embeddings)]
+        x_emb = torch.cat(x_emb, dim=1)
+
+        x = torch.cat([x_cont, x_emb], dim=1)
+
+        return self.mlp(x).squeeze(-1)
 
 
 class Float32Transformer(BaseEstimator, TransformerMixin):
