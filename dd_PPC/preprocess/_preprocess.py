@@ -338,8 +338,6 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
     # x_train['strata_urban'] = (x_train['strata'].astype(str) + "_" + x_train['urban'].astype(str)).apply(lambda x: _custom_maps['strata_urban'][x])
     # x_train['strata_sanitation'] = (x_train['strata'].astype(str) + "_" + x_train['sanitation_source'].astype(str)).apply(lambda x: _custom_maps['strata_sanitation'][x]) / 2
 
-    category_cols = category_cols + ['strata_urban']
-
     return x_train[category_cols].to_numpy(), category_cols
 
 
