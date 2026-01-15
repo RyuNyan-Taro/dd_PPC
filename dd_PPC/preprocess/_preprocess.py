@@ -5,18 +5,19 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe']
 
 import numpy as np
 import pandas as pd
 import tqdm
+from sklearn.decomposition import TruncatedSVD
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 
 
-def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[pd.DataFrame, StandardScaler]:
-    x_train_std, _num_cols = _standardized(train, fit_model)
+def standardized_with_numbers_dataframe(train: pd.DataFrame, fit_model: StandardScaler | None = None, add_columns: list[str] | None = None) -> tuple[pd.DataFrame, StandardScaler]:
+    x_train_std, _num_cols = _standardized(train, fit_model, add_columns)
 
     return pd.DataFrame(x_train_std, columns=_num_cols), fit_model
 
@@ -37,13 +38,20 @@ def standardized_with_numbers(train: pd.DataFrame, fit_model: StandardScaler | N
     return x_train_std, fit_model
 
 
-def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None) -> tuple[np.ndarray, list[str]]:
+def _standardized(train: pd.DataFrame, fit_model: StandardScaler | None = None, add_columns: list[str] | None = None) -> tuple[np.ndarray, list[str]]:
 
-    num_cols = ['weight', 'strata', 'hsize', 'age',
+    num_cols = ['weight', 'strata', 'hsize', 'age', 'utl_exp_ppp17',
                  'num_children5', 'num_children10', 'num_children18',
                  'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
-    x_train = train[num_cols]
+    if add_columns is not None:
+        num_cols = num_cols + add_columns
+
+    x_train = train[num_cols].copy()
+
+    for _col in num_cols:
+        if x_train[_col].isnull().sum() > 0:
+            x_train[_col] = x_train[_col].fillna(x_train[_col].mean())
 
     if fit_model is None:
         fit_model = StandardScaler()
@@ -88,6 +96,77 @@ def encoding_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     x_train, _columns = _category_encoding(train)
 
     return pd.DataFrame(x_train, columns=_columns)
+
+
+def consumed_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+    latent_feats, svd, columns = _consumed_svd(train, n_components, svd)
+
+    if isinstance(latent_feats, pd.DataFrame):
+        return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+
+    return pd.DataFrame(latent_feats, columns=columns), svd
+
+def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
+    consumed_cols = [c for c in train.columns if 'consumed' in c]
+
+    if svd is None:
+        svd = TruncatedSVD(n_components=n_components, random_state=123)
+        svd.fit(train[consumed_cols])
+
+    latent_feats = svd.transform(train[consumed_cols])
+
+    columns = [f'svd_consumed_{_i}' for _i in range(n_components)]
+
+    return latent_feats, svd, columns
+
+
+def infrastructure_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+    latent_feats, svd, columns = _infrastructure_svd(train, n_components, svd)
+
+    if isinstance(latent_feats, pd.DataFrame):
+        return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+
+    return pd.DataFrame(latent_feats, columns=columns), svd
+
+def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
+    infrastructure_cols = [
+        'water', 'toilet', 'sewer', 'elect', 'water_source', 'sector1d'
+    ]
+
+    if svd is None:
+        svd = TruncatedSVD(n_components=n_components, random_state=123)
+        svd.fit(train[infrastructure_cols])
+
+    latent_feats = svd.transform(train[infrastructure_cols])
+
+    columns = [f'svd_infrastructure_{_i}' for _i in range(n_components)]
+
+    return latent_feats, svd, columns
+
+
+def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
+    _strata_mean = train.groupby('strata')['svd_consumed_0'].transform('mean')
+    _strata_std = train.groupby('strata')['svd_consumed_0'].transform('std')
+    # _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
+
+    _complex_numbers = {
+        'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
+        'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
+        # 'urban_times_consumed': (train['urban'] + 1) * train['svd_consumed_1'],
+        'consumed_per_hsize': train['svd_consumed_1'] / (train['hsize'] + 1),
+        'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
+        'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
+        'urban_sanitation': train['urban'] * train['sanitation_source'],
+        # 'dependency_interaction': train['num_children5'] + train['num_children10'] + train['num_elderly'] / (train['hsize'] + 1),
+        'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
+        'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
+        'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
+        # 'infra_rel_to_strata': train['svd_infrastructure_0'] / (_infra_strata_mean + 1e-6),
+        # 'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
+        # 'infra_zscore_to_strata': (train['svd_infrastructure_0'] - _infra_strata_mean) / (_infra_strata_mean + 1e-6)
+    }
+
+    return pd.DataFrame(_complex_numbers)
 
 
 def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -145,11 +224,11 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'region6': _already_number,
         'region7': _already_number,
         'water_source': {
-            'Piped water into dwelling': 6,
+            'Piped water into dwelling': 7,
             'Surface water': 1,
             'Other': 2,
-            'Piped water to yard/plot': 5,
-            'Protected dug well': 4,
+            'Piped water to yard/plot': 6,
+            'Protected dug well': 5,
             'Public tap or standpipe': 3,
             'Tanker-truck': 0,
             'Protected spring': 4,
@@ -210,7 +289,6 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'consumed4100': _yes_no, 'consumed4200': _yes_no, 'consumed4300': _yes_no, 'consumed4400': _yes_no,
         'consumed4500': _yes_no, 'consumed4600': _yes_no, 'consumed4700': _yes_no, 'consumed4800': _yes_no,
         'consumed4900': _yes_no, 'consumed5000': _yes_no,
-
     }
 
     category_cols = [
@@ -233,6 +311,29 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         'consumed4500', 'consumed4600', 'consumed4700', 'consumed4800',
         'consumed4900', 'consumed5000',
     ]
+    #
+    # _custom_maps = {
+    #     'strata_urban': {
+    #         '1_0': 0, '1_1': 1,
+    #         '2_0': 2, '2_1': 3,
+    #         '3_0': 4, '3_1': 5,
+    #         '4_0': 6, '4_1': 7,
+    #         '5_0': 8, '5_1': 9,
+    #         '6_0': 10, '6_1': 11,
+    #         '7_0': 12, '7_1': 13,
+    #         '8_0': 14, '8_1': 15,
+    #     },
+    #     'strata_sanitation': {
+    #         '1_0': 0, '1_1': 1, '1_2': 2, '1_3': 3, '1_4': 4, '1_5': 5,
+    #         '2_0': 6, '2_1': 7, '2_2': 8, '2_3': 9, '2_4': 10, '2_5': 11,
+    #         '3_0': 12, '3_1': 13, '3_2': 14, '3_3': 15, '3_4': 16, '3_5': 17,
+    #         '4_0': 18, '4_1': 19, '4_2': 20, '4_3': 21, '4_4': 22, '4_5': 23,
+    #         '5_0': 24, '5_1': 25, '5_2': 26, '5_3': 27, '5_4': 28, '5_5': 29,
+    #         '6_0': 30, '6_1': 31, '6_2': 32, '6_3': 33, '6_4': 34, '6_5': 35,
+    #         '7_0': 36, '7_1': 37, '7_2': 38, '7_3': 39, '7_4': 40, '7_5': 41,
+    #         '8_0': 42, '8_1': 43, '8_2': 44, '8_3': 45, '8_4': 46, '8_5': 47,
+    #     }
+    # }
 
     x_train = train.copy()
     _imputer = SimpleImputer(strategy='most_frequent')
@@ -243,6 +344,9 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
         x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()),
                                   index=x_train.index).astype(int)
+
+    # x_train['strata_urban'] = (x_train['strata'].astype(str) + "_" + x_train['urban'].astype(str)).apply(lambda x: _custom_maps['strata_urban'][x])
+    # x_train['strata_sanitation'] = (x_train['strata'].astype(str) + "_" + x_train['sanitation_source'].astype(str)).apply(lambda x: _custom_maps['strata_sanitation'][x]) / 2
 
     return x_train[category_cols].to_numpy(), category_cols
 

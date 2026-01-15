@@ -2,13 +2,14 @@ __all__ = ['fit_and_test_pipeline']
 
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, FunctionTransformer
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
 from sklearn import set_config
@@ -17,6 +18,7 @@ import xgboost as xgb
 import catboost
 
 from .. import file, model, data, calc
+from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
 
 def fit_and_test_pipeline():
@@ -64,22 +66,50 @@ def fit_and_test_pipeline():
         print('model:', _model)
         print('params:', _params)
 
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', StandardScaler(), num_cols),
+    def drop_unused_columns(X):
+        return X.drop(columns=['hhid', 'com', 'share_secondary', 'survey_id'])
 
-            ('cat', CustomCategoryMapper(category_number_maps, category_cols), category_cols)
+    def handle_null_numbers(X):
+        X = X.copy()
+        X['utl_exp_ppp17'] = X['utl_exp_ppp17'].fillna(X['utl_exp_ppp17'].mean())
+
+        return X
+
+    category_stage = ColumnTransformer(
+        transformers=[
+            ('cat_encode', CustomCategoryMapper(category_number_maps, category_cols), category_cols)
         ],
-        remainder='drop'
+        remainder='passthrough',
+        verbose_feature_names_out=False
     )
+
+    preprocessor = Pipeline([
+        ('drop_unused', FunctionTransformer(drop_unused_columns)),
+
+        ('handle_null_numbers', FunctionTransformer(handle_null_numbers)),
+
+        ('category_encoding', category_stage),
+
+        ('svd_gen', SVDFeatureGenerator()),
+
+        ('complex_gen', FunctionTransformer(complex_feature_wrapper)),
+
+        ('final_scaler', ColumnTransformer(
+            transformers=[
+                ('scaling', StandardScaler(), num_cols)
+            ],
+            remainder='passthrough',
+            verbose_feature_names_out=False
+        ))
+    ])
 
     model_pipelines = [
         (
             'lgb', Pipeline([('prep', preprocessor), ('model', lgb.LGBMRegressor(**model_params['lightgbm']))])
         ),
-        (
-            'xgb', Pipeline([('prep', preprocessor), ('model', xgb.XGBRegressor(**model_params['xgboost']))])
-        ),
+        # (
+        #     'xgb', Pipeline([('prep', preprocessor), ('model', xgb.XGBRegressor(**model_params['xgboost']))])
+        # ),
         (
             'catboost',
             Pipeline([('prep', preprocessor), ('model', catboost.CatBoostRegressor(**model_params['catboost']))])
@@ -92,10 +122,10 @@ def fit_and_test_pipeline():
         #     'knn',
         #     Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])
         # ),
-        (
-            'lasso',
-            Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
-        ),
+        # (
+        #     'lasso',
+        #     Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
+        # ),
         # (
         #     'tabular',
         #     Pipeline([
@@ -148,11 +178,11 @@ def fit_and_test_pipeline():
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
-        final_estimator=Ridge(random_state=123, max_iter=10000),
-        # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
+        # final_estimator=Ridge(random_state=123, max_iter=10000),
+        final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
-        n_jobs=3,
+        n_jobs=2,
         verbose=1
     )
 
@@ -242,6 +272,35 @@ class CustomCategoryMapper(BaseEstimator, TransformerMixin):
         return self.columns
 
 
+class SVDFeatureGenerator(BaseEstimator, TransformerMixin):
+    def __init__(self, consumed_svd=None, infra_svd=None):
+        self.consumed_svd = consumed_svd
+        self.infra_svd = infra_svd
+
+    def fit(self, X, y=None):
+        # 学習時（Train）にSVDをfitさせる
+        _, self.consumed_svd = consumed_svd_dataframe(X, svd=self.consumed_svd)
+        _, self.infra_svd = infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+
+        df_cons, _ = consumed_svd_dataframe(X, svd=self.consumed_svd)
+        df_infra, _ = infrastructure_svd_dataframe(X, svd=self.infra_svd)
+
+        df_cons.index = X.index
+        df_infra.index = X.index
+
+        return pd.concat([X, df_cons, df_infra], axis=1)
+
+def complex_feature_wrapper(X):
+    df_complex = complex_numbers_dataframe(X)
+
+    df_complex.index = X.index
+    return pd.concat([X, df_complex], axis=1)
+
+
 class ClassifierWrapper(RegressorMixin, BaseEstimator):
 
     def __init__(self, classifier, boxcox_threshold=9.87):
@@ -281,11 +340,11 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
         'region6': _already_number,
         'region7': _already_number,
         'water_source': {
-            'Piped water into dwelling': 6,
+            'Piped water into dwelling': 7,
             'Surface water': 1,
             'Other': 2,
-            'Piped water to yard/plot': 5,
-            'Protected dug well': 4,
+            'Piped water to yard/plot': 6,
+            'Protected dug well': 5,
             'Public tap or standpipe': 3,
             'Tanker-truck': 0,
             'Protected spring': 4,
@@ -370,16 +429,25 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
         'consumed4900', 'consumed5000',
     ]
 
-    num_cols = ['weight', 'strata', 'hsize', 'age',
+    num_cols = ['weight', 'strata', 'hsize', 'age', 'utl_exp_ppp17',
                 'num_children5', 'num_children10', 'num_children18',
                 'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
 
-    return num_cols, category_cols, category_number_maps
+    _complex_input_cols = num_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1']
+
+    complex_output_cols = list(complex_numbers_dataframe(pd.DataFrame(
+        [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
+        columns=_complex_input_cols)).columns)
+    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
+
+    final_num_cols = num_cols + svd_cols + complex_output_cols
+
+    return final_num_cols, category_cols, category_number_maps
 
 
 def _get_model_params() -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet']:
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
         _model_param = file.load_best_params(_model)
         match _model:
             case 'lightgbm':

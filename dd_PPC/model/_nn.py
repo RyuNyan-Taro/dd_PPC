@@ -8,6 +8,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from skorch import NeuralNetRegressor
 
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
+from ..preprocess import complex_numbers_dataframe
 
 
 def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:
@@ -89,7 +90,16 @@ def get_mlp_nn_regressor(params: dict) -> NeuralNetRegressor:
         torch.manual_seed(params['seed'])
         del params['seed']
 
-    num_features = len(NUMBER_COLUMNS)
+    _complex_input_cols = NUMBER_COLUMNS + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1']
+
+    complex_output_cols = list(complex_numbers_dataframe(pd.DataFrame(
+        [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
+        columns=_complex_input_cols)).columns)
+    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
+
+    final_num_cols = NUMBER_COLUMNS + svd_cols + complex_output_cols
+
+    num_features = len(final_num_cols)
     cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
     emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
 
@@ -101,7 +111,7 @@ def get_mlp_nn_regressor(params: dict) -> NeuralNetRegressor:
         criterion=nn.SmoothL1Loss,
         optimizer=torch.optim.Adam,
         train_split=None,
-        verbose=0,
+        verbose=1,
         device='cuda' if torch.cuda.is_available() else 'cpu',
         **params
     )

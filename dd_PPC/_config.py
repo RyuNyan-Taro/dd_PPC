@@ -1,5 +1,5 @@
 NUMBER_COLUMNS = [
-    'weight', 'strata', 'hsize', 'age',
+    'weight', 'strata', 'hsize', 'age', 'utl_exp_ppp17',
     'num_children5', 'num_children10', 'num_children18',
     'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh'
 ]
@@ -14,11 +14,11 @@ CATEGORY_NUMBER_MAPS = {
         'sewer': _access_or_not,
         'elect': _access_or_not,
         'water_source': {
-            'Piped water into dwelling': 6,
+            'Piped water into dwelling': 7,
             'Surface water': 1,
             'Other': 2,
-            'Piped water to yard/plot': 5,
-            'Protected dug well': 4,
+            'Piped water to yard/plot': 6,
+            'Protected dug well': 5,
             'Public tap or standpipe': 3,
             'Tanker-truck': 0,
             'Protected spring': 4,
