@@ -66,20 +66,27 @@ def fit_and_test_pipeline():
         print('model:', _model)
         print('params:', _params)
 
+    category_stage = ColumnTransformer(
+        transformers=[
+            ('cat_encode', CustomCategoryMapper(category_number_maps, category_cols), category_cols)
+        ],
+        remainder='passthrough',
+        verbose_feature_names_out=False
+    )
+
     preprocessor = Pipeline([
-        # 手順: SVD列の追加
+        ('category_encoding', category_stage),
+
         ('svd_gen', SVDFeatureGenerator()),
 
-        # 手順: Complex列の追加
         ('complex_gen', FunctionTransformer(complex_feature_wrapper)),
 
-        # 手順: 最終的な型整理とスケーリング
-        ('final_processor', ColumnTransformer(
+        ('final_scaler', ColumnTransformer(
             transformers=[
-                ('num', StandardScaler(), num_cols),
-                ('cat', CustomCategoryMapper(category_number_maps, category_cols), category_cols)
+                ('scaling', StandardScaler(), num_cols)
             ],
-            remainder='drop'
+            remainder='passthrough',
+            verbose_feature_names_out=False
         ))
     ])
 
@@ -266,15 +273,19 @@ class SVDFeatureGenerator(BaseEstimator, TransformerMixin):
     def transform(self, X):
         X = X.copy()
 
-        # SVD適用
         df_cons, _ = consumed_svd_dataframe(X, svd=self.consumed_svd)
         df_infra, _ = infrastructure_svd_dataframe(X, svd=self.infra_svd)
-        # 元のデータに結合
-        return pd.concat([X.reset_index(drop=True), df_cons, df_infra], axis=1)
+
+        df_cons.index = X.index
+        df_infra.index = X.index
+
+        return pd.concat([X, df_cons, df_infra], axis=1)
 
 def complex_feature_wrapper(X):
     df_complex = complex_numbers_dataframe(X)
-    return pd.concat([X.reset_index(drop=True), df_complex], axis=1)
+
+    df_complex.index = X.index
+    return pd.concat([X, df_complex], axis=1)
 
 
 class ClassifierWrapper(RegressorMixin, BaseEstimator):
