@@ -137,7 +137,7 @@ def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | N
 def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     _strata_mean = train.groupby('strata')['svd_consumed_0'].transform('mean')
     _strata_std = train.groupby('strata')['svd_consumed_0'].transform('std')
-    _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
+    # _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
 
     _complex_numbers = {
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
@@ -151,8 +151,9 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
-        'infra_rel_to_strata': train['svd_infrastructure_0'] / (_infra_strata_mean + 1e-6),
-        'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
+        # 'infra_rel_to_strata': train['svd_infrastructure_0'] / (_infra_strata_mean + 1e-6),
+        # 'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
+        # 'infra_zscore_to_strata': (train['svd_infrastructure_0'] - _infra_strata_mean) / (_infra_strata_mean + 1e-6)
     }
 
     return pd.DataFrame(_complex_numbers)
