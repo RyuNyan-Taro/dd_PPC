@@ -139,6 +139,10 @@ def test_model_pipeline(model_name: str) -> tuple:
         print(_train_metrics)
         print(_test_metrics)
 
+        learned_models.append(_model_pipeline)
+        train_scores.append(_train_metrics)
+        test_scores.append(_test_metrics)
+
     return learned_models, train_scores, test_scores,
 
 
