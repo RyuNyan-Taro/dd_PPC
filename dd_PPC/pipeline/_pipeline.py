@@ -1,4 +1,4 @@
-__all__ = ['fit_and_test_pipeline', 'fit_and_predictions_pipeline']
+__all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline']
 
 
 import numpy as np
@@ -70,7 +70,7 @@ def fit_and_test_pipeline():
 
         train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
 
-        _train_metrics = _calculate_metrics(_y_train_mean_pred, train_cons_y.cons_ppp17, train_pred_rate_y, consumption, model_pipelines, train_x, train_rate_y)
+        _train_metrics = _calculate_metrics(_y_train_mean_pred, train_cons_y.cons_ppp17, train_pred_rate_y, consumption, train_rate_y)
 
         consumption = test_cons_y.copy()
         consumption['cons_pred'] = _y_test_mean_pred
@@ -78,12 +78,68 @@ def fit_and_test_pipeline():
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
-        _test_metrics = _calculate_metrics(_y_test_mean_pred, test_cons_y.cons_ppp17, test_pred_rate_y, consumption, model_pipelines, test_x, test_rate_y)
+        _test_metrics = _calculate_metrics(_y_test_mean_pred, test_cons_y.cons_ppp17, test_pred_rate_y, consumption, test_rate_y)
 
         print(_train_metrics)
         print(_test_metrics)
 
         plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
+
+
+def test_model_pipeline(model_name: str) -> tuple:
+    boxcox_lambda = 0.09
+
+    _model_pipeline = model.get_stacking_regressor_and_pipelines([model_name], boxcox_lambda=boxcox_lambda)[1][0]
+
+    _datas = file.get_datas()
+
+    _k_fold_test_ids = [100000, 200000, 300000]
+
+    learned_models = []
+    train_scores = []
+    test_scores = []
+
+    for _i, _id in enumerate(_k_fold_test_ids):
+        print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
+
+        train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(
+            _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
+        )
+
+        set_config(transform_output="pandas")
+        train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda)[0]
+        _model_pipeline.fit(train_x, train_y.astype(np.float32).flatten())
+
+        y_train_pred = _model_pipeline.predict(train_x)
+        y_test_pred = _model_pipeline.predict(test_x)
+
+        _y_train_mean_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
+        _y_test_mean_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
+
+        consumption = train_cons_y.copy()
+        consumption['cons_pred'] = _y_train_mean_pred
+        train_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+
+        ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
+
+        train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
+
+        _train_metrics = _calculate_metrics(_y_train_mean_pred, train_cons_y.cons_ppp17, train_pred_rate_y, consumption,
+                                            train_rate_y)
+
+        consumption = test_cons_y.copy()
+        consumption['cons_pred'] = _y_test_mean_pred
+        test_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+
+        test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
+
+        _test_metrics = _calculate_metrics(_y_test_mean_pred, test_cons_y.cons_ppp17, test_pred_rate_y, consumption,
+                                           test_rate_y)
+
+        print(_train_metrics)
+        print(_test_metrics)
+
+    return learned_models, train_scores, test_scores,
 
 
 def fit_and_predictions_pipeline(folder_prefix: str | None = None):
@@ -112,7 +168,7 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
 
     print(_calculate_metrics(
         y_train_pred, train_cons_y.cons_ppp17, train_pred_rate_y, train_cons_y,
-        model_pipelines, train_x, train_rate_y
+        train_rate_y
     ))
 
     # prediction
@@ -128,7 +184,7 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
 
 
 # common subfunctions for pipelines
-def _calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, model_pipelines: list, X, target_rate_y) -> dict[str, float]:
+def _calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, target_rate_y) -> dict[str, float]:
     rmse = np.sqrt(np.mean((pred_cons_y - y) ** 2))
     mae = np.mean(np.abs(pred_cons_y - y))
     competition_score = calc.weighted_average_of_consumption_and_poverty_rate(consumption, pred_rate_y, target_rate_y)
