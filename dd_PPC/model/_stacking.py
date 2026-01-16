@@ -30,33 +30,7 @@ def get_stacking_regressor_and_pipelines():
         print('model:', _model)
         print('params:', _params)
 
-    category_stage = ColumnTransformer(
-        transformers=[
-            ('cat_encode', _CustomCategoryMapper(category_number_maps, category_cols), category_cols)
-        ],
-        remainder='passthrough',
-        verbose_feature_names_out=False
-    )
-
-    preprocessor = Pipeline([
-        ('drop_unused', FunctionTransformer(_drop_unused_columns)),
-
-        ('handle_null_numbers', FunctionTransformer(_handle_null_numbers)),
-
-        ('category_encoding', category_stage),
-
-        ('svd_gen', _SVDFeatureGenerator()),
-
-        ('complex_gen', FunctionTransformer(_complex_feature_wrapper)),
-
-        ('final_scaler', ColumnTransformer(
-            transformers=[
-                ('scaling', StandardScaler(), num_cols)
-            ],
-            remainder='passthrough',
-            verbose_feature_names_out=False
-        ))
-    ])
+    preprocessor = _get_common_preprocess(category_number_maps, category_cols, num_cols)
 
     model_pipelines = [
         (
@@ -143,6 +117,110 @@ def get_stacking_regressor_and_pipelines():
 
     return stacking_regressor, model_pipelines
 
+
+# sub functions to get params
+def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
+    _access_or_not = {'Access': 1, 'No access': 0}
+    _already_number = {0: 0, 1: 1}
+    _yes_no = {'Yes': 1, 'No': 0}
+
+    category_cols = [
+        'water', 'toilet', 'sewer', 'elect', 'water_source',
+        'male', 'urban',
+        'owner', 'employed', 'any_nonagric',
+        'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
+        'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
+        'consumed100', 'consumed200', 'consumed300', 'consumed400',
+        'consumed500', 'consumed600', 'consumed700', 'consumed800',
+        'consumed900', 'consumed1000', 'consumed1100', 'consumed1200',
+        'consumed1300', 'consumed1400', 'consumed1500', 'consumed1600',
+        'consumed1700', 'consumed1800', 'consumed1900', 'consumed2000',
+        'consumed2100', 'consumed2200', 'consumed2300', 'consumed2400',
+        'consumed2500', 'consumed2600', 'consumed2700', 'consumed2800',
+        'consumed2900', 'consumed3000', 'consumed3100', 'consumed3200',
+        'consumed3300', 'consumed3400', 'consumed3500', 'consumed3600',
+        'consumed3700', 'consumed3800', 'consumed3900', 'consumed4000',
+        'consumed4100', 'consumed4200', 'consumed4300', 'consumed4400',
+        'consumed4500', 'consumed4600', 'consumed4700', 'consumed4800',
+        'consumed4900', 'consumed5000',
+    ]
+
+    num_cols = NUMBER_COLUMNS.copy()
+
+    _complex_input_cols = num_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1']
+
+    complex_output_cols = list(complex_numbers_dataframe(pd.DataFrame(
+        [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
+        columns=_complex_input_cols)).columns)
+    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
+
+    final_num_cols = num_cols + svd_cols + complex_output_cols
+
+    return final_num_cols, category_cols, CATEGORY_NUMBER_MAPS
+
+
+def _get_model_params(model_names: list[str]) -> dict[str, dict]:
+    model_params = {}
+    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
+        _model_param = file.load_best_params(_model)
+        match _model:
+            case 'lightgbm':
+                _model_param['objective'] = 'regression'
+                _model_param['metric'] = 'rmse'
+                _model_param['verbose'] = -1
+            case 'xgboost':
+                _model_param['objective'] = 'reg:squarederror'
+                _model_param['eval_metric'] = 'rmse'
+            case 'catboost':
+                _model_param['verbose'] = 0
+                _model_param['loss_function'] = 'RMSE'
+            case 'lasso':
+                _model_param['max_iter'] = 10000
+            case 'ridge':
+                _model_param['max_iter'] = 10000
+            case 'elasticnet':
+                _model_param['max_iter'] = 10000
+
+        if _model != 'kneighbors':
+            _model_param['random_state'] = 123
+        model_params[_model] = _model_param
+
+    model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
+    model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
+
+    return {model: model_params[model] for model in model_names}
+
+
+def _get_common_preprocess(category_number_maps: dict, category_cols: list[str], num_cols: list[str]) -> Pipeline:
+    _category_stage = ColumnTransformer(
+        transformers=[
+            ('cat_encode', _CustomCategoryMapper(category_number_maps, category_cols), category_cols)
+        ],
+        remainder='passthrough',
+        verbose_feature_names_out=False
+    )
+
+    preprocessor = Pipeline([
+        ('drop_unused', FunctionTransformer(_drop_unused_columns)),
+
+        ('handle_null_numbers', FunctionTransformer(_handle_null_numbers)),
+
+        ('category_encoding', _category_stage),
+
+        ('svd_gen', _SVDFeatureGenerator()),
+
+        ('complex_gen', FunctionTransformer(_complex_feature_wrapper)),
+
+        ('final_scaler', ColumnTransformer(
+            transformers=[
+                ('scaling', StandardScaler(), num_cols)
+            ],
+            remainder='passthrough',
+            verbose_feature_names_out=False
+        ))
+    ])
+
+    return preprocessor
 
 # sub functions for preprocessing
 def _drop_unused_columns(X):
@@ -235,75 +313,3 @@ class ClassifierWrapper(RegressorMixin, BaseEstimator):
     def predict(self, X):
 
         return self.classifier.predict_proba(X)[:, 1]
-
-
-def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
-    _access_or_not = {'Access': 1, 'No access': 0}
-    _already_number = {0: 0, 1: 1}
-    _yes_no = {'Yes': 1, 'No': 0}
-
-    category_cols = [
-        'water', 'toilet', 'sewer', 'elect', 'water_source',
-        'male', 'urban',
-        'owner', 'employed', 'any_nonagric',
-        'sanitation_source', 'dweltyp', 'educ_max', 'sector1d',
-        'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7',
-        'consumed100', 'consumed200', 'consumed300', 'consumed400',
-        'consumed500', 'consumed600', 'consumed700', 'consumed800',
-        'consumed900', 'consumed1000', 'consumed1100', 'consumed1200',
-        'consumed1300', 'consumed1400', 'consumed1500', 'consumed1600',
-        'consumed1700', 'consumed1800', 'consumed1900', 'consumed2000',
-        'consumed2100', 'consumed2200', 'consumed2300', 'consumed2400',
-        'consumed2500', 'consumed2600', 'consumed2700', 'consumed2800',
-        'consumed2900', 'consumed3000', 'consumed3100', 'consumed3200',
-        'consumed3300', 'consumed3400', 'consumed3500', 'consumed3600',
-        'consumed3700', 'consumed3800', 'consumed3900', 'consumed4000',
-        'consumed4100', 'consumed4200', 'consumed4300', 'consumed4400',
-        'consumed4500', 'consumed4600', 'consumed4700', 'consumed4800',
-        'consumed4900', 'consumed5000',
-    ]
-
-    num_cols = NUMBER_COLUMNS.copy()
-
-    _complex_input_cols = num_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1']
-
-    complex_output_cols = list(complex_numbers_dataframe(pd.DataFrame(
-        [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
-        columns=_complex_input_cols)).columns)
-    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
-
-    final_num_cols = num_cols + svd_cols + complex_output_cols
-
-    return final_num_cols, category_cols, CATEGORY_NUMBER_MAPS
-
-
-def _get_model_params(model_names: list[str]) -> dict[str, dict]:
-    model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
-        _model_param = file.load_best_params(_model)
-        match _model:
-            case 'lightgbm':
-                _model_param['objective'] = 'regression'
-                _model_param['metric'] = 'rmse'
-                _model_param['verbose'] = -1
-            case 'xgboost':
-                _model_param['objective'] = 'reg:squarederror'
-                _model_param['eval_metric'] = 'rmse'
-            case 'catboost':
-                _model_param['verbose'] = 0
-                _model_param['loss_function'] = 'RMSE'
-            case 'lasso':
-                _model_param['max_iter'] = 10000
-            case 'ridge':
-                _model_param['max_iter'] = 10000
-            case 'elasticnet':
-                _model_param['max_iter'] = 10000
-
-        if _model != 'kneighbors':
-            _model_param['random_state'] = 123
-        model_params[_model] = _model_param
-
-    model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
-    model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
-
-    return {model: model_params[model] for model in model_names}
