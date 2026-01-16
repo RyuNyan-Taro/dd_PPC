@@ -14,7 +14,7 @@ import lightgbm as lgb
 import xgboost as xgb
 import catboost
 
-from .. import file
+from .. import file, model
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
@@ -34,76 +34,9 @@ def get_stacking_regressor_and_pipelines():
 
     model_pipelines = [
         (
-            'lgb', Pipeline([('prep', preprocessor), ('model', lgb.LGBMRegressor(**model_params['lightgbm']))])
-        ),
-        # (
-        #     'xgb', Pipeline([('prep', preprocessor), ('model', xgb.XGBRegressor(**model_params['xgboost']))])
-        # ),
-        (
-            'catboost',
-            Pipeline([('prep', preprocessor), ('model', catboost.CatBoostRegressor(**model_params['catboost']))])
-        ),
-        (
-            'ridge',
-            Pipeline([('prep', preprocessor), ('model', Ridge(**model_params['ridge']))])
-        ),
-        # (
-        #     'knn',
-        #     Pipeline([('prep', preprocessor), ('model', KNeighborsRegressor(**model_params['kneighbors']))])
-        # ),
-        # (
-        #     'lasso',
-        #     Pipeline([('prep', preprocessor), ('model',  Lasso(**model_params['lasso']))])
-        # ),
-        # (
-        #     'tabular',
-        #     Pipeline([
-        #         ('prep', preprocessor),
-        #         ('convert', model.Float32Transformer()),
-        #         ('model', model.get_tabular_nn_regressor(model_params['tabular']))
-        #     ])
-        # )
-        # (
-        #     'mlp',
-        #     Pipeline([
-        #         ('prep', preprocessor),
-        #         ('convert', model.Float32Transformer()),
-        #         ('model', model.get_mlp_nn_regressor(model_params['mlp']))
-        #     ])
-        # )
-        # (
-        #     'clf_low',
-        #     Pipeline([('prep', preprocessor), (
-        #         'model', _ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose = -1, force_row_wise=True),
-        #                                    boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda))
-        #     )])
-        # ),
-        # (
-        #     'clf_middle',
-        #     Pipeline([('prep', preprocessor), (
-        #         'model', _ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-        #                                    boxcox_threshold=get_bc_threshold(9.87, boxcox_lambda))
-        #     )])
-        # ),
-        # (
-        #     'clf_high',
-        #     Pipeline([('prep', preprocessor), (
-        #         'model', _ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-        #                                    boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
-        #     )])
-        # ),
-        # (
-        #     'clf_very_high',
-        #     Pipeline([('prep', preprocessor), (
-        #         'model', _ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-        #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
-        #     )])
-        # ),
-        # (
-        #     'elasticnet',
-        #     Pipeline([('prep', preprocessor), ('model', ElasticNet(**model_params['elasticnet']))]),
-        # )
-    ]
+            _name,
+            Pipeline([('prep', preprocessor)] + _get_initialized_model(_name, model_params))
+        ) for _name in _model_names]
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
@@ -221,6 +154,56 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
     ])
 
     return preprocessor
+
+
+def _get_initialized_model(model_name: str, model_params: dict) -> list[tuple[str, BaseEstimator]]:
+    _additional_preprocess = ['tabular', 'mlp']
+    _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
+    _model = None
+
+    if model_name in _additional_preprocess:
+        match model_name:
+            case 'tabular':
+                _model = model.get_tabular_nn_regressor(model_params['tabular'])
+            case 'mlp':
+                _model = model.get_mlp_nn_regressor(model_params['mlp'])
+            case _:
+                raise ValueError(f'Invalid model name: {model_name}')
+
+        return [('convert', model.Float32Transformer()), _model]
+
+    if model_name in _clf_model:
+        _bc_threshold = {
+            'clf_low': 3.17,
+            'clf_middle': 9.87,
+            'clf_high': 10.70,
+            'clf_very_high': 27.37
+        }[model_name]
+
+        _model = _ClassifierWrapper(
+            lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+            boxcox_threshold=_bc_threshold
+        )
+
+        return [('model', _model)]
+
+    match model_name:
+        case 'lightgbm':
+            _model = lgb.LGBMRegressor(**model_params['lightgbm'])
+        case 'xgboost':
+            _model = xgb.XGBRegressor(**model_params['xgboost'])
+        case 'catboost':
+            _model = catboost.CatBoostRegressor(**model_params['catboost'])
+        case 'ridge':
+            _model = Ridge(**model_params['ridge'])
+        case 'kneighbors':
+            _model = KNeighborsRegressor(**model_params['kneighbors'])
+        case 'lasso':
+            _model = Lasso(**model_params['lasso'])
+        case 'elasticnet':
+            _model = ElasticNet(**model_params['elasticnet'])
+
+    return [('model', _model)]
 
 # sub functions for preprocessing
 def _drop_unused_columns(X):
