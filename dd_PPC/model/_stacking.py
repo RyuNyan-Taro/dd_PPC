@@ -15,6 +15,7 @@ import xgboost as xgb
 import catboost
 
 from .. import file
+from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
 
@@ -241,92 +242,6 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
     _already_number = {0: 0, 1: 1}
     _yes_no = {'Yes': 1, 'No': 0}
 
-    category_number_maps = {
-        'owner': {'Owner': 1, 'Not owner': 0},
-        'water': _access_or_not,
-        'toilet': _access_or_not,
-        'sewer': _access_or_not,
-        'elect': _access_or_not,
-        'male': {'Male': 1, 'Female': 0},
-        'urban': {'Urban': 1, 'Rural': 0},
-        'employed': {'Employed': 1, 'Not employed': 0},
-        'any_nonagric': _yes_no,
-        'region1': _already_number,
-        'region2': _already_number,
-        'region3': _already_number,
-        'region4': _already_number,
-        'region5': _already_number,
-        'region6': _already_number,
-        'region7': _already_number,
-        'water_source': {
-            'Piped water into dwelling': 7,
-            'Surface water': 1,
-            'Other': 2,
-            'Piped water to yard/plot': 6,
-            'Protected dug well': 5,
-            'Public tap or standpipe': 3,
-            'Tanker-truck': 0,
-            'Protected spring': 4,
-        },
-        'sanitation_source': {
-            'A piped sewer system': 5,
-            'A septic tank': 3,
-            'Pit latrine with slab': 2,
-            'No facilities or bush or field': 0,
-            'Pit latrine': 1,
-            'Other': 4,
-        },
-        'dweltyp': {
-            'Detached house': 4,
-            'Separate apartment': 2,
-            'Several buildings connected': 1,
-            'Other': 0,
-            'Improvised housing unit': 3,
-        },
-        'educ_max': {
-            'Complete Tertiary Education': 6,
-            'Complete Secondary Education': 5,
-            'Incomplete Tertiary Education': 4,
-            'Incomplete Primary Education': 2,
-            'Complete Primary Education': 3,
-            'Incomplete Secondary Education': 1,
-            'Never attended': 0,
-        },
-        'sector1d': {
-            'Agriculture, hunting and forestry': 0,
-            'Wholesale and retail trade': 1,
-            'Transport, storage and communications': 2,
-            'Manufacturing': 3,
-            'Construction': 4,
-            'Public administration and defence': 5,
-            'Hotels and restaurants': 6,
-            'Education': 7,
-            'Real estate, renting and business activities': 8,
-            'Other community, social and personal service activities': 9,
-            'Mining and quarrying': 10,
-            'Health and social work': 11,
-            'Activities of private households as employers ': 12,
-            'Fishing': 13,
-            'Financial intermediation': 14,
-            'Electricity, gas and water supply': 15,
-            ' Extraterritorial organizations and bodies': 16,
-        },
-        'consumed100': _yes_no, 'consumed200': _yes_no, 'consumed300': _yes_no, 'consumed400': _yes_no,
-        'consumed500': _yes_no, 'consumed600': _yes_no, 'consumed700': _yes_no, 'consumed800': _yes_no,
-        'consumed900': _yes_no, 'consumed1000': _yes_no, 'consumed1100': _yes_no, 'consumed1200': _yes_no,
-        'consumed1300': _yes_no, 'consumed1400': _yes_no, 'consumed1500': _yes_no, 'consumed1600': _yes_no,
-        'consumed1700': _yes_no, 'consumed1800': _yes_no, 'consumed1900': _yes_no, 'consumed2000': _yes_no,
-        'consumed2100': _yes_no, 'consumed2200': _yes_no, 'consumed2300': _yes_no, 'consumed2400': _yes_no,
-        'consumed2500': _yes_no, 'consumed2600': _yes_no, 'consumed2700': _yes_no, 'consumed2800': _yes_no,
-        'consumed2900': _yes_no, 'consumed3000': _yes_no, 'consumed3100': _yes_no, 'consumed3200': _yes_no,
-        'consumed3300': _yes_no, 'consumed3400': _yes_no, 'consumed3500': _yes_no, 'consumed3600': _yes_no,
-        'consumed3700': _yes_no, 'consumed3800': _yes_no, 'consumed3900': _yes_no, 'consumed4000': _yes_no,
-        'consumed4100': _yes_no, 'consumed4200': _yes_no, 'consumed4300': _yes_no, 'consumed4400': _yes_no,
-        'consumed4500': _yes_no, 'consumed4600': _yes_no, 'consumed4700': _yes_no, 'consumed4800': _yes_no,
-        'consumed4900': _yes_no, 'consumed5000': _yes_no,
-
-    }
-
     category_cols = [
         'water', 'toilet', 'sewer', 'elect', 'water_source',
         'male', 'urban',
@@ -348,9 +263,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
         'consumed4900', 'consumed5000',
     ]
 
-    num_cols = ['weight', 'strata', 'hsize', 'age', 'utl_exp_ppp17',
-                'num_children5', 'num_children10', 'num_children18',
-                'num_adult_female', 'num_adult_male', 'num_elderly', 'sworkershh', 'sfworkershh']
+    num_cols = NUMBER_COLUMNS.copy()
 
     _complex_input_cols = num_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1']
 
@@ -361,7 +274,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
     final_num_cols = num_cols + svd_cols + complex_output_cols
 
-    return final_num_cols, category_cols, category_number_maps
+    return final_num_cols, category_cols, CATEGORY_NUMBER_MAPS
 
 
 def _get_model_params(model_names: list[str]) -> dict[str, dict]:
