@@ -1,4 +1,4 @@
-__all__ = ['fit_and_test_pipeline']
+__all__ = ['fit_and_test_pipeline', 'fit_and_predictions_pipeline']
 
 
 import numpy as np
@@ -87,6 +87,48 @@ def fit_and_test_pipeline():
         print(_test_metrics)
 
         plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
+
+
+def fit_and_predictions_pipeline(folder_prefix: str | None = None):
+    boxcox_lambda = 0.
+
+    stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines()
+
+    _datas = file.get_datas()
+
+    # learning
+    train_x = _datas['train']
+    train_cons_y = _datas['target_consumption']
+    train_rate_y = _datas['target_rate']
+
+    set_config(transform_output="pandas")
+    train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda)[0]
+    stacking_regressor.fit(train_x, train_y.astype(np.float32).flatten())
+
+    y_train_pred = stacking_regressor.predict(train_x)
+    y_train_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
+
+    train_cons_y['cons_pred'] = y_train_pred
+    train_pred_rate_y = calc.poverty_rates_from_consumption(train_cons_y, 'cons_pred')
+    ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
+    train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
+
+    print(_calculate_metrics(
+        y_train_pred, train_cons_y.cons_ppp17, train_pred_rate_y, train_cons_y,
+        model_pipelines, train_x, train_rate_y
+    ))
+
+    # prediction
+    _predicted_coxbox = stacking_regressor.predict(_datas['test'])
+    _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, boxcox_lambda)
+
+    _consumption, _ = file.get_submission_formats('../results')
+    _consumption['cons_pred'] = _predicted
+    pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
+    pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
+
+    file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)
+
 
 # common subfunctions for pipelines
 def _calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, model_pipelines: list, X, target_rate_y) -> dict[str, float]:
