@@ -20,8 +20,10 @@ from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, c
 
 def get_stacking_regressor_and_pipelines():
 
+    _model_names = ['lightgbm', 'catboost', 'ridge']
+
     num_cols, category_cols, category_number_maps = _get_columns()
-    model_params = _get_model_params()
+    model_params = _get_model_params(_model_names)
 
     for _model, _params in model_params.items():
         print('model:', _model)
@@ -362,7 +364,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
     return final_num_cols, category_cols, category_number_maps
 
 
-def _get_model_params() -> dict[str, dict]:
+def _get_model_params(model_names: list[str]) -> dict[str, dict]:
     model_params = {}
     for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
         _model_param = file.load_best_params(_model)
@@ -391,4 +393,4 @@ def _get_model_params() -> dict[str, dict]:
     model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
     model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
 
-    return model_params
+    return {model: model_params[model] for model in model_names}
