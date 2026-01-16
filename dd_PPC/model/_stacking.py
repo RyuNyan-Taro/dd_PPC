@@ -14,12 +14,12 @@ import lightgbm as lgb
 import xgboost as xgb
 import catboost
 
-from .. import file, model
+from .. import file, model, calc
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
 
-def get_stacking_regressor_and_pipelines(model_names: list[str] | None = None):
+def get_stacking_regressor_and_pipelines(model_names: list[str], boxcox_lambda: float):
 
     num_cols, category_cols, category_number_maps = _get_columns()
     model_params = _get_model_params(model_names)
@@ -33,7 +33,7 @@ def get_stacking_regressor_and_pipelines(model_names: list[str] | None = None):
     model_pipelines = [
         (
             _name,
-            Pipeline([('prep', preprocessor)] + _get_initialized_model(_name, model_params))
+            Pipeline([('prep', preprocessor)] + _get_initialized_model(_name, model_params, boxcox_lambda=boxcox_lambda))
         ) for _name in model_names]
 
     stacking_regressor = StackingRegressor(
@@ -154,10 +154,13 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
     return preprocessor
 
 
-def _get_initialized_model(model_name: str, model_params: dict) -> list[tuple[str, BaseEstimator]]:
+def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: float) -> list[tuple[str, BaseEstimator]]:
     _additional_preprocess = ['tabular', 'mlp']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
+
+    def get_bc_threshold(original_val, lam):
+        return calc.apply_boxcox_transform(np.array([original_val]), lam)[0][0]
 
     if model_name in _additional_preprocess:
         match model_name:
@@ -180,7 +183,7 @@ def _get_initialized_model(model_name: str, model_params: dict) -> list[tuple[st
 
         _model = _ClassifierWrapper(
             lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
-            boxcox_threshold=_bc_threshold
+            boxcox_threshold=get_bc_threshold(_bc_threshold, boxcox_lambda)
         )
 
         return [('model', _model)]

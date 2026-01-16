@@ -10,10 +10,6 @@ from .. import file, model, data, calc
 
 def fit_and_test_pipeline():
 
-    def get_bc_threshold(original_val, lam):
-        return calc.apply_boxcox_transform(np.array([original_val]), lam)[0][0]
-
-
     def plot_model_bias(y_true, y_pred, model_name):
         plt.figure(figsize=(8, 6))
         plt.scatter(y_true, y_pred, alpha=0.3, s=10)
@@ -35,8 +31,9 @@ def fit_and_test_pipeline():
         plt.show()
 
     boxcox_lambda = 0.09
+    _model_names = ['lgb', 'xgboost', 'catboost']
 
-    stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines()
+    stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_model_names, boxcox_lambda=boxcox_lambda)
 
     _datas = file.get_datas()
 
