@@ -89,7 +89,7 @@ def fit_and_test_pipeline():
 def test_model_pipeline(model_name: str) -> tuple:
     boxcox_lambda = 0.09
 
-    _model_pipeline = model.get_stacking_regressor_and_pipelines([model_name], boxcox_lambda=boxcox_lambda)[1][0]
+    _model_pipeline = model.get_stacking_regressor_and_pipelines([model_name], boxcox_lambda=boxcox_lambda)[1][0][1]
 
     _datas = file.get_datas()
 
