@@ -74,28 +74,28 @@ def get_stacking_regressor_and_pipelines():
         # (
         #     'clf_low',
         #     Pipeline([('prep', preprocessor), (
-        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose = -1, force_row_wise=True),
+        #         'model', _ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose = -1, force_row_wise=True),
         #                                    boxcox_threshold=get_bc_threshold(3.17, boxcox_lambda))
         #     )])
         # ),
         # (
         #     'clf_middle',
         #     Pipeline([('prep', preprocessor), (
-        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #         'model', _ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
         #                                    boxcox_threshold=get_bc_threshold(9.87, boxcox_lambda))
         #     )])
         # ),
         # (
         #     'clf_high',
         #     Pipeline([('prep', preprocessor), (
-        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #         'model', _ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
         #                                    boxcox_threshold=get_bc_threshold(10.70, boxcox_lambda))
         #     )])
         # ),
         # (
         #     'clf_very_high',
         #     Pipeline([('prep', preprocessor), (
-        #         'model', ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+        #         'model', _ClassifierWrapper(lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
         #                                    boxcox_threshold=get_bc_threshold(27.37, boxcox_lambda))
         #     )])
         # ),
@@ -299,7 +299,7 @@ class _SVDFeatureGenerator(BaseEstimator, TransformerMixin):
         return pd.concat([X, df_cons, df_infra], axis=1)
 
 
-class ClassifierWrapper(RegressorMixin, BaseEstimator):
+class _ClassifierWrapper(RegressorMixin, BaseEstimator):
 
     def __init__(self, classifier, boxcox_threshold=9.87):
         self.classifier = classifier
