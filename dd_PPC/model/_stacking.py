@@ -19,12 +19,10 @@ from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
 
-def get_stacking_regressor_and_pipelines():
-
-    _model_names = ['lightgbm', 'catboost', 'ridge']
+def get_stacking_regressor_and_pipelines(model_names: list[str] | None = None):
 
     num_cols, category_cols, category_number_maps = _get_columns()
-    model_params = _get_model_params(_model_names)
+    model_params = _get_model_params(model_names)
 
     for _model, _params in model_params.items():
         print('model:', _model)
@@ -36,7 +34,7 @@ def get_stacking_regressor_and_pipelines():
         (
             _name,
             Pipeline([('prep', preprocessor)] + _get_initialized_model(_name, model_params))
-        ) for _name in _model_names]
+        ) for _name in model_names]
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
