@@ -7,7 +7,7 @@ from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, FunctionTransformer
+from sklearn.preprocessing import StandardScaler, FunctionTransformer, TargetEncoder
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
 import lightgbm as lgb
@@ -40,6 +40,7 @@ def get_stacking_regressor_and_pipelines(model_names: list[str], boxcox_lambda: 
         estimators=model_pipelines,
         # final_estimator=Ridge(random_state=123, max_iter=10000),
         final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
+        # final_estimator=lgb.LGBMRegressor(),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
         n_jobs=2,
@@ -155,14 +156,15 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
 
 
 def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: float) -> list[tuple[str, BaseEstimator]]:
-    _additional_preprocess = ['tabular', 'mlp']
+    _add_float_size_conversion = ['tabular', 'mlp']
+    _add_target_encoding = ['lightgbm', 'catboost', 'xgboost']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
 
     def get_bc_threshold(original_val, lam):
         return calc.apply_boxcox_transform(np.array([original_val]), lam)[0][0]
 
-    if model_name in _additional_preprocess:
+    if model_name in _add_float_size_conversion:
         match model_name:
             case 'tabular':
                 _model = model.get_tabular_nn_regressor(model_params['tabular'])
@@ -172,6 +174,30 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
                 raise ValueError(f'Invalid model name: {model_name}')
 
         return [('convert', model.Float32Transformer()), _model]
+
+    if model_name in _add_target_encoding:
+        match model_name:
+            case 'lightgbm':
+                _model = lgb.LGBMRegressor(**model_params['lightgbm'])
+            case 'catboost':
+                _model = catboost.CatBoostRegressor(**model_params['catboost'])
+            case 'xgboost':
+                _model = xgb.XGBRegressor(**model_params['xgboost'])
+            case _:
+                raise ValueError(f'Invalid model name: {model_name}')
+
+        _target_encoding_cols = ['sanitation_source', 'educ_max', 'dweltyp', 'sector1d']
+
+        _te = ColumnTransformer(
+            transformers=[(
+                'encoding', TargetEncoder(
+                categories=[sorted(list(CATEGORY_NUMBER_MAPS[_col].values())) for _col in _target_encoding_cols],
+                random_state=123
+            ), _target_encoding_cols)],
+            remainder='passthrough',
+            verbose_feature_names_out=False
+        )
+        return [('target_encoding', _te), ('model', _model)]
 
     if model_name in _clf_model:
         _bc_threshold = {
@@ -189,16 +215,10 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         return [('model', _model)]
 
     match model_name:
-        case 'lightgbm':
-            _model = lgb.LGBMRegressor(**model_params['lightgbm'])
-        case 'xgboost':
-            _model = xgb.XGBRegressor(**model_params['xgboost'])
-        case 'catboost':
-            _model = catboost.CatBoostRegressor(**model_params['catboost'])
-        case 'ridge':
-            _model = Ridge(**model_params['ridge'])
         case 'kneighbors':
             _model = KNeighborsRegressor(**model_params['kneighbors'])
+        case 'ridge':
+            _model = Ridge(**model_params['ridge'])
         case 'lasso':
             _model = Lasso(**model_params['lasso'])
         case 'elasticnet':

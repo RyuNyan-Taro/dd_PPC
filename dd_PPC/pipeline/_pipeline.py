@@ -4,40 +4,36 @@ __all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import set_config
+from sklearn.ensemble import StackingRegressor
 
 from .. import file, model, data, calc
 
 
-def fit_and_test_pipeline():
+def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict]]:
 
-    def plot_model_bias(y_true, y_pred, model_name):
-        plt.figure(figsize=(8, 6))
-        plt.scatter(y_true, y_pred, alpha=0.3, s=10)
-        plt.plot([0, 50], [0, 50], '--', color='red')  # 理想線
-
-        # 指標で使われている重要な閾値を描画
-        _poverty_thresholds = [
-            3.17, 9.13, 9.87, 10.70, 27.37
-        ]
-        for t in _poverty_thresholds:
-            plt.axvline(t, color='green', linestyle=':', alpha=0.5)
-            plt.axhline(t, color='green', linestyle=':', alpha=0.5)
-
-        plt.xlabel('True Consumption')
-        plt.ylabel('Predicted Consumption')
-        plt.title(f'Bias Analysis: {model_name}')
-        plt.xlim(0, 50)
-        plt.ylim(0, 50)
-        plt.show()
+    def get_feature_importance(model_):
+        """Extract feature importance/coefficients based on the model type."""
+        if hasattr(model_, 'coef_'):
+            # Linear models (Ridge, Lasso, LinearRegression, etc.)
+            return model_.coef_
+        elif hasattr(model_, 'feature_importances_'):
+            # Tree-based models (LightGBM, XGBoost, CatBoost, RandomForest, etc.)
+            return model_.feature_importances_
+        else:
+            raise AttributeError(f"Model {type(model_).__name__} doesn't have coef_ or feature_importances_")
 
     boxcox_lambda = 0.09
-    _model_names = ['lgb', 'xgboost', 'catboost']
+    _model_names = ['lightgbm', 'ridge', 'catboost', 'xgboost']
 
     stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_model_names, boxcox_lambda=boxcox_lambda)
 
     _datas = file.get_datas()
 
     _k_fold_test_ids = [100000, 200000, 300000]
+
+    learned_stacks = []
+    train_scores = []
+    test_scores = []
 
     for _i, _id in enumerate(_k_fold_test_ids):
         print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
@@ -52,7 +48,7 @@ def fit_and_test_pipeline():
 
         # fitの後に実行
         model_names = [name for name, _ in model_pipelines]
-        weights = stacking_regressor.final_estimator_.coef_
+        weights = get_feature_importance(stacking_regressor.final_estimator_)
         for name, weight in zip(model_names, weights):
             print(f"Model: {name}, Weight: {weight:.4f}")
 
@@ -83,7 +79,13 @@ def fit_and_test_pipeline():
         print(_train_metrics)
         print(_test_metrics)
 
-        plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
+        learned_stacks.append(stacking_regressor)
+        train_scores.append(_train_metrics)
+        test_scores.append(_test_metrics)
+
+        # plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
+
+    return learned_stacks, train_scores, test_scores
 
 
 def test_model_pipeline(model_name: str) -> tuple:
