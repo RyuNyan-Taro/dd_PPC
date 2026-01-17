@@ -11,25 +11,16 @@ from .. import file, model, data, calc
 
 def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict]]:
 
-    def plot_model_bias(y_true, y_pred, model_name):
-        plt.figure(figsize=(8, 6))
-        plt.scatter(y_true, y_pred, alpha=0.3, s=10)
-        plt.plot([0, 50], [0, 50], '--', color='red')  # 理想線
-
-        # 指標で使われている重要な閾値を描画
-        _poverty_thresholds = [
-            3.17, 9.13, 9.87, 10.70, 27.37
-        ]
-        for t in _poverty_thresholds:
-            plt.axvline(t, color='green', linestyle=':', alpha=0.5)
-            plt.axhline(t, color='green', linestyle=':', alpha=0.5)
-
-        plt.xlabel('True Consumption')
-        plt.ylabel('Predicted Consumption')
-        plt.title(f'Bias Analysis: {model_name}')
-        plt.xlim(0, 50)
-        plt.ylim(0, 50)
-        plt.show()
+    def get_feature_importance(model_):
+        """Extract feature importance/coefficients based on the model type."""
+        if hasattr(model_, 'coef_'):
+            # Linear models (Ridge, Lasso, LinearRegression, etc.)
+            return model_.coef_
+        elif hasattr(model_, 'feature_importances_'):
+            # Tree-based models (LightGBM, XGBoost, CatBoost, RandomForest, etc.)
+            return model_.feature_importances_
+        else:
+            raise AttributeError(f"Model {type(model_).__name__} doesn't have coef_ or feature_importances_")
 
     boxcox_lambda = 0.09
     _model_names = ['lightgbm', 'ridge', 'catboost', 'xgboost']
@@ -57,7 +48,7 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
 
         # fitの後に実行
         model_names = [name for name, _ in model_pipelines]
-        weights = stacking_regressor.final_estimator_.coef_
+        weights = get_feature_importance(stacking_regressor.final_estimator_)
         for name, weight in zip(model_names, weights):
             print(f"Model: {name}, Weight: {weight:.4f}")
 
