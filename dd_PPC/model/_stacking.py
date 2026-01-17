@@ -20,9 +20,16 @@ from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, c
 
 
 def get_stacking_regressor_and_pipelines(model_names: list[str], boxcox_lambda: float) -> tuple[StackingRegressor, list[tuple[str, Pipeline]]]:
+def get_stacking_regressor_and_pipelines(
+        model_names: list[str],
+        boxcox_lambda: float,
+        model_params: dict | None = None
+) -> tuple[StackingRegressor, list[tuple[str, Pipeline]]]:
 
     num_cols, category_cols, category_number_maps = _get_columns()
-    model_params = _get_model_params(model_names)
+
+    if model_params is None:
+        model_params = _get_model_params(model_names)
 
     for _model, _params in model_params.items():
         print('model:', _model)
