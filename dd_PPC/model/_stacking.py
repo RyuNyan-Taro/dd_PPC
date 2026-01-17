@@ -156,7 +156,7 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
 
 def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: float) -> list[tuple[str, BaseEstimator]]:
     _add_float_size_conversion = ['tabular', 'mlp']
-    _add_target_encoding = ['ridge', 'lightgbm']
+    _add_target_encoding = ['ridge', 'lightgbm', 'catboost']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
 
@@ -180,6 +180,8 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
                 _model = Ridge(**model_params['ridge'])
             case 'lightgbm':
                 _model = lgb.LGBMRegressor(**model_params['lightgbm'])
+            case 'catboost':
+                _model = catboost.CatBoostRegressor(**model_params['catboost'])
             case _:
                 raise ValueError(f'Invalid model name: {model_name}')
 
@@ -214,8 +216,6 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
     match model_name:
         case 'xgboost':
             _model = xgb.XGBRegressor(**model_params['xgboost'])
-        case 'catboost':
-            _model = catboost.CatBoostRegressor(**model_params['catboost'])
         case 'kneighbors':
             _model = KNeighborsRegressor(**model_params['kneighbors'])
         case 'lasso':
