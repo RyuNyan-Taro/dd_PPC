@@ -188,7 +188,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         _te = ColumnTransformer(
             transformers=[(
                 'encoding', TargetEncoder(
-                categories=[list(CATEGORY_NUMBER_MAPS[_col].values()) for _col in _target_encoding_cols],
+                categories=[sorted(list(CATEGORY_NUMBER_MAPS[_col].values())) for _col in _target_encoding_cols],
                 random_state=123
             ), _target_encoding_cols)],
             remainder='passthrough',
