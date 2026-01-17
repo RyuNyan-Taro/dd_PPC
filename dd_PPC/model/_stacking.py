@@ -232,12 +232,9 @@ def _drop_unused_columns(X):
 
 
 def _handle_null_numbers(X):
-    _null_columns = ['utl_exp_ppp17', 'share_secondary']
+    _null_columns = ['utl_exp_ppp17']
     X = X.copy()
     for _col in _null_columns:
-        if _col == 'share_secondary':
-            X[_col] = X[_col].fillna(X[_col].median())
-            continue
         X[_col] = X[_col].fillna(X[_col].mean())
 
     return X
