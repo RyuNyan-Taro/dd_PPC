@@ -43,6 +43,11 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - process: pipeline.fit_and_predictions_lightgbm
 - apply isotonic regression. But it is not good. <- It was fixed by f808b27. foggoten inverse coxbox was the case.
 
+# 4.48
+- model: stacking of some models
+- process: pipeline.fit_and_predictions_pipeline
+- apply parameter tuning of some single models
+
 # Records
 - pipeline.apply_random_forest
    - two_category: large category has more high difference from prediction
