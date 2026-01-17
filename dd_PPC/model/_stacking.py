@@ -156,7 +156,7 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
 
 def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: float) -> list[tuple[str, BaseEstimator]]:
     _add_float_size_conversion = ['tabular', 'mlp']
-    _add_target_encoding = ['ridge']
+    _add_target_encoding = ['ridge', 'lightgbm']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
 
@@ -175,13 +175,22 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         return [('convert', model.Float32Transformer()), _model]
 
     if model_name in _add_target_encoding:
-        _model = Ridge(**model_params['ridge'])
+        match model_name:
+            case 'ridge':
+                _model = Ridge(**model_params['ridge'])
+            case 'lightgbm':
+                _model = lgb.LGBMRegressor(**model_params['lightgbm'])
+            case _:
+                raise ValueError(f'Invalid model name: {model_name}')
+
+        _target_encoding_cols = ['sector1d']
+
         _te = ColumnTransformer(
             transformers=[(
                 'encoding', TargetEncoder(
-                categories=[list(CATEGORY_NUMBER_MAPS['sector1d'].values())],
+                categories=[list(CATEGORY_NUMBER_MAPS[_col].values()) for _col in _target_encoding_cols],
                 random_state=123
-            ), ['sector1d'])],
+            ), _target_encoding_cols)],
             remainder='passthrough',
             verbose_feature_names_out=False
         )
@@ -203,8 +212,6 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         return [('model', _model)]
 
     match model_name:
-        case 'lightgbm':
-            _model = lgb.LGBMRegressor(**model_params['lightgbm'])
         case 'xgboost':
             _model = xgb.XGBRegressor(**model_params['xgboost'])
         case 'catboost':
