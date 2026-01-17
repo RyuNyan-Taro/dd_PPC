@@ -19,7 +19,7 @@ from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
 
-def get_stacking_regressor_and_pipelines(model_names: list[str], boxcox_lambda: float):
+def get_stacking_regressor_and_pipelines(model_names: list[str], boxcox_lambda: float) -> tuple[StackingRegressor, list[tuple[str, Pipeline]]]:
 
     num_cols, category_cols, category_number_maps = _get_columns()
     model_params = _get_model_params(model_names)
