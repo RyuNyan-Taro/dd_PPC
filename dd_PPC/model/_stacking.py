@@ -179,7 +179,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         _te = ColumnTransformer(
             transformers=[(
                 'encoding', TargetEncoder(
-                categories=[CATEGORY_NUMBER_MAPS['sector1d'].values()],
+                categories=[list(CATEGORY_NUMBER_MAPS['sector1d'].values())],
                 random_state=123
             ), ['sector1d'])],
             remainder='passthrough',
