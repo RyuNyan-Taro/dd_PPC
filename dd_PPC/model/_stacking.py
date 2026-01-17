@@ -185,7 +185,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             case _:
                 raise ValueError(f'Invalid model name: {model_name}')
 
-        _target_encoding_cols = ['sanitation_source', 'educ_max', 'dweltyp', 'sector1d', 'water_source']
+        _target_encoding_cols = ['sanitation_source', 'educ_max', 'dweltyp', 'sector1d']
 
         _te = ColumnTransformer(
             transformers=[(
