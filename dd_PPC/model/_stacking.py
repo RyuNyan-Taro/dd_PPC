@@ -228,12 +228,14 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
 # sub functions for preprocessing
 def _drop_unused_columns(X):
-    return X.drop(columns=['hhid', 'com', 'share_secondary', 'survey_id'])
+    return X.drop(columns=['hhid', 'com', 'survey_id'])
 
 
 def _handle_null_numbers(X):
+    _null_columns = ['utl_exp_ppp17', 'share_secondary']
     X = X.copy()
-    X['utl_exp_ppp17'] = X['utl_exp_ppp17'].fillna(X['utl_exp_ppp17'].mean())
+    for _col in _null_columns:
+        X[_col] = X[_col].fillna(X[_col].mean())
 
     return X
 
