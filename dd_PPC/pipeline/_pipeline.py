@@ -31,7 +31,7 @@ def fit_and_test_pipeline():
         plt.show()
 
     boxcox_lambda = 0.09
-    _model_names = ['lgb', 'xgboost', 'catboost']
+    _model_names = ['lightgbm', 'ridge', 'catboost']
 
     stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_model_names, boxcox_lambda=boxcox_lambda)
 
