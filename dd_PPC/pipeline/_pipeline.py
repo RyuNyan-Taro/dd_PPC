@@ -32,7 +32,7 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         plt.show()
 
     boxcox_lambda = 0.09
-    _model_names = ['lightgbm', 'ridge', 'catboost']
+    _model_names = ['lightgbm', 'ridge', 'catboost', 'xgboost']
 
     stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_model_names, boxcox_lambda=boxcox_lambda)
 
