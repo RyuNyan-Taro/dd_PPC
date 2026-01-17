@@ -19,12 +19,34 @@ from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
 
-def get_stacking_regressor_and_pipelines(model_names: list[str], boxcox_lambda: float) -> tuple[StackingRegressor, list[tuple[str, Pipeline]]]:
 def get_stacking_regressor_and_pipelines(
         model_names: list[str],
         boxcox_lambda: float,
         model_params: dict | None = None
 ) -> tuple[StackingRegressor, list[tuple[str, Pipeline]]]:
+    """
+    Constructs a stacking regressor and associated pipelines for given models by applying
+    preprocessing and encapsulating them in pipelines.
+
+    This function prepares a setup for stacking regression by preprocessing features like numeric
+    and categorical columns, initializes the models using the provided or default parameters,
+    and combines them into a `StackingRegressor`. Each model is wrapped in a `Pipeline` with
+    a shared preprocessing step that handles transformations.
+
+    Args:
+        model_names: A list of model names to include in the stacking regression.
+            Each model will be initialized and processed based on its specified parameters.
+        boxcox_lambda: The lambda value for Box-Cox transformations, used when
+            initializing certain models.
+        model_params: Optional dictionary containing model-specific parameters.
+            If None, default parameters will be retrieved automatically for each model.
+
+    Returns:
+        The first element is the `StackingRegressor` configured with the specified models and
+        a final estimator.
+        The second element is a list of tuples where each tuple contains the model name and
+        its corresponding `Pipeline`.
+    """
 
     num_cols, category_cols, category_number_maps = _get_columns()
 
