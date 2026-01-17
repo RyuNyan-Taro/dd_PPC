@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from ._common import fit_and_test_model
+from ..model import get_stacking_regressor_and_pipelines
 
 
 def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
@@ -42,7 +43,7 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
                 _params[k] = _val
             _args['model_params'] = _params
 
-            _train_scores_per_survey_group, _valid_scores_per_survey_group = fit_and_test_model(**_args)
+            _train_scores_per_survey_group, _valid_scores_per_survey_group, *_ = get_stacking_regressor_and_pipelines(**_args)
             _train_scores.append([_scores[_scoring] for _scores in _train_scores_per_survey_group])
             _valid_scores.append([_scores[_scoring] for _scores in _valid_scores_per_survey_group])
             clear_output(wait=True)
