@@ -4,11 +4,12 @@ __all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import set_config
+from sklearn.ensemble import StackingRegressor
 
 from .. import file, model, data, calc
 
 
-def fit_and_test_pipeline():
+def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict]]:
 
     def plot_model_bias(y_true, y_pred, model_name):
         plt.figure(figsize=(8, 6))
@@ -38,6 +39,10 @@ def fit_and_test_pipeline():
     _datas = file.get_datas()
 
     _k_fold_test_ids = [100000, 200000, 300000]
+
+    learned_stacks = []
+    train_scores = []
+    test_scores = []
 
     for _i, _id in enumerate(_k_fold_test_ids):
         print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
@@ -83,7 +88,13 @@ def fit_and_test_pipeline():
         print(_train_metrics)
         print(_test_metrics)
 
-        plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
+        learned_stacks.append(stacking_regressor)
+        train_scores.append(_train_metrics)
+        test_scores.append(_test_metrics)
+
+        # plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
+
+    return learned_stacks, train_scores, test_scores
 
 
 def test_model_pipeline(model_name: str) -> tuple:
