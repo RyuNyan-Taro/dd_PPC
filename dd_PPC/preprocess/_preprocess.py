@@ -5,7 +5,7 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe', 'survey_related_features']
 
 import numpy as np
 import pandas as pd
@@ -167,6 +167,27 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     }
 
     return pd.DataFrame(_complex_numbers)
+
+
+def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
+        target_cols = ['hsize', 'educ_max', 'svd_consumed_0', 'utl_exp_ppp17']
+
+        df = train.copy()
+        _latest_cols = df.columns
+        for col in target_cols:
+            # 1. survey_idごとの平均
+            group_mean = df.groupby('survey_id')[col].transform('mean')
+
+            # 2. 平均との差（そのエリア内での相対的な立ち位置）
+            df[f'{col}_diff_survey'] = df[col] - group_mean
+
+            # 3. 平均との比率
+            df[f'{col}_ratio_survey'] = df[col] / (group_mean + 1e-6)
+
+            # 4. エリア内での順位（0.0〜1.0）
+            df[f'{col}_rank_survey'] = df.groupby('survey_id')[col].rank(pct=True)
+
+        return df.drop(columns=_latest_cols)
 
 
 def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:
