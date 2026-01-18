@@ -95,7 +95,7 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
     _model_pipeline = model.get_stacking_regressor_and_pipelines(
         [model_name],
         boxcox_lambda=boxcox_lambda,
-        model_params={model_name: model_params}
+        model_params=model_params
     )[1][0][1]
 
     _datas = file.get_datas()
