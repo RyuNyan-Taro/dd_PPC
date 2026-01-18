@@ -170,7 +170,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 
 
 def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
-        target_cols = ['svd_consumed_0', 'utl_exp_ppp17', 'sanitation_and_consumed', 'sanitation_source']
+        target_cols = ['svd_consumed_0', 'utl_exp_ppp17', 'sanitation_and_consumed', 'sanitation_source', 'consumed_per_hsize', 'worker_density']
 
         df = train.copy()
         _latest_cols = df.columns
