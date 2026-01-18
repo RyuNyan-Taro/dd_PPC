@@ -151,7 +151,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     _adult_equivalence = 1 + 0.7 * (train['num_adult_male'] + train['num_adult_female'] - 1) + 0.5 * (train['num_children5'] + train['num_children10'] + train['num_children18'])
 
     _complex_numbers = {
-        'adult_equivalence': _adult_equivalence,
+        # 'adult_equivalence': _adult_equivalence,
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
         'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
         # 'urban_times_consumed': (train['urban'] + 1) * train['svd_consumed_1'],
@@ -165,6 +165,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
+        'utl_per_ae': train['utl_exp_ppp17'] / _adult_equivalence
         # 'infra_rel_to_strata': train['svd_infrastructure_0'] / (_infra_strata_mean + 1e-6),
         # 'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
         # 'infra_zscore_to_strata': (train['svd_infrastructure_0'] - _infra_strata_mean) / (_infra_strata_mean + 1e-6)
@@ -176,7 +177,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
         target_cols = [
             'svd_consumed_0', 'utl_exp_ppp17', 'sanitation_and_consumed',
-            'sanitation_source', 'consumed_per_hsize', 'worker_density', 'adult_equivalence'
+            'sanitation_source', 'consumed_per_hsize', 'worker_density', 'utl_per_ae'
         ]
 
         df = train.copy()
