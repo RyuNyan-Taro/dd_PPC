@@ -5,8 +5,12 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import set_config
 from sklearn.ensemble import StackingRegressor
+from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
+
+_MODEL_NAMES = ['lightgbm', 'ridge', 'catboost', 'xgboost']
+_BOXCOX_LAMBDA = 0.09
 
 
 def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict]]:
@@ -22,8 +26,8 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         else:
             raise AttributeError(f"Model {type(model_).__name__} doesn't have coef_ or feature_importances_")
 
-    boxcox_lambda = 0.09
-    _model_names = ['lightgbm', 'ridge', 'catboost', 'xgboost']
+    boxcox_lambda = _BOXCOX_LAMBDA
+    _model_names = _MODEL_NAMES
 
     stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_model_names, boxcox_lambda=boxcox_lambda)
 
@@ -88,10 +92,14 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
     return learned_stacks, train_scores, test_scores
 
 
-def test_model_pipeline(model_name: str) -> tuple:
-    boxcox_lambda = 0.09
+def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tuple[list[Pipeline], list[dict], list[dict]]:
+    boxcox_lambda = _BOXCOX_LAMBDA
 
-    _model_pipeline = model.get_stacking_regressor_and_pipelines([model_name], boxcox_lambda=boxcox_lambda)[1][0][1]
+    _model_pipeline = model.get_stacking_regressor_and_pipelines(
+        [model_name],
+        boxcox_lambda=boxcox_lambda,
+        model_params=model_params
+    )[1][0][1]
 
     _datas = file.get_datas()
 
@@ -149,9 +157,10 @@ def test_model_pipeline(model_name: str) -> tuple:
 
 
 def fit_and_predictions_pipeline(folder_prefix: str | None = None):
-    boxcox_lambda = 0.
 
-    stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines()
+    boxcox_lambda = _BOXCOX_LAMBDA
+
+    stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_MODEL_NAMES, boxcox_lambda=boxcox_lambda)
 
     _datas = file.get_datas()
 

@@ -5,6 +5,7 @@ from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import numpy as np
 
+from ._pipeline import test_model_pipeline
 from ._common import fit_and_test_model
 
 
@@ -33,7 +34,7 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
             print(f'\nModel: {model_name}\nProcessing parameter: {k} {_val_i}/{len(v)} val: {_val}')
 
             _args = dict(
-                model_names=[model_name], display_result=False
+                model_name=model_name
             )
             _params = _model_params.copy()
             if k == 'boxcox_lambda':
@@ -42,7 +43,7 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
                 _params[k] = _val
             _args['model_params'] = _params
 
-            _train_scores_per_survey_group, _valid_scores_per_survey_group = fit_and_test_model(**_args)
+            _, _train_scores_per_survey_group, _valid_scores_per_survey_group = test_model_pipeline(**_args)
             _train_scores.append([_scores[_scoring] for _scores in _train_scores_per_survey_group])
             _valid_scores.append([_scores[_scoring] for _scores in _valid_scores_per_survey_group])
             clear_output(wait=True)
@@ -114,10 +115,9 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
         # boxcox_lambda = trial.suggest_float('boxcox_lambda', 0.0, 0.3)
 
         # Run cross-validation with these parameters
-        train_scores, test_scores, *_ = fit_and_test_model(
-            model_names=[model_name],
-            model_params=params,
-            display_result=False
+        _, train_scores, test_scores = test_model_pipeline(
+            model_name=model_name,
+            model_params={model_name: params}
         )
 
         clear_output(wait=True)
@@ -168,6 +168,7 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
             booster='gbtree',
             objective='reg:squarederror',
             random_state=42,
+            learning_rate=0.1,
             n_estimators=100
         ),
         'lightgbm': dict(
@@ -199,7 +200,7 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
                 'colsample_bytree': [0.3, 0.5, 0.7, 0.9, 1.0],
                 'reg_alpha': [0.0001, 0.001, 0.01, 0.1, 1.0],
                 'reg_lambda': [0.0001, 0.001, 0.01, 0.1, 1.0],
-                'learning_rate': [0.001, 0.01, 0.1, 0.3],
+                # 'learning_rate': [0.001, 0.01, 0.1, 0.3],
                 'min_child_weight': [1, 3, 5, 7, 10],
                 'max_depth': [3, 4, 5, 6, 7, 8],
                 'gamma': [0, 0.001, 0.01, 0.1, 1.0]
@@ -302,13 +303,13 @@ def _get_tuning_params(model_name: str, trial: optuna.trial.Trial) -> dict:
             'random_state': 123,
             'n_estimators': trial.suggest_int('n_estimators', 100, 1500),
             'max_depth': trial.suggest_int('max_depth', 3, 8),
-            'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.1, log=True),
-            'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+            'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
+            'subsample': trial.suggest_float('subsample', 0.5, 0.9),
             'colsample_bytree': trial.suggest_float('colsample_bytree', 0.3, 0.9),
             'min_child_weight': trial.suggest_int('min_child_weight', 1, 9),
-            'gamma': trial.suggest_float('gamma', 0.1, 1.0, log=True),
+            'gamma': trial.suggest_float('gamma', 0.1, 0.5, log=True),
             'reg_alpha': trial.suggest_float('reg_alpha', 0.01, 1.0, log=True),
-            'reg_lambda': trial.suggest_float('reg_lambda', 0.0001, 1.0, log=True),
+            'reg_lambda': trial.suggest_float('reg_lambda', 0.001, 1.0, log=True),
         }
     elif model_name == 'lightgbm':
         return {

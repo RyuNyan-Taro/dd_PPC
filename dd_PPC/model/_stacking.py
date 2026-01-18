@@ -19,10 +19,39 @@ from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
 
 
-def get_stacking_regressor_and_pipelines(model_names: list[str], boxcox_lambda: float):
+def get_stacking_regressor_and_pipelines(
+        model_names: list[str],
+        boxcox_lambda: float,
+        model_params: dict | None = None
+) -> tuple[StackingRegressor, list[tuple[str, Pipeline]]]:
+    """
+    Constructs a stacking regressor and associated pipelines for given models by applying
+    preprocessing and encapsulating them in pipelines.
+
+    This function prepares a setup for stacking regression by preprocessing features like numeric
+    and categorical columns, initializes the models using the provided or default parameters,
+    and combines them into a `StackingRegressor`. Each model is wrapped in a `Pipeline` with
+    a shared preprocessing step that handles transformations.
+
+    Args:
+        model_names: A list of model names to include in the stacking regression.
+            Each model will be initialized and processed based on its specified parameters.
+        boxcox_lambda: The lambda value for Box-Cox transformations, used when
+            initializing certain models.
+        model_params: Optional dictionary containing model-specific parameters.
+            If None, default parameters will be retrieved automatically for each model.
+
+    Returns:
+        The first element is the `StackingRegressor` configured with the specified models and
+        a final estimator.
+        The second element is a list of tuples where each tuple contains the model name and
+        its corresponding `Pipeline`.
+    """
 
     num_cols, category_cols, category_number_maps = _get_columns()
-    model_params = _get_model_params(model_names)
+
+    if model_params is None:
+        model_params = _get_model_params(model_names)
 
     for _model, _params in model_params.items():
         print('model:', _model)
@@ -120,6 +149,9 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
     model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
     model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
 
+    for _threshold in ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']:
+        model_params[_threshold] = dict(random_state=123, verbose=-1, force_row_wise=True)
+
     return {model: model_params[model] for model in model_names}
 
 
@@ -197,7 +229,9 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             remainder='passthrough',
             verbose_feature_names_out=False
         )
-        return [('target_encoding', _te), ('model', _model)]
+        # return [('target_encoding', _te), ('model', _model)]
+
+        return [('model', _model)]
 
     if model_name in _clf_model:
         _bc_threshold = {
@@ -208,7 +242,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         }[model_name]
 
         _model = _ClassifierWrapper(
-            lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+            lgb.LGBMClassifier(**model_params[model_name]),
             boxcox_threshold=get_bc_threshold(_bc_threshold, boxcox_lambda)
         )
 
@@ -228,12 +262,14 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
 # sub functions for preprocessing
 def _drop_unused_columns(X):
-    return X.drop(columns=['hhid', 'com', 'share_secondary', 'survey_id'])
+    return X.drop(columns=['hhid', 'com', 'survey_id', 'share_secondary'])
 
 
 def _handle_null_numbers(X):
+    _null_columns = ['utl_exp_ppp17']
     X = X.copy()
-    X['utl_exp_ppp17'] = X['utl_exp_ppp17'].fillna(X['utl_exp_ppp17'].mean())
+    for _col in _null_columns:
+        X[_col] = X[_col].fillna(X[_col].mean())
 
     return X
 
