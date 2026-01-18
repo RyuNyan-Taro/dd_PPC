@@ -118,7 +118,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
     svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
 
-    _survey_cols = list({'survey_id'} | set(num_cols) | {'educ_max'} | set(complex_output_cols) | set(svd_cols))
+    _survey_cols = list({'survey_id', 'sanitation_source'} | set(num_cols) | {'educ_max'} | set(complex_output_cols) | set(svd_cols))
 
     survey_related_output_cols = list(survey_related_features(pd.DataFrame(
         [[0] * len(_survey_cols), [1] * len(_survey_cols)],
