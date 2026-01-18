@@ -223,7 +223,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
         _ce = ColumnTransformer(
             transformers=[(
-                'encoding', CountEncoder(handle_unknown=0, normalize=True), _count_encoding_cols)],
+                'encoding', CountEncoder(cols=_count_encoding_cols, handle_unknown=0, normalize=True), _count_encoding_cols)],
             remainder='passthrough',
             verbose_feature_names_out=False
         )
