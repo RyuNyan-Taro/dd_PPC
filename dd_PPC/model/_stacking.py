@@ -229,7 +229,9 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             remainder='passthrough',
             verbose_feature_names_out=False
         )
-        return [('target_encoding', _te), ('model', _model)]
+        # return [('target_encoding', _te), ('model', _model)]
+
+        return [('model', _model)]
 
     if model_name in _clf_model:
         _bc_threshold = {
