@@ -169,6 +169,7 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
             booster='gbtree',
             objective='reg:squarederror',
             random_state=42,
+            learning_rate=0.1,
             n_estimators=100
         ),
         'lightgbm': dict(
@@ -200,7 +201,7 @@ def _get_validation_params(model_name: str) -> tuple[dict, str, dict, dict]:
                 'colsample_bytree': [0.3, 0.5, 0.7, 0.9, 1.0],
                 'reg_alpha': [0.0001, 0.001, 0.01, 0.1, 1.0],
                 'reg_lambda': [0.0001, 0.001, 0.01, 0.1, 1.0],
-                'learning_rate': [0.001, 0.01, 0.1, 0.3],
+                # 'learning_rate': [0.001, 0.01, 0.1, 0.3],
                 'min_child_weight': [1, 3, 5, 7, 10],
                 'max_depth': [3, 4, 5, 6, 7, 8],
                 'gamma': [0, 0.001, 0.01, 0.1, 1.0]
