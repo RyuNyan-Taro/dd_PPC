@@ -148,8 +148,10 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     _strata_mean = train.groupby('strata')['svd_consumed_0'].transform('mean')
     _strata_std = train.groupby('strata')['svd_consumed_0'].transform('std')
     # _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
+    _adult_equivalence = 1 + 0.7 * (train['num_adult_male'] + train['num_adult_female'] - 1) + 0.5 * (train['num_children5'] + train['num_children10'] + train['num_children18'])
 
     _complex_numbers = {
+        'adult_equivalence': _adult_equivalence,
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
         'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
         # 'urban_times_consumed': (train['urban'] + 1) * train['svd_consumed_1'],
@@ -159,6 +161,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'urban_sanitation': train['urban'] * train['sanitation_source'],
         # 'dependency_interaction': (train['num_children5'] + train['num_children10'] + train['num_elderly']) / (train['hsize'] + 1),
         # 'dependency_ratio': (train['num_children5'] + train['num_children10'] + train['num_children18'] + train['num_elderly']) / (train['num_adult_male'] + train['num_adult_female'] + 1e-6),
+        # 'adult_ratio': (train['num_adult_male'] + train['num_adult_female']) / (train['hsize'] + 1e-6),
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
@@ -173,7 +176,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
         target_cols = [
             'svd_consumed_0', 'utl_exp_ppp17', 'sanitation_and_consumed',
-            'sanitation_source', 'consumed_per_hsize', 'worker_density'
+            'sanitation_source', 'consumed_per_hsize', 'worker_density', 'adult_equivalence'
         ]
 
         df = train.copy()
