@@ -175,16 +175,10 @@ def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
         df = train.copy()
         _latest_cols = df.columns
         for col in target_cols:
-            # 1. survey_idごとの平均
-            group_mean = df.groupby('survey_id')[col].transform('mean')
+            _group_mean = df.groupby('survey_id')[col].transform('mean')
 
-            # 2. 平均との差（そのエリア内での相対的な立ち位置）
-            df[f'{col}_diff_survey'] = df[col] - group_mean
-
-            # 3. 平均との比率
-            df[f'{col}_ratio_survey'] = df[col] / (group_mean + 1e-6)
-
-            # 4. エリア内での順位（0.0〜1.0）
+            df[f'{col}_diff_survey'] = df[col] - _group_mean
+            df[f'{col}_ratio_survey'] = df[col] / (_group_mean + 1e-6)
             df[f'{col}_rank_survey'] = df.groupby('survey_id')[col].rank(pct=True)
 
         return df.drop(columns=_latest_cols)
