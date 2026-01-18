@@ -157,7 +157,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
         'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
         'urban_sanitation': train['urban'] * train['sanitation_source'],
-        # 'dependency_interaction': train['num_children5'] + train['num_children10'] + train['num_elderly'] / (train['hsize'] + 1),
+        'dependency_interaction': (train['num_children5'] + train['num_children10'] + train['num_elderly']) / (train['hsize'] + 1),
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
