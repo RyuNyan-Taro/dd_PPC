@@ -257,7 +257,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
 # sub functions for preprocessing
 def _drop_unused_columns(X):
-    return X.drop(columns=['hhid', 'com', 'survey_id'])
+    return X.drop(columns=['hhid', 'com', 'survey_id', 'share_secondary'])
 
 
 def _handle_null_numbers(X):
