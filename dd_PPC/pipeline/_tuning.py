@@ -117,7 +117,7 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
         # Run cross-validation with these parameters
         _, train_scores, test_scores = test_model_pipeline(
             model_name=model_name,
-            model_params=params
+            model_params={model_name: params}
         )
 
         clear_output(wait=True)
