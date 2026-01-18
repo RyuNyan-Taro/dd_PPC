@@ -89,10 +89,14 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
     return learned_stacks, train_scores, test_scores
 
 
-def test_model_pipeline(model_name: str) -> tuple[list[Pipeline], list[dict], list[dict]]:
+def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tuple[list[Pipeline], list[dict], list[dict]]:
     boxcox_lambda = 0.09
 
-    _model_pipeline = model.get_stacking_regressor_and_pipelines([model_name], boxcox_lambda=boxcox_lambda)[1][0][1]
+    _model_pipeline = model.get_stacking_regressor_and_pipelines(
+        [model_name],
+        boxcox_lambda=boxcox_lambda,
+        model_params={model_name: model_params}
+    )[1][0][1]
 
     _datas = file.get_datas()
 

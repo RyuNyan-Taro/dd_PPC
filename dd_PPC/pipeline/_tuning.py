@@ -5,8 +5,8 @@ from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import numpy as np
 
+from . import test_model_pipeline
 from ._common import fit_and_test_model
-from ..model import get_stacking_regressor_and_pipelines
 
 
 def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
@@ -34,7 +34,7 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
             print(f'\nModel: {model_name}\nProcessing parameter: {k} {_val_i}/{len(v)} val: {_val}')
 
             _args = dict(
-                model_names=[model_name], display_result=False
+                model_name=model_name
             )
             _params = _model_params.copy()
             if k == 'boxcox_lambda':
@@ -43,7 +43,7 @@ def validation_plot_parameters(model_name: str, cv_params: dict | None = None):
                 _params[k] = _val
             _args['model_params'] = _params
 
-            _train_scores_per_survey_group, _valid_scores_per_survey_group, *_ = get_stacking_regressor_and_pipelines(**_args)
+            _, _train_scores_per_survey_group, _valid_scores_per_survey_group = test_model_pipeline(**_args)
             _train_scores.append([_scores[_scoring] for _scores in _train_scores_per_survey_group])
             _valid_scores.append([_scores[_scoring] for _scores in _valid_scores_per_survey_group])
             clear_output(wait=True)
