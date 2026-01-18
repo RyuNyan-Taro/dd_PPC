@@ -149,6 +149,9 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
     model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
     model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
 
+    for _threshold in ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']:
+        model_params[_threshold] = dict(random_state=123, verbose=-1, force_row_wise=True)
+
     return {model: model_params[model] for model in model_names}
 
 
@@ -237,7 +240,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         }[model_name]
 
         _model = _ClassifierWrapper(
-            lgb.LGBMClassifier(random_state=123, verbose=-1, force_row_wise=True),
+            lgb.LGBMClassifier(**model_params[model_name]),
             boxcox_threshold=get_bc_threshold(_bc_threshold, boxcox_lambda)
         )
 
