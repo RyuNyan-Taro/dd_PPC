@@ -149,6 +149,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     _strata_std = train.groupby('strata')['svd_consumed_0'].transform('std')
     # _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
     _adult_equivalence = 1 + 0.7 * (train['num_adult_male'] + train['num_adult_female'] - 1) + 0.5 * (train['num_children5'] + train['num_children10'] + train['num_children18'])
+    _sector_edu_mean = train.groupby('sector1d')['educ_max'].transform('mean')
 
     _complex_numbers = {
         # 'adult_equivalence': _adult_equivalence,
@@ -159,6 +160,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
         'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
         'urban_sanitation': train['urban'] * train['sanitation_source'],
+        # 'edu_potential_diff': train['educ_max'] - _sector_edu_mean,
         # 'dependency_interaction': (train['num_children5'] + train['num_children10'] + train['num_elderly']) / (train['hsize'] + 1),
         # 'dependency_ratio': (train['num_children5'] + train['num_children10'] + train['num_children18'] + train['num_elderly']) / (train['num_adult_male'] + train['num_adult_female'] + 1e-6),
         # 'adult_ratio': (train['num_adult_male'] + train['num_adult_female']) / (train['hsize'] + 1e-6),
