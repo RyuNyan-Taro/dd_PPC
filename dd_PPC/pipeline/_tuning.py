@@ -5,7 +5,7 @@ from IPython.display import clear_output
 import matplotlib.pyplot as plt
 import numpy as np
 
-from . import test_model_pipeline
+from ._pipeline import test_model_pipeline
 from ._common import fit_and_test_model
 
 
