@@ -10,6 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, TargetEncoder
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
+from category_encoders import CountEncoder
 import lightgbm as lgb
 import xgboost as xgb
 import catboost
@@ -189,7 +190,7 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
 
 def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: float) -> list[tuple[str, BaseEstimator]]:
     _add_float_size_conversion = ['tabular', 'mlp']
-    _add_target_encoding = ['lightgbm', 'catboost', 'xgboost']
+    _add_count_encoding = ['lightgbm', 'catboost', 'xgboost']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
 
@@ -207,7 +208,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
         return [('convert', model.Float32Transformer()), _model]
 
-    if model_name in _add_target_encoding:
+    if model_name in _add_count_encoding:
         match model_name:
             case 'lightgbm':
                 _model = lgb.LGBMRegressor(**model_params['lightgbm'])
@@ -218,20 +219,17 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             case _:
                 raise ValueError(f'Invalid model name: {model_name}')
 
-        _target_encoding_cols = ['sanitation_source', 'educ_max', 'dweltyp', 'sector1d']
+        _count_encoding_cols = ['sanitation_source', 'educ_max', 'dweltyp', 'sector1d']
 
-        _te = ColumnTransformer(
+        _ce = ColumnTransformer(
             transformers=[(
-                'encoding', TargetEncoder(
-                categories=[sorted(list(CATEGORY_NUMBER_MAPS[_col].values())) for _col in _target_encoding_cols],
-                random_state=123
-            ), _target_encoding_cols)],
+                'encoding', CountEncoder(handle_unknown=0, normalize=True), _count_encoding_cols)],
             remainder='passthrough',
             verbose_feature_names_out=False
         )
-        # return [('target_encoding', _te), ('model', _model)]
+        return [('count_encoding', _ce), ('model', _model)]
 
-        return [('model', _model)]
+        # return [('model', _model)]
 
     if model_name in _clf_model:
         _bc_threshold = {
