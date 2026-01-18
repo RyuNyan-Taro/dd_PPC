@@ -165,6 +165,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
+        # 'edu_labor_efficiency': train['educ_max'] / (train['sector1d'] + 1),
         # 'utl_per_ae': train['utl_exp_ppp17'] / _adult_equivalence
         # 'infra_rel_to_strata': train['svd_infrastructure_0'] / (_infra_strata_mean + 1e-6),
         # 'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
