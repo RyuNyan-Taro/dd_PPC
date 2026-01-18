@@ -180,16 +180,10 @@ def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
         _latest_cols = df.columns
         for col in target_cols:
             _survey_group_mean = df.groupby('survey_id')[col].transform('mean')
-            _strata_mean = df.groupby('strata')[col].transform('mean')
 
             df[f'{col}_diff_survey'] = df[col] - _survey_group_mean
             df[f'{col}_ratio_survey'] = df[col] / (_survey_group_mean + 1e-6)
             df[f'{col}_rank_survey'] = df.groupby('survey_id')[col].rank(pct=True)
-
-            df[f'{col}_diff_strata'] = df[col] - _strata_mean
-            df[f'{col}_ratio_strata'] = df[col] / (_strata_mean + 1e-6)
-            df[f'{col}_rank_strata'] = df.groupby('strata')[col].rank(pct=True)
-
         return df.drop(columns=_latest_cols)
 
 
