@@ -5,7 +5,7 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe', 'survey_related_features']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'education_svd_dataframe', 'complex_numbers_dataframe', 'survey_related_features']
 
 import numpy as np
 import pandas as pd
@@ -140,6 +140,30 @@ def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | N
     latent_feats = svd.transform(train[infrastructure_cols])
 
     columns = [f'svd_infrastructure_{_i}' for _i in range(n_components)]
+
+    return latent_feats, svd, columns
+
+
+def education_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+    latent_feats, svd, columns = _education_svd(train, n_components, svd)
+
+    if isinstance(latent_feats, pd.DataFrame):
+        return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+
+    return pd.DataFrame(latent_feats, columns=columns), svd
+
+def _education_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
+    education_cols = [
+        'educ_max', 'sector1d', 'employed', 'owner'
+    ]
+
+    if svd is None:
+        svd = TruncatedSVD(n_components=n_components, random_state=123)
+        svd.fit(train[education_cols])
+
+    latent_feats = svd.transform(train[education_cols])
+
+    columns = [f'svd_education_{_i}' for _i in range(n_components)]
 
     return latent_feats, svd, columns
 

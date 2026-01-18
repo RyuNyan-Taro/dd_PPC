@@ -18,7 +18,7 @@ import catboost
 from .. import file, model, calc
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe, \
-    survey_related_features
+    survey_related_features, education_svd_dataframe
 
 
 def get_stacking_regressor_and_pipelines(
@@ -116,7 +116,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
         [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
         columns=_complex_input_cols)).columns)
 
-    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
+    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)] + [f'svd_education_{i}' for i in range(3)]
 
     _survey_cols = list({'survey_id', 'sanitation_source'} | set(num_cols) | {'educ_max'} | set(complex_output_cols) | set(svd_cols))
 
@@ -125,6 +125,8 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
         columns=_survey_cols)).columns)
 
     final_num_cols = num_cols + svd_cols + complex_output_cols + survey_related_output_cols
+
+    # final_num_cols = num_cols + svd_cols + complex_output_cols
 
     return final_num_cols, category_cols, CATEGORY_NUMBER_MAPS
 
@@ -338,14 +340,16 @@ class _CustomCategoryMapper(BaseEstimator, TransformerMixin):
 
 
 class _SVDFeatureGenerator(BaseEstimator, TransformerMixin):
-    def __init__(self, consumed_svd=None, infra_svd=None):
+    def __init__(self, consumed_svd=None, infra_svd=None, educ_svd=None):
         self.consumed_svd = consumed_svd
         self.infra_svd = infra_svd
+        self.educ_svd = educ_svd
 
     def fit(self, X, y=None):
         # 学習時（Train）にSVDをfitさせる
         _, self.consumed_svd = consumed_svd_dataframe(X, svd=self.consumed_svd)
         _, self.infra_svd = infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        _, self.educ_svd = education_svd_dataframe(X, svd=self.educ_svd)
         return self
 
     def transform(self, X):
@@ -353,11 +357,13 @@ class _SVDFeatureGenerator(BaseEstimator, TransformerMixin):
 
         df_cons, _ = consumed_svd_dataframe(X, svd=self.consumed_svd)
         df_infra, _ = infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        df_educ, _ = education_svd_dataframe(X, svd=self.educ_svd)
 
         df_cons.index = X.index
         df_infra.index = X.index
+        df_educ.index = X.index
 
-        return pd.concat([X, df_cons, df_infra], axis=1)
+        return pd.concat([X, df_cons, df_infra, df_educ], axis=1)
 
 
 class _ClassifierWrapper(RegressorMixin, BaseEstimator):
