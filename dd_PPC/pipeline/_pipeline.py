@@ -93,6 +93,21 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
 
 
 def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tuple[list[Pipeline], list[dict], list[dict]]:
+    """Tests a machine learning pipeline for a given model name and optional parameters using k-fold cross-validation.
+    The function builds and trains a stacking regressor pipeline using the input model, processes data using box-cox
+    transformations, and evaluates the pipeline's performance via metrics such as consumption and poverty rate predictions.
+    Models, training scores, and testing scores are returned for further analysis.
+
+    Args:
+        model_name (str): The name of the model to be used in the stacking regressor pipeline.
+        model_params (dict | None): A dictionary of model parameters, or None if no parameters are specified.
+
+    Returns:
+        A tuple containing:
+            - A list of trained machine learning Pipeline objects.
+            - A list of dictionaries containing training evaluation metrics.
+            - A list of dictionaries containing testing evaluation metrics.
+    """
     boxcox_lambda = _BOXCOX_LAMBDA
 
     _model_pipeline = model.get_stacking_regressor_and_pipelines(
