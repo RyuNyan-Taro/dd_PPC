@@ -5,7 +5,7 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe', 'survey_related_features']
 
 import numpy as np
 import pandas as pd
@@ -148,8 +148,11 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     _strata_mean = train.groupby('strata')['svd_consumed_0'].transform('mean')
     _strata_std = train.groupby('strata')['svd_consumed_0'].transform('std')
     # _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
+    _adult_equivalence = 1 + 0.7 * (train['num_adult_male'] + train['num_adult_female'] - 1) + 0.5 * (train['num_children5'] + train['num_children10'] + train['num_children18'])
+    _sector_edu_mean = train.groupby('sector1d')['educ_max'].transform('mean')
 
     _complex_numbers = {
+        # 'adult_equivalence': _adult_equivalence,
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
         'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
         # 'urban_times_consumed': (train['urban'] + 1) * train['svd_consumed_1'],
@@ -157,16 +160,41 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
         'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
         'urban_sanitation': train['urban'] * train['sanitation_source'],
-        # 'dependency_interaction': train['num_children5'] + train['num_children10'] + train['num_elderly'] / (train['hsize'] + 1),
+        # 'age_per_hsize': train['age'] / (train['hsize'] + 1),
+        # 'stable_workers': train['sfworkershh'] * train['sworkershh'] * (train['num_adult_male'] + train['num_adult_female']),
+        # 'edu_potential_diff': train['educ_max'] - _sector_edu_mean,
+        # 'dependency_interaction': (train['num_children5'] + train['num_children10'] + train['num_elderly']) / (train['hsize'] + 1),
+        # 'dependency_ratio': (train['num_children5'] + train['num_children10'] + train['num_children18'] + train['num_elderly']) / (train['num_adult_male'] + train['num_adult_female'] + 1e-6),
+        # 'adult_ratio': (train['num_adult_male'] + train['num_adult_female']) / (train['hsize'] + 1e-6),
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
+        # 'consumed_times_infra': train['svd_consumed_0'] * train['svd_infrastructure_0'],
+        # 'edu_labor_efficiency': train['educ_max'] / (train['sector1d'] + 1),
+        # 'utl_per_ae': train['utl_exp_ppp17'] / _adult_equivalence
         # 'infra_rel_to_strata': train['svd_infrastructure_0'] / (_infra_strata_mean + 1e-6),
         # 'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
         # 'infra_zscore_to_strata': (train['svd_infrastructure_0'] - _infra_strata_mean) / (_infra_strata_mean + 1e-6)
     }
 
     return pd.DataFrame(_complex_numbers)
+
+
+def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
+        target_cols = [
+            'svd_consumed_0', 'utl_exp_ppp17', 'sanitation_and_consumed',
+            'sanitation_source', 'consumed_per_hsize', 'worker_density'
+        ]
+
+        df = train.copy()
+        _latest_cols = df.columns
+        for col in target_cols:
+            _survey_group_mean = df.groupby('survey_id')[col].transform('mean')
+
+            df[f'{col}_diff_survey'] = df[col] - _survey_group_mean
+            df[f'{col}_ratio_survey'] = df[col] / (_survey_group_mean + 1e-6)
+            df[f'{col}_rank_survey'] = df.groupby('survey_id')[col].rank(pct=True)
+        return df.drop(columns=_latest_cols)
 
 
 def target_encode(train: pd.DataFrame, test: pd.DataFrame, target: pd.Series, cols: list[str], smoothing: float = 1.0) -> tuple[pd.DataFrame, pd.DataFrame]:

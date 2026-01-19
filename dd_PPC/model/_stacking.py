@@ -17,7 +17,8 @@ import catboost
 
 from .. import file, model, calc
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
-from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe
+from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe, \
+    survey_related_features
 
 
 def get_stacking_regressor_and_pipelines(
@@ -109,14 +110,21 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
     num_cols = NUMBER_COLUMNS.copy()
 
-    _complex_input_cols = num_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1']
+    _complex_input_cols = num_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1', 'educ_max', 'sector1d']
 
     complex_output_cols = list(complex_numbers_dataframe(pd.DataFrame(
         [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
         columns=_complex_input_cols)).columns)
+
     svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
 
-    final_num_cols = num_cols + svd_cols + complex_output_cols
+    _survey_cols = list({'survey_id', 'sanitation_source'} | set(num_cols) | {'educ_max'} | set(complex_output_cols) | set(svd_cols))
+
+    survey_related_output_cols = list(survey_related_features(pd.DataFrame(
+        [[0] * len(_survey_cols), [1] * len(_survey_cols)],
+        columns=_survey_cols)).columns)
+
+    final_num_cols = num_cols + svd_cols + complex_output_cols + survey_related_output_cols
 
     return final_num_cols, category_cols, CATEGORY_NUMBER_MAPS
 
@@ -175,6 +183,10 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
         ('svd_gen', _SVDFeatureGenerator()),
 
         ('complex_gen', FunctionTransformer(_complex_feature_wrapper)),
+
+        ('survey_related_gen', FunctionTransformer(_survey_related_feature_wrapper)),
+
+        ('drop_temporary_used', FunctionTransformer(_drop_temporary_used_columns)),
 
         ('final_scaler', ColumnTransformer(
             transformers=[
@@ -260,7 +272,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
 # sub functions for preprocessing
 def _drop_unused_columns(X):
-    return X.drop(columns=['hhid', 'com', 'survey_id', 'share_secondary'])
+    return X.drop(columns=['hhid', 'com', 'share_secondary'])
 
 
 def _handle_null_numbers(X):
@@ -277,6 +289,17 @@ def _complex_feature_wrapper(X):
 
     df_complex.index = X.index
     return pd.concat([X, df_complex], axis=1)
+
+
+def _survey_related_feature_wrapper(X):
+    df_survey_related = survey_related_features(X)
+
+    df_survey_related.index = X.index
+    return pd.concat([X, df_survey_related], axis=1)
+
+
+def _drop_temporary_used_columns(X):
+    return X.drop(columns=['survey_id'])
 
 
 class _CustomCategoryMapper(BaseEstimator, TransformerMixin):
