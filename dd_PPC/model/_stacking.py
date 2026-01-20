@@ -242,7 +242,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
         if model_name == 'catboost':
             def _drop_catboost_features(X):
-                return X.drop(columns=['water', 'sewer', 'urban'])
+                return X.drop(columns=['water', 'sewer', 'urban', 'sanitation_source_rank_survey'])
 
             return [('count_encoding', _ce), ('drop_features', FunctionTransformer(_drop_catboost_features)), ('model', _model)]
         return [('count_encoding', _ce), ('model', _model)]
