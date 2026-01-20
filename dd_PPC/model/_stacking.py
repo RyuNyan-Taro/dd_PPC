@@ -69,7 +69,7 @@ def get_stacking_regressor_and_pipelines(
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
-        # final_estimator=Ridge(random_state=123, max_iter=10000),
+        # final_estimator=Ridge(random_state=123, max_iter=10000, positive=True, alpha=1, fit_intercept=True),
         final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=lgb.LGBMRegressor(),
         # final_estimator=Lasso(**model_params['lasso']),
@@ -239,6 +239,13 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             remainder='passthrough',
             verbose_feature_names_out=False
         )
+
+        if model_name == 'catboost':
+            def _drop_catboost_features(X):
+                return X.drop(columns=['water', 'sewer', 'urban'])
+
+            return [('count_encoding', _ce), ('drop_features', FunctionTransformer(_drop_catboost_features)), ('model', _model)]
+
         return [('count_encoding', _ce), ('model', _model)]
 
         # return [('model', _model)]

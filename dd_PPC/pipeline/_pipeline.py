@@ -9,7 +9,7 @@ from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
 
-_MODEL_NAMES = ['lightgbm', 'ridge', 'xgboost']
+_MODEL_NAMES = ['lightgbm', 'xgboost', 'catboost']
 _BOXCOX_LAMBDA = 0.09
 
 
@@ -29,8 +29,6 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
     boxcox_lambda = _BOXCOX_LAMBDA
     _model_names = _MODEL_NAMES
 
-    stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_model_names, boxcox_lambda=boxcox_lambda)
-
     _datas = file.get_datas()
 
     _k_fold_test_ids = [100000, 200000, 300000]
@@ -41,6 +39,9 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
 
     for _i, _id in enumerate(_k_fold_test_ids):
         print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
+
+        stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_model_names,
+                                                                                         boxcox_lambda=boxcox_lambda)
 
         train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
@@ -93,13 +94,22 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
 
 
 def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tuple[list[Pipeline], list[dict], list[dict]]:
-    boxcox_lambda = _BOXCOX_LAMBDA
+    """Tests a machine learning pipeline for a given model name and optional parameters using k-fold cross-validation.
+    The function builds and trains a stacking regressor pipeline using the input model, processes data using box-cox
+    transformations, and evaluates the pipeline's performance via metrics such as consumption and poverty rate predictions.
+    Models, training scores, and testing scores are returned for further analysis.
 
-    _model_pipeline = model.get_stacking_regressor_and_pipelines(
-        [model_name],
-        boxcox_lambda=boxcox_lambda,
-        model_params=model_params
-    )[1][0][1]
+    Args:
+        model_name (str): The name of the model to be used in the stacking regressor pipeline.
+        model_params (dict | None): A dictionary of model parameters, or None if no parameters are specified.
+
+    Returns:
+        A tuple containing:
+            - A list of trained machine learning Pipeline objects.
+            - A list of dictionaries containing training evaluation metrics.
+            - A list of dictionaries containing testing evaluation metrics.
+    """
+    boxcox_lambda = _BOXCOX_LAMBDA
 
     _datas = file.get_datas()
 
@@ -110,6 +120,12 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
     test_scores = []
 
     for _i, _id in enumerate(_k_fold_test_ids):
+        _model_pipeline = model.get_stacking_regressor_and_pipelines(
+            [model_name],
+            boxcox_lambda=boxcox_lambda,
+            model_params=model_params
+        )[1][0][1]
+
         print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
 
         train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(
