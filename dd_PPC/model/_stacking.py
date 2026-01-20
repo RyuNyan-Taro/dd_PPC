@@ -245,6 +245,12 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
                 return X.drop(columns=['water', 'sewer', 'urban'])
 
             return [('count_encoding', _ce), ('drop_features', FunctionTransformer(_drop_catboost_features)), ('model', _model)]
+
+        if model_name == 'lightgbm':
+            def _drop_lightgbm_features(X):
+                return X.drop(columns=['sewer'])
+
+            return [('count_encoding', _ce), ('drop_features', FunctionTransformer(_drop_lightgbm_features)), ('model', _model)]
         return [('count_encoding', _ce), ('model', _model)]
 
         # return [('model', _model)]
