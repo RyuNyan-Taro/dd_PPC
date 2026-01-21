@@ -10,6 +10,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import boxcox
 from scipy.special import inv_boxcox
+import torch
+import torch.nn as nn
 
 
 def weighted_average_of_consumption_and_poverty_rate(
@@ -95,10 +97,6 @@ def inverse_boxcox_transform(transformed_data: np.ndarray, lambda_param: float):
     """Inverse Box-Cox transformation"""
 
     return inv_boxcox(transformed_data, lambda_param)
-
-
-import torch
-import torch.nn as nn
 
 
 class CustomCompetitionLoss(nn.Module):
