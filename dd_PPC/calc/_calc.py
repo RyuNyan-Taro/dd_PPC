@@ -2,7 +2,8 @@ __all__ = [
     'weighted_average_of_consumption_and_poverty_rate',
     'poverty_rates_from_consumption',
     'apply_boxcox_transform',
-    'inverse_boxcox_transform'
+    'inverse_boxcox_transform',
+    'score_statics'
 ]
 
 from typing import Any
@@ -119,3 +120,7 @@ class CustomCompetitionLoss(nn.Module):
         pov_loss = (90 / self.p_weights.sum()) * torch.mean(torch.sum(weighted_pov_diff, dim=1))
 
         return cons_loss + pov_loss
+
+
+def score_statics(title: str, scores: list[float]):
+    print(title, [_func(scores) for _func in [np.mean, np.std]], scores,)
