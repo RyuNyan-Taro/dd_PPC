@@ -65,3 +65,6 @@ competition: https://www.drivendata.org/competitions/305/competition-worldbank-p
 - GroupKFold
 - Target encoding
   - some models increase training score but finally drop because of a decrease test score
+- latest edm
+  - cons_ppp17 <= 5: I predict higher than target.
+  - cons_ppp17 > 5: I predict lower than target.
