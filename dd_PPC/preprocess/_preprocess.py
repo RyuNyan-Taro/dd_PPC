@@ -145,11 +145,14 @@ def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | N
 
 
 def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
+    train = train.copy()
     _strata_mean = train.groupby('strata')['svd_consumed_0'].transform('mean')
     _strata_std = train.groupby('strata')['svd_consumed_0'].transform('std')
     # _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
     _adult_equivalence = 1 + 0.7 * (train['num_adult_male'] + train['num_adult_female'] - 1) + 0.5 * (train['num_children5'] + train['num_children10'] + train['num_children18'])
     _sector_edu_mean = train.groupby('sector1d')['educ_max'].transform('mean')
+
+    train['has_child'] = (train['num_children5'] + train['num_children10'] + train['num_children18'] > 0).apply(lambda x: 1 if x else 0)
 
     _complex_numbers = {
         # 'adult_equivalence': _adult_equivalence,
@@ -169,7 +172,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
-        'concat_consumed': train[['consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800']].apply(
+        'concat_consumed': train[['has_child', 'consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800']].apply(
         lambda x: int(''.join([str(_val) for _val in x]), 2), axis=1)
         # 'consumed_times_infra': train['svd_consumed_0'] * train['svd_infrastructure_0'],
         # 'edu_labor_efficiency': train['educ_max'] / (train['sector1d'] + 1),
