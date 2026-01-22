@@ -173,7 +173,8 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
         'concat_consumed': train[['has_child', 'consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800']].apply(
-        lambda x: int(''.join([str(_val) for _val in x]), 2), axis=1)
+        lambda x: int(''.join([str(_val) for _val in x]), 2), axis=1),
+        'has_child': train['has_child'].astype(int),
         # 'consumed_times_infra': train['svd_consumed_0'] * train['svd_infrastructure_0'],
         # 'edu_labor_efficiency': train['educ_max'] / (train['sector1d'] + 1),
         # 'utl_per_ae': train['utl_exp_ppp17'] / _adult_equivalence
