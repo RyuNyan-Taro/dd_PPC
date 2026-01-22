@@ -151,6 +151,25 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     _adult_equivalence = 1 + 0.7 * (train['num_adult_male'] + train['num_adult_female'] - 1) + 0.5 * (train['num_children5'] + train['num_children10'] + train['num_children18'])
     _sector_edu_mean = train.groupby('sector1d')['educ_max'].transform('mean')
 
+    _concat_consumed_dict = {
+        '0000': 0,
+        '0001': 1,
+        '0010': 2,
+        '0011': 3,
+        '0100': 4,
+        '0101': 5,
+        '0110': 6,
+        '0111': 7,
+        '1000': 8,
+        '1001': 9,
+        '1010': 10,
+        '1011': 11,
+        '1100': 12,
+        '1101': 13,
+        '1110': 14,
+        '1111': 15
+    }
+
     _complex_numbers = {
         # 'adult_equivalence': _adult_equivalence,
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
@@ -169,6 +188,8 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
+        'concat_consumed': train[['consumed3100', 'consumed1500', 'consumed2000']].apply(
+        _concat_consumed_dict[lambda x: ''.join([str(_val) for _val in x])], axis=1)
         # 'consumed_times_infra': train['svd_consumed_0'] * train['svd_infrastructure_0'],
         # 'edu_labor_efficiency': train['educ_max'] / (train['sector1d'] + 1),
         # 'utl_per_ae': train['utl_exp_ppp17'] / _adult_equivalence
