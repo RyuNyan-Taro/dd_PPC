@@ -172,7 +172,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
         'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
         'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
-        'concat_consumed': train[['consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800']].apply(
+        'concat_consumed': train[['consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800', 'consumed3100']].apply(
         lambda x: sum([_val for _val in x]), axis=1),
         'has_child': train['has_child'].astype(int),
         # 'consumed_times_infra': train['svd_consumed_0'] * train['svd_infrastructure_0'],
