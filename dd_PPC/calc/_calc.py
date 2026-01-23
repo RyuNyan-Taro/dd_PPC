@@ -41,7 +41,7 @@ def weighted_average_of_consumption_and_poverty_rate(
 
     _weighted_average = sum(_consumption_weighted_averages) + sum(_poverty_rate_weighted_averages)
 
-    return float(_weighted_average / len(poverty_rate_pred))
+    return float(_weighted_average[0] / len(poverty_rate_pred))
 
 # sub functions for weighted_average_of_consumption_and_poverty_rate
 def _calc_consumption_weighted_average(preds: np.ndarray, targets: np.ndarray) -> float:
