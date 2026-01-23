@@ -5,8 +5,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def param_compare(df_a, df_b, labels: list[str], prefix: str, dir: str = '../plots'):
-    os.makedirs(dir, exist_ok=False)
+def param_compare(
+        df_a: pd.DataFrame, df_b: pd.DataFrame,
+        labels: list[str], prefix: str, dir: str = '../plots',
+        allow_overwrite: bool = False,
+):
+    os.makedirs(dir, exist_ok=allow_overwrite)
 
     for _col in set(df_a.columns) - {'hhid', 'com'}:
 
@@ -19,8 +23,8 @@ def param_compare(df_a, df_b, labels: list[str], prefix: str, dir: str = '../plo
                 plt.ylim(0, 1)
 
         else:
-            plt.hist(df_a[_col], density=True, label=labels[0])
-            plt.hist(df_b[_col], density=True, label=labels[1])
+            plt.hist(df_a[_col], label=labels[0])
+            plt.hist(df_b[_col], label=labels[1])
             plt.legend()
 
         plt.title(_col)
