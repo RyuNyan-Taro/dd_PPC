@@ -2,7 +2,8 @@ __all__ = [
     'weighted_average_of_consumption_and_poverty_rate',
     'poverty_rates_from_consumption',
     'apply_boxcox_transform',
-    'inverse_boxcox_transform'
+    'inverse_boxcox_transform',
+    'score_statics'
 ]
 
 from typing import Any
@@ -10,6 +11,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import boxcox
 from scipy.special import inv_boxcox
+import torch
+import torch.nn as nn
 
 
 def weighted_average_of_consumption_and_poverty_rate(
@@ -38,7 +41,7 @@ def weighted_average_of_consumption_and_poverty_rate(
 
     _weighted_average = sum(_consumption_weighted_averages) + sum(_poverty_rate_weighted_averages)
 
-    return float(_weighted_average / len(poverty_rate_pred))
+    return float(_weighted_average[0] / len(poverty_rate_pred))
 
 # sub functions for weighted_average_of_consumption_and_poverty_rate
 def _calc_consumption_weighted_average(preds: np.ndarray, targets: np.ndarray) -> float:
@@ -97,10 +100,6 @@ def inverse_boxcox_transform(transformed_data: np.ndarray, lambda_param: float):
     return inv_boxcox(transformed_data, lambda_param)
 
 
-import torch
-import torch.nn as nn
-
-
 class CustomCompetitionLoss(nn.Module):
     def __init__(self, poverty_weights):
         super().__init__()
@@ -121,3 +120,7 @@ class CustomCompetitionLoss(nn.Module):
         pov_loss = (90 / self.p_weights.sum()) * torch.mean(torch.sum(weighted_pov_diff, dim=1))
 
         return cons_loss + pov_loss
+
+
+def score_statics(title: str, scores: list[float]):
+    print(title, [_func(scores) for _func in [np.mean, np.std]], scores,)

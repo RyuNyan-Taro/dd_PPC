@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import set_config
 from sklearn.ensemble import StackingRegressor
+from sklearn.isotonic import IsotonicRegression
 from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
@@ -13,7 +14,7 @@ _MODEL_NAMES = ['lightgbm', 'xgboost', 'catboost']
 _BOXCOX_LAMBDA = 0.09
 
 
-def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict]]:
+def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict], list[IsotonicRegression]]:
 
     def get_feature_importance(model_):
         """Extract feature importance/coefficients based on the model type."""
@@ -36,6 +37,7 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
     learned_stacks = []
     train_scores = []
     test_scores = []
+    isotonic_regressors = []
 
     for _i, _id in enumerate(_k_fold_test_ids):
         print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
@@ -87,13 +89,14 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         learned_stacks.append(stacking_regressor)
         train_scores.append(_train_metrics)
         test_scores.append(_test_metrics)
+        isotonic_regressors.append(ir)
 
         # plot_model_bias(_y_test_mean_pred, test_cons_y.cons_ppp17, "Stacking Regressor")
 
-    return learned_stacks, train_scores, test_scores
+    return learned_stacks, train_scores, test_scores, isotonic_regressors
 
 
-def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tuple[list[Pipeline], list[dict], list[dict]]:
+def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tuple[list[Pipeline], list[dict], list[dict], list[IsotonicRegression]]:
     """Tests a machine learning pipeline for a given model name and optional parameters using k-fold cross-validation.
     The function builds and trains a stacking regressor pipeline using the input model, processes data using box-cox
     transformations, and evaluates the pipeline's performance via metrics such as consumption and poverty rate predictions.
@@ -118,6 +121,7 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
     learned_models = []
     train_scores = []
     test_scores = []
+    isotonic_regressors = []
 
     for _i, _id in enumerate(_k_fold_test_ids):
         _model_pipeline = model.get_stacking_regressor_and_pipelines(
@@ -168,8 +172,9 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
         learned_models.append(_model_pipeline)
         train_scores.append(_train_metrics)
         test_scores.append(_test_metrics)
+        isotonic_regressors.append(ir)
 
-    return learned_models, train_scores, test_scores,
+    return learned_models, train_scores, test_scores, isotonic_regressors
 
 
 def fit_and_predictions_pipeline(folder_prefix: str | None = None):

@@ -110,7 +110,7 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
     num_cols = NUMBER_COLUMNS.copy()
 
-    _complex_input_cols = num_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'urban', 'sanitation_source', 'svd_consumed_1', 'educ_max', 'sector1d']
+    _complex_input_cols = num_cols + category_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'svd_consumed_1']
 
     complex_output_cols = list(complex_numbers_dataframe(pd.DataFrame(
         [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
