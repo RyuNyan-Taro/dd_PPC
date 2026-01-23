@@ -1,5 +1,8 @@
 __all__ = ['param_compare']
 
+import pandas as pd
+import matplotlib.pyplot as plt
+
 
 def param_compare(df_a, df_b, labels: list[str], prefix: str, dir: str = '../plots'):
     for _col in set(df_a.columns) - {'hhid', 'com'}:
