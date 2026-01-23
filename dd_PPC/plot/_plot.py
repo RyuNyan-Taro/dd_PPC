@@ -11,8 +11,8 @@ def param_compare(df_a, df_b, labels: list[str], prefix: str, dir: str = '../plo
     for _col in set(df_a.columns) - {'hhid', 'com'}:
 
         if isinstance(df_a[_col], pd.Categorical) or pd.api.types.is_object_dtype(df_a[_col]):
-            df_a_counts = df_a[_col].value_counts(normalize=True)
-            df_b_counts = df_b[_col].value_counts(normalize=True)
+            df_a_counts = df_a[_col].value_counts(normalize=True).sort_index(ascending=False,)
+            df_b_counts = df_b[_col].value_counts(normalize=True).sort_index(ascending=False,)
 
             pd.DataFrame({labels[0]: df_a_counts, labels[1]: df_b_counts}).plot(kind='bar')
             if len(df_a_counts) == 2:
