@@ -23,8 +23,8 @@ def param_compare(
                 plt.ylim(0, 1)
 
         else:
-            plt.hist(df_a[_col], label=labels[0])
-            plt.hist(df_b[_col], label=labels[1])
+            plt.hist(df_a[_col], label=labels[0], density=True)
+            plt.hist(df_b[_col], label=labels[1], density=True, alpha=0.7)
             plt.legend()
 
         plt.title(_col)
