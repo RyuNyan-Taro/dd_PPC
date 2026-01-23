@@ -1,10 +1,13 @@
 __all__ = ['param_compare']
 
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
 def param_compare(df_a, df_b, labels: list[str], prefix: str, dir: str = '../plots'):
+    os.makedirs(dir, exist_ok=False)
+
     for _col in set(df_a.columns) - {'hhid', 'com'}:
 
         if isinstance(df_a[_col], pd.Categorical) or pd.api.types.is_object_dtype(df_a[_col]):
