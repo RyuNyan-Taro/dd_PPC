@@ -221,18 +221,15 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         return [('convert', model.Float32Transformer()), _model]
 
     if model_name in _add_count_encoding:
-        match model_name:
-            case 'lightgbm':
-                _model = lgb.LGBMRegressor(**model_params['lightgbm'])
-            case 'catboost':
-                _model = catboost.CatBoostRegressor(**model_params['catboost'])
-            case 'xgboost':
-                _model = xgb.XGBRegressor(**model_params['xgboost'])
-            case _:
-                raise ValueError(f'Invalid model name: {model_name}')
+        _model_dict = {
+            'lightgbm': {'model': lgb.LGBMRegressor, 'drop': ['exp_per_hsize', 'any_nonagoric_and_sewer']},
+            'catboost': {'model': catboost.CatBoostRegressor, 'drop': ['water', 'sewer', 'urban']},
+            'xgboost': {'model': xgb.XGBRegressor, 'drop': ['exp_per_hsize']}
+        }[model_name]
+
+        _model = _model_dict['model'](**model_params[model_name])
 
         _count_encoding_cols = ['sector1d']
-
         _ce = ColumnTransformer(
             transformers=[(
                 'encoding', CountEncoder(cols=_count_encoding_cols, handle_unknown=0, normalize=True), _count_encoding_cols)],
@@ -240,15 +237,10 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             verbose_feature_names_out=False
         )
 
-        if model_name == 'catboost':
-            def _drop_catboost_features(X):
-                return X.drop(columns=['water', 'sewer', 'urban'])
+        def _drop_features(X):
+            return X.drop(columns=_model_dict['drop'])
 
-            return [('count_encoding', _ce), ('drop_features', FunctionTransformer(_drop_catboost_features)), ('model', _model)]
-
-        return [('count_encoding', _ce), ('model', _model)]
-
-        # return [('model', _model)]
+        return [('count_encoding', _ce), ('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]
 
     if model_name in _clf_model:
         _bc_threshold = {
@@ -275,7 +267,10 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         case 'elasticnet':
             _model = ElasticNet(**model_params['elasticnet'])
 
-    return [('model', _model)]
+    def _drop_features(X):
+        return X.drop(columns=['exp_per_hsize', 'any_nonagoric_and_sewer'])
+
+    return [('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]
 
 # sub functions for preprocessing
 def _drop_unused_columns(X):
