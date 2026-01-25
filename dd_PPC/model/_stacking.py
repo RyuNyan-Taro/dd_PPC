@@ -222,7 +222,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
     if model_name in _add_count_encoding:
         _model_dict = {
-            'lightgbm': {'model': lgb.LGBMRegressor, 'drop': ['exp_per_hsize', 'any_nonagoric_and_sewer']},
+            'lightgbm': {'model': lgb.LGBMRegressor, 'drop': ['exp_per_hsize']},
             'catboost': {'model': catboost.CatBoostRegressor, 'drop': ['water', 'sewer', 'urban']},
             'xgboost': {'model': xgb.XGBRegressor, 'drop': ['exp_per_hsize']}
         }[model_name]
@@ -268,7 +268,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             _model = ElasticNet(**model_params['elasticnet'])
 
     def _drop_features(X):
-        return X.drop(columns=['exp_per_hsize', 'any_nonagoric_and_sewer'])
+        return X.drop(columns=['exp_per_hsize'])
 
     return [('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]
 
