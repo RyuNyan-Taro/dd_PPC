@@ -175,7 +175,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'concat_consumed': train[['consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800', 'consumed3100']].apply(
         lambda x: sum([_val for _val in x]), axis=1),
         'lower_than_not_have_consumed': train[
-            ['consumed900', 'consumed4100', 'consumed300',]].apply(
+            ['consumed900', 'consumed4100', 'consumed300', 'consumed400']].apply(
             lambda x: sum([_val for _val in x]), axis=1),
         'exp_per_hsize': train['utl_exp_ppp17'] / train['hsize'],
         'any_nonagoric_and_sewer': (train['any_nonagric'] + train['sewer']) / 2,
