@@ -209,15 +209,15 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'living_standard_index': train['svd_consumed_0'] * train['svd_infrastructure_0']
         # 'consumed_variety': train[_consumed_cols].sum(axis=1)
         # 'cons_z_in_sector': (train['svd_consumed_0'] - _sector_mean) / (_sector_std + 1e-6)
-        'burden_factor': (train['hsize'] - train['sfworkershh']) / (train['sfworkershh'] + 1),
-        'infra_cons_ratio': train['svd_infrastructure_0'] / (train['svd_consumed_0'] + 1e-6),
+        # 'burden_factor': (train['hsize'] - train['sfworkershh']) / (train['sfworkershh'] + 1),
+        # 'infra_cons_ratio': train['svd_infrastructure_0'] / (train['svd_consumed_0'] + 1e-6),
         # 'is_high_educ': (train['educ_max'] >= 5).astype(int)
         # 'urban_sector_combo': train['urban'] * 10 + train['sector1d']
-        'modern_score': (
-            (train['sanitation_source'] > 0).astype(int) +
-            (train['sewer'] > 0).astype(int) +
-            (train['any_nonagric'] > 0).astype(int)
-        ),
+        # 'modern_score': (
+        #     (train['sanitation_source'] > 0).astype(int) +
+        #     (train['sewer'] > 0).astype(int) +
+        #     (train['any_nonagric'] > 0).astype(int)
+        # ),
         # 'rel_wealth_vs_cons': train['relative_infra_wealth'] / (train['svd_consumed_0'] + 1e-6)
         # 'household_maturity': (train['educ_max'] * train['sfworkershh']) / (train['hsize'] + 1e-6)
     }
