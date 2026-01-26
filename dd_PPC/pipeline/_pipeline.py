@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
 
-_MODEL_NAMES = ['lightgbm', 'xgboost', 'catboost']
+_MODEL_NAMES = ['lightgbm', 'xgboost', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
 
 

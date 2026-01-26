@@ -201,7 +201,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(_complex_numbers)
 
 
-def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
+def survey_related_features(train: pd.DataFrame, center_func: str = 'mean') -> pd.DataFrame:
         target_cols = [
             'svd_consumed_0', 'utl_exp_ppp17', 'sanitation_and_consumed',
             'sanitation_source', 'consumed_per_hsize', 'worker_density'
@@ -210,10 +210,10 @@ def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
         df = train.copy()
         _latest_cols = df.columns
         for col in target_cols:
-            _survey_group_mean = df.groupby('survey_id')[col].transform('mean')
+            _survey_group_center = df.groupby('survey_id')[col].transform(center_func)
 
-            df[f'{col}_diff_survey'] = df[col] - _survey_group_mean
-            df[f'{col}_ratio_survey'] = df[col] / (_survey_group_mean + 1e-6)
+            df[f'{col}_diff_survey'] = df[col] - _survey_group_center
+            df[f'{col}_ratio_survey'] = df[col] / (_survey_group_center + 1e-6)
             df[f'{col}_rank_survey'] = df.groupby('survey_id')[col].rank(pct=True)
         return df.drop(columns=_latest_cols)
 
