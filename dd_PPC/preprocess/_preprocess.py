@@ -151,18 +151,29 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     # _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
     _adult_equivalence = 1 + 0.7 * (train['num_adult_male'] + train['num_adult_female'] - 1) + 0.5 * (train['num_children5'] + train['num_children10'] + train['num_children18'])
     _sector_edu_mean = train.groupby('sector1d')['educ_max'].transform('mean')
+    _strata_edu_mean = train.groupby('strata')['educ_max'].transform('mean')
 
     train['has_child'] = (train['num_children5'] + train['num_children10'] + train['num_children18'] > 0).apply(lambda x: 1 if x else 0)
+    _consumed_cols = [c for c in train.columns if 'consumed' in c and c.startswith('consumed')]
+
+    # _strata_infra_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
+    # train['relative_infra_wealth'] = train['svd_infrastructure_0'] - _strata_infra_mean
+
+    # _sector_mean = train.groupby('sector1d')['svd_consumed_0'].transform('mean')
+    # _sector_std = train.groupby('sector1d')['svd_consumed_0'].transform('std')
 
     _complex_numbers = {
         # 'adult_equivalence': _adult_equivalence,
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
         'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
         # 'urban_times_consumed': (train['urban'] + 1) * train['svd_consumed_1'],
+        # 'urban_times_sewer': train['urban'] * (train['sewer'] + 1),
         'consumed_per_hsize': train['svd_consumed_1'] / (train['hsize'] + 1),
         'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
         'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
         'urban_sanitation': train['urban'] * train['sanitation_source'],
+        # 'rural_nosewer': ((train.urban=='Rural') & (train.sewer=='No access')).apply(int),
+        # 'old_and_low_family_size': train['hsize'] / train['age'],
         # 'age_per_hsize': train['age'] / (train['hsize'] + 1),
         # 'stable_workers': train['sfworkershh'] * train['sworkershh'] * (train['num_adult_male'] + train['num_adult_female']),
         # 'edu_potential_diff': train['educ_max'] - _sector_edu_mean,
@@ -177,6 +188,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'lower_than_not_have_consumed': train[
             ['consumed900', 'consumed4100', 'consumed300',]].apply(
             lambda x: sum([_val for _val in x]), axis=1),
+        # 'false_high_condition': (train['strata'].isin([1, 2, 3])) & (train['educ_max'] == 6) & (train['sector1d'].isin([0, 4, 6, 12])),
         # 'lower_than_and_no_access_not_have_consumed': train[
         #     ['consumed200', 'consumed900', 'consumed3100', 'region5']].apply(
         #     lambda x: x.region5 * 10 + sum([_val for _val in x[['consumed200', 'consumed900', 'consumed3100']]]), axis=1),
@@ -192,6 +204,22 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'infra_rel_to_strata': train['svd_infrastructure_0'] / (_infra_strata_mean + 1e-6),
         # 'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
         # 'infra_zscore_to_strata': (train['svd_infrastructure_0'] - _infra_strata_mean) / (_infra_strata_mean + 1e-6)
+        # 'nonagric_efficiency': train['any_nonagric'] * train['sfworkershh']
+        # 'edu_diff_strata': train['educ_max'] - _strata_edu_mean
+        # 'living_standard_index': train['svd_consumed_0'] * train['svd_infrastructure_0']
+        # 'consumed_variety': train[_consumed_cols].sum(axis=1)
+        # 'cons_z_in_sector': (train['svd_consumed_0'] - _sector_mean) / (_sector_std + 1e-6)
+        # 'burden_factor': (train['hsize'] - train['sfworkershh']) / (train['sfworkershh'] + 1),
+        # 'infra_cons_ratio': train['svd_infrastructure_0'] / (train['svd_consumed_0'] + 1e-6),
+        # 'is_high_educ': (train['educ_max'] >= 5).astype(int)
+        # 'urban_sector_combo': train['urban'] * 10 + train['sector1d']
+        # 'modern_score': (
+        #     (train['sanitation_source'] > 0).astype(int) +
+        #     (train['sewer'] > 0).astype(int) +
+        #     (train['any_nonagric'] > 0).astype(int)
+        # ),
+        # 'rel_wealth_vs_cons': train['relative_infra_wealth'] / (train['svd_consumed_0'] + 1e-6)
+        # 'household_maturity': (train['educ_max'] * train['sfworkershh']) / (train['hsize'] + 1e-6)
     }
 
     return pd.DataFrame(_complex_numbers)
