@@ -59,19 +59,13 @@ def get_stacking_regressor_and_pipelines(
         print('model:', _model)
         print('params:', _params)
 
-    preprocessor, final_processor = _get_common_preprocess(category_number_maps, category_cols, num_cols)
-
-    _model_process = [
-        (_name, _get_initialized_model(_name, model_params, boxcox_lambda=boxcox_lambda))
-    for _name in model_names
-    ]
+    preprocessor = _get_common_preprocess(category_number_maps, category_cols, num_cols)
 
     model_pipelines = [
         (
             _name,
-            Pipeline([('prep', preprocessor)] + _process[:-1] + [('final', final_processor)] + [_process[-1]]))
-        for _name, _process in _model_process
-    ]
+            Pipeline([('prep', preprocessor)] + _get_initialized_model(_name, model_params, boxcox_lambda=boxcox_lambda))
+        ) for _name in model_names]
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
@@ -191,10 +185,9 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
         ('complex_gen', FunctionTransformer(_complex_feature_wrapper)),
 
         ('survey_related_gen', FunctionTransformer(_survey_related_feature_wrapper)),
-    ])
 
-    final_processor = Pipeline([
         ('drop_temporary_used', FunctionTransformer(_drop_temporary_used_columns)),
+
         ('final_scaler', ColumnTransformer(
             transformers=[
                 ('scaling', StandardScaler(), num_cols)
@@ -204,7 +197,7 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
         ))
     ])
 
-    return preprocessor, final_processor
+    return preprocessor
 
 
 def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: float) -> list[tuple[str, BaseEstimator]]:
@@ -274,31 +267,10 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         case 'elasticnet':
             _model = ElasticNet(**model_params['elasticnet'])
 
-    def _overlap_survey_related_feature_wrapper(X):
-        df_survey_related = survey_related_features(X, 'median')
-
-        df_survey_related.index = X.index
-        return pd.concat([X.drop(columns=list(df_survey_related.columns)), df_survey_related], axis=1)
-
     def _drop_features(X):
         return X.drop(columns=['exp_per_hsize', 'any_nonagoric_and_sewer', 'lower_than_not_have_consumed'])
 
-    _overlap_cols = [
-        _first + '_' + _second
-        for _first in [
-            'svd_consumed_0', 'utl_exp_ppp17', 'sanitation_and_consumed',
-            'sanitation_source', 'consumed_per_hsize', 'worker_density'
-        ]
-        for _second in [
-            'diff_survey', 'ratio_survey', 'rank_survey'
-        ]
-    ]
-
-    return [
-        ('drop_features', FunctionTransformer(_drop_features)),
-        ('overlap_survey_related_feature', FunctionTransformer(_overlap_survey_related_feature_wrapper)),
-        ('model', _model)
-    ]
+    return [('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]
 
 # sub functions for preprocessing
 def _drop_unused_columns(X):
