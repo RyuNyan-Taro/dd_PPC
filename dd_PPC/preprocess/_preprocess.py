@@ -196,6 +196,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'infra_rel_to_strata': train['svd_infrastructure_0'] / (_infra_strata_mean + 1e-6),
         # 'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
         # 'infra_zscore_to_strata': (train['svd_infrastructure_0'] - _infra_strata_mean) / (_infra_strata_mean + 1e-6)
+        # 'nonagric_efficiency': train['any_nonagric'] * train['sfworkershh']
     }
 
     return pd.DataFrame(_complex_numbers)
