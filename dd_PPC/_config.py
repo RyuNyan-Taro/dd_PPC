@@ -45,11 +45,11 @@ CATEGORY_NUMBER_MAPS = {
         },
         'educ_max': {
             'Complete Tertiary Education': 6,
-            'Complete Secondary Education': 5,
-            'Incomplete Tertiary Education': 4,
-            'Incomplete Primary Education': 2,
-            'Complete Primary Education': 3,
-            'Incomplete Secondary Education': 1,
+            'Incomplete Tertiary Education': 5,
+            'Complete Secondary Education': 4,
+            'Incomplete Secondary Education': 3,
+            'Complete Primary Education': 2,
+            'Incomplete Primary Education': 1,
             'Never attended': 0,
         },
         'sector1d': {
