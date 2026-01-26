@@ -222,9 +222,9 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
     if model_name in _add_count_encoding:
         _model_dict = {
-            'lightgbm': {'model': lgb.LGBMRegressor, 'drop': ['exp_per_hsize', 'any_nonagoric_and_sewer', 'infra_cons_ratio']},
-            'catboost': {'model': catboost.CatBoostRegressor, 'drop': ['water', 'sewer', 'urban', 'burden_factor', 'infra_cons_ratio']},
-            'xgboost': {'model': xgb.XGBRegressor, 'drop': ['exp_per_hsize', 'lower_than_not_have_consumed', 'burden_factor']}
+            'lightgbm': {'model': lgb.LGBMRegressor, 'drop': ['exp_per_hsize', 'any_nonagoric_and_sewer', 'infra_cons_ratio', 'modern_score']},
+            'catboost': {'model': catboost.CatBoostRegressor, 'drop': ['water', 'sewer', 'urban', 'burden_factor', 'infra_cons_ratio', 'modern_score']},
+            'xgboost': {'model': xgb.XGBRegressor, 'drop': ['exp_per_hsize', 'lower_than_not_have_consumed', 'burden_factor', 'modern_score']}
         }[model_name]
 
         _model = _model_dict['model'](**model_params[model_name])

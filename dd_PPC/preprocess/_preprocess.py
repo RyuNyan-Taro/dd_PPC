@@ -210,6 +210,11 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'infra_cons_ratio': train['svd_infrastructure_0'] / (train['svd_consumed_0'] + 1e-6),
         # 'is_high_educ': (train['educ_max'] >= 5).astype(int)
         # 'urban_sector_combo': train['urban'] * 10 + train['sector1d']
+        'modern_score': (
+            (train['sanitation_source'] > 0).astype(int) +
+            (train['sewer'] > 0).astype(int) +
+            (train['any_nonagric'] > 0).astype(int)
+    )
     }
 
     return pd.DataFrame(_complex_numbers)
