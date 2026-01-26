@@ -180,7 +180,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'lower_than_not_have_consumed': train[
             ['consumed900', 'consumed4100', 'consumed300',]].apply(
             lambda x: sum([_val for _val in x]), axis=1),
-        'false_high_condition': (train['strata'].isin([1, 2, 3])) & (train['educ_max'] == 6) & (train['sector1d'].isin([0, 4, 6, 12])),
+        # 'false_high_condition': (train['strata'].isin([1, 2, 3])) & (train['educ_max'] == 6) & (train['sector1d'].isin([0, 4, 6, 12])),
         # 'lower_than_and_no_access_not_have_consumed': train[
         #     ['consumed200', 'consumed900', 'consumed3100', 'region5']].apply(
         #     lambda x: x.region5 * 10 + sum([_val for _val in x[['consumed200', 'consumed900', 'consumed3100']]]), axis=1),
