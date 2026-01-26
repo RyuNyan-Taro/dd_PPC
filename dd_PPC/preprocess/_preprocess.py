@@ -151,6 +151,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     # _infra_strata_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
     _adult_equivalence = 1 + 0.7 * (train['num_adult_male'] + train['num_adult_female'] - 1) + 0.5 * (train['num_children5'] + train['num_children10'] + train['num_children18'])
     _sector_edu_mean = train.groupby('sector1d')['educ_max'].transform('mean')
+    _strata_edu_mean = train.groupby('strata')['educ_max'].transform('mean')
 
     train['has_child'] = (train['num_children5'] + train['num_children10'] + train['num_children18'] > 0).apply(lambda x: 1 if x else 0)
 
@@ -197,6 +198,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'infra_diff_to_strata': train['svd_infrastructure_0'] - _infra_strata_mean,
         # 'infra_zscore_to_strata': (train['svd_infrastructure_0'] - _infra_strata_mean) / (_infra_strata_mean + 1e-6)
         # 'nonagric_efficiency': train['any_nonagric'] * train['sfworkershh']
+        # 'edu_diff_strata': train['educ_max'] - _strata_edu_mean
     }
 
     return pd.DataFrame(_complex_numbers)
