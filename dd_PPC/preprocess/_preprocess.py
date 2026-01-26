@@ -164,6 +164,8 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
         'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
         'urban_sanitation': train['urban'] * train['sanitation_source'],
+        'rural_nosewer': ((train.urban=='Rural') & (train.sewer=='No access')).apply(int),
+        'old_and_low_family_size': train['hsize'] / train['age'],
         # 'age_per_hsize': train['age'] / (train['hsize'] + 1),
         # 'stable_workers': train['sfworkershh'] * train['sworkershh'] * (train['num_adult_male'] + train['num_adult_female']),
         # 'edu_potential_diff': train['educ_max'] - _sector_edu_mean,
