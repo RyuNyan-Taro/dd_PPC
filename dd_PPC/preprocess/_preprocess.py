@@ -206,7 +206,8 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'living_standard_index': train['svd_consumed_0'] * train['svd_infrastructure_0']
         # 'consumed_variety': train[_consumed_cols].sum(axis=1)
         # 'cons_z_in_sector': (train['svd_consumed_0'] - _sector_mean) / (_sector_std + 1e-6)
-        'burden_factor': (train['hsize'] - train['sfworkershh']) / (train['sfworkershh'] + 1)
+        'burden_factor': (train['hsize'] - train['sfworkershh']) / (train['sfworkershh'] + 1),
+        'infra_cons_ratio': train['svd_infrastructure_0'] / (train['svd_consumed_0'] + 1e-6)
     }
 
     return pd.DataFrame(_complex_numbers)
