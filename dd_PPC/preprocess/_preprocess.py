@@ -219,6 +219,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
             (train['any_nonagric'] > 0).astype(int)
         ),
         # 'rel_wealth_vs_cons': train['relative_infra_wealth'] / (train['svd_consumed_0'] + 1e-6)
+        # 'household_maturity': (train['educ_max'] * train['sfworkershh']) / (train['hsize'] + 1e-6)
     }
 
     return pd.DataFrame(_complex_numbers)
