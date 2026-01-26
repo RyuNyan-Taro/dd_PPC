@@ -156,6 +156,9 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     train['has_child'] = (train['num_children5'] + train['num_children10'] + train['num_children18'] > 0).apply(lambda x: 1 if x else 0)
     _consumed_cols = [c for c in train.columns if 'consumed' in c and c.startswith('consumed')]
 
+    # _strata_infra_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
+    # train['relative_infra_wealth'] = train['svd_infrastructure_0'] - _strata_infra_mean
+
     # _sector_mean = train.groupby('sector1d')['svd_consumed_0'].transform('mean')
     # _sector_std = train.groupby('sector1d')['svd_consumed_0'].transform('std')
 
@@ -214,7 +217,8 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
             (train['sanitation_source'] > 0).astype(int) +
             (train['sewer'] > 0).astype(int) +
             (train['any_nonagric'] > 0).astype(int)
-    )
+        ),
+        # 'rel_wealth_vs_cons': train['relative_infra_wealth'] / (train['svd_consumed_0'] + 1e-6)
     }
 
     return pd.DataFrame(_complex_numbers)
