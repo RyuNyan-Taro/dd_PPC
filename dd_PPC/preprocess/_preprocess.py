@@ -156,6 +156,9 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     train['has_child'] = (train['num_children5'] + train['num_children10'] + train['num_children18'] > 0).apply(lambda x: 1 if x else 0)
     _consumed_cols = [c for c in train.columns if 'consumed' in c and c.startswith('consumed')]
 
+    # _sector_mean = train.groupby('sector1d')['svd_consumed_0'].transform('mean')
+    # _sector_std = train.groupby('sector1d')['svd_consumed_0'].transform('std')
+
     _complex_numbers = {
         # 'adult_equivalence': _adult_equivalence,
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
@@ -202,6 +205,8 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'edu_diff_strata': train['educ_max'] - _strata_edu_mean
         # 'living_standard_index': train['svd_consumed_0'] * train['svd_infrastructure_0']
         # 'consumed_variety': train[_consumed_cols].sum(axis=1)
+        # 'cons_z_in_sector': (train['svd_consumed_0'] - _sector_mean) / (_sector_std + 1e-6)
+        'burden_factor': (train['hsize'] - train['sfworkershh']) / (train['sfworkershh'] + 1)
     }
 
     return pd.DataFrame(_complex_numbers)
