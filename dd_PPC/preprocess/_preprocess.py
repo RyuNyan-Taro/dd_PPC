@@ -201,7 +201,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'nonagric_efficiency': train['any_nonagric'] * train['sfworkershh']
         # 'edu_diff_strata': train['educ_max'] - _strata_edu_mean
         # 'living_standard_index': train['svd_consumed_0'] * train['svd_infrastructure_0']
-        'consumed_variety': train[_consumed_cols].sum(axis=1)
+        # 'consumed_variety': train[_consumed_cols].sum(axis=1)
     }
 
     return pd.DataFrame(_complex_numbers)
