@@ -5,12 +5,14 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe', 'survey_related_features']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe',
+           'complex_numbers_dataframe', 'survey_related_features', 'complex_svd_dataframe'
+           ]
 
 import numpy as np
 import pandas as pd
 import tqdm
-from sklearn.decomposition import TruncatedSVD
+from sklearn.decomposition import TruncatedSVD, NMF
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
@@ -113,6 +115,11 @@ def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = 
         svd = TruncatedSVD(n_components=n_components, random_state=123)
         svd.fit(train[consumed_cols])
 
+
+    # if svd is None:
+    #     svd = NMF(n_components=n_components, random_state=123)
+    #     svd.fit(train[consumed_cols])
+    #
     latent_feats = svd.transform(train[consumed_cols])
 
     columns = [f'svd_consumed_{_i}' for _i in range(n_components)]
@@ -144,6 +151,31 @@ def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | N
     return latent_feats, svd, columns
 
 
+def complex_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+    latent_feats, svd, columns = _complex_svd(train, n_components, svd)
+
+    if isinstance(latent_feats, pd.DataFrame):
+        return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+
+    return pd.DataFrame(latent_feats, columns=columns), svd
+
+
+def _complex_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
+    complex_cols = [
+        'urban', 'employed', 'any_nonagric', 'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7', 'sanitation_source', 'educ_max', 'sector1d'
+    ]
+
+    if svd is None:
+        svd = TruncatedSVD(n_components=n_components, random_state=123)
+        svd.fit(train[complex_cols])
+
+    latent_feats = svd.transform(train[complex_cols])
+
+    columns = [f'svd_complex_{_i}' for _i in range(n_components)]
+
+    return latent_feats, svd, columns
+
+
 def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     train = train.copy()
     _strata_mean = train.groupby('strata')['svd_consumed_0'].transform('mean')
@@ -159,8 +191,8 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     # _strata_infra_mean = train.groupby('strata')['svd_infrastructure_0'].transform('mean')
     # train['relative_infra_wealth'] = train['svd_infrastructure_0'] - _strata_infra_mean
 
-    # _sector_mean = train.groupby('sector1d')['svd_consumed_0'].transform('mean')
-    # _sector_std = train.groupby('sector1d')['svd_consumed_0'].transform('std')
+    _sector_mean = train.groupby('sector1d')['svd_consumed_0'].transform('mean')
+    _sector_std = train.groupby('sector1d')['svd_consumed_0'].transform('std')
 
     _complex_numbers = {
         # 'adult_equivalence': _adult_equivalence,
@@ -175,9 +207,9 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'rural_nosewer': ((train.urban=='Rural') & (train.sewer=='No access')).apply(int),
         # 'old_and_low_family_size': train['hsize'] / train['age'],
         # 'age_per_hsize': train['age'] / (train['hsize'] + 1),
-        # 'stable_workers': train['sfworkershh'] * train['sworkershh'] * (train['num_adult_male'] + train['num_adult_female']),
+        'stable_workers': train['sfworkershh'] * train['sworkershh'] * (train['num_adult_male'] + train['num_adult_female']),
         # 'edu_potential_diff': train['educ_max'] - _sector_edu_mean,
-        # 'dependency_interaction': (train['num_children5'] + train['num_children10'] + train['num_elderly']) / (train['hsize'] + 1),
+        'dependency_interaction': (train['num_children5'] + train['num_children10'] + train['num_elderly']) / (train['hsize'] + 1),
         # 'dependency_ratio': (train['num_children5'] + train['num_children10'] + train['num_children18'] + train['num_elderly']) / (train['num_adult_male'] + train['num_adult_female'] + 1e-6),
         # 'adult_ratio': (train['num_adult_male'] + train['num_adult_female']) / (train['hsize'] + 1e-6),
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
@@ -194,9 +226,6 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         #     lambda x: x.region5 * 10 + sum([_val for _val in x[['consumed200', 'consumed900', 'consumed3100']]]), axis=1),
         'exp_per_hsize': train['utl_exp_ppp17'] / train['hsize'],
         'any_nonagoric_and_sewer': (train['any_nonagric'] + train['sewer']) / 2,
-        # 'concat_consumed': train[
-        #     ['consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800', 'consumed3100']].apply(
-        #     lambda x: int(''.join([str(_val) for _val in x]), 2), axis=1),
         'has_child': train['has_child'].astype(int),
         # 'consumed_times_infra': train['svd_consumed_0'] * train['svd_infrastructure_0'],
         # 'edu_labor_efficiency': train['educ_max'] / (train['sector1d'] + 1),
@@ -228,7 +257,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
         target_cols = [
             'svd_consumed_0', 'utl_exp_ppp17', 'sanitation_and_consumed',
-            'sanitation_source', 'consumed_per_hsize', 'worker_density'
+            'sanitation_source', 'consumed_per_hsize', 'worker_density', 'hsize'
         ]
 
         df = train.copy()
