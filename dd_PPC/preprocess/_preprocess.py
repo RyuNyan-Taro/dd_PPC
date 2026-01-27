@@ -5,12 +5,14 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
-           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe', 'complex_numbers_dataframe', 'survey_related_features']
+           'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe',
+           'complex_numbers_dataframe', 'survey_related_features', 'complex_svd_dataframe'
+           ]
 
 import numpy as np
 import pandas as pd
 import tqdm
-from sklearn.decomposition import TruncatedSVD
+from sklearn.decomposition import TruncatedSVD, NMF
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
@@ -113,6 +115,11 @@ def _consumed_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = 
         svd = TruncatedSVD(n_components=n_components, random_state=123)
         svd.fit(train[consumed_cols])
 
+
+    # if svd is None:
+    #     svd = NMF(n_components=n_components, random_state=123)
+    #     svd.fit(train[consumed_cols])
+    #
     latent_feats = svd.transform(train[consumed_cols])
 
     columns = [f'svd_consumed_{_i}' for _i in range(n_components)]
@@ -140,6 +147,31 @@ def _infrastructure_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | N
     latent_feats = svd.transform(train[infrastructure_cols])
 
     columns = [f'svd_infrastructure_{_i}' for _i in range(n_components)]
+
+    return latent_feats, svd, columns
+
+
+def complex_svd_dataframe(train: pd.DataFrame, n_components: int = 3, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD]:
+    latent_feats, svd, columns = _complex_svd(train, n_components, svd)
+
+    if isinstance(latent_feats, pd.DataFrame):
+        return pd.DataFrame(latent_feats.to_numpy(), columns=columns), svd
+
+    return pd.DataFrame(latent_feats, columns=columns), svd
+
+
+def _complex_svd(train: pd.DataFrame, n_components, svd: TruncatedSVD | None = None) -> tuple[pd.DataFrame, TruncatedSVD, list[str]]:
+    complex_cols = [
+        'urban', 'employed', 'any_nonagric', 'region1', 'region2', 'region3', 'region4', 'region5', 'region6', 'region7', 'sanitation_source', 'educ_max', 'sector1d'
+    ]
+
+    if svd is None:
+        svd = TruncatedSVD(n_components=n_components, random_state=123)
+        svd.fit(train[complex_cols])
+
+    latent_feats = svd.transform(train[complex_cols])
+
+    columns = [f'svd_complex_{_i}' for _i in range(n_components)]
 
     return latent_feats, svd, columns
 

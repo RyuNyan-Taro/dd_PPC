@@ -18,8 +18,8 @@ import catboost
 
 from .. import file, model, calc
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
-from ..preprocess import consumed_svd_dataframe, infrastructure_svd_dataframe, complex_numbers_dataframe, \
-    survey_related_features
+from .. import preprocess
+from ..preprocess import complex_numbers_dataframe, survey_related_features
 
 
 def get_stacking_regressor_and_pipelines(
@@ -232,12 +232,13 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             ]},
             'catboost': {'model': catboost.CatBoostRegressor, 'drop': [
                 'water', 'sewer', 'urban', 'has_child', 'stable_workers',
-                'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey'
+                'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey',
+                'svd_complex_0', 'svd_complex_1', 'svd_complex_2'
             ]},
             'xgboost': {'model': xgb.XGBRegressor, 'drop': [
                 'exp_per_hsize', 'lower_than_not_have_consumed', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'diff_consumed_to_strata',
-                'dependency_interaction'
+                'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2'
             ]}
         }[model_name]
 
@@ -285,7 +286,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
         return X.drop(columns=[
             'has_child', 'exp_per_hsize', 'any_nonagoric_and_sewer', 'lower_than_not_have_consumed',
             'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'zscore_consumed_to_strata',
-            'dependency_interaction'
+            'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2'
         ])
 
     return [('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]
@@ -358,26 +359,30 @@ class _CustomCategoryMapper(BaseEstimator, TransformerMixin):
 
 
 class _SVDFeatureGenerator(BaseEstimator, TransformerMixin):
-    def __init__(self, consumed_svd=None, infra_svd=None):
+    def __init__(self, consumed_svd=None, infra_svd=None, complex_svd=None):
         self.consumed_svd = consumed_svd
         self.infra_svd = infra_svd
+        self.complex_svd = complex_svd
 
     def fit(self, X, y=None):
         # 学習時（Train）にSVDをfitさせる
-        _, self.consumed_svd = consumed_svd_dataframe(X, svd=self.consumed_svd)
-        _, self.infra_svd = infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        _, self.consumed_svd = preprocess.consumed_svd_dataframe(X, svd=self.consumed_svd)
+        _, self.infra_svd = preprocess.infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        _, self.complex_svd = preprocess.complex_svd_dataframe(X, svd=self.complex_svd)
         return self
 
     def transform(self, X):
         X = X.copy()
 
-        df_cons, _ = consumed_svd_dataframe(X, svd=self.consumed_svd)
-        df_infra, _ = infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        df_cons, _ = preprocess.consumed_svd_dataframe(X, svd=self.consumed_svd)
+        df_infra, _ = preprocess.infrastructure_svd_dataframe(X, svd=self.infra_svd)
+        df_complex, _ = preprocess.complex_svd_dataframe(X, svd=self.complex_svd)
 
         df_cons.index = X.index
         df_infra.index = X.index
+        df_complex.index = X.index
 
-        return pd.concat([X, df_cons, df_infra], axis=1)
+        return pd.concat([X, df_cons, df_infra, df_complex], axis=1)
 
 
 class _ClassifierWrapper(RegressorMixin, BaseEstimator):
