@@ -1,19 +1,23 @@
 __all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline']
 
 
+import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import set_config
 from sklearn.ensemble import StackingRegressor
 from sklearn.isotonic import IsotonicRegression
 from sklearn.model_selection import GroupKFold
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.pipeline import Pipeline
+import lightgbm as lgb
 
-from .. import file, model, data, calc
+from .. import file, model, data, calc, preprocess
 
 _MODEL_NAMES = ['lightgbm', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
-_TARGET_TRANSFORM = dict(method='log1p', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
+_TARGET_TRANSFORM = dict(method='boxcox', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
+_DIRECT_RATE_BLEND = 0.5
 
 
 def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
@@ -23,6 +27,80 @@ def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
         lambda_param=_TARGET_TRANSFORM.get('boxcox_lambda'),
         quantile_n=_TARGET_TRANSFORM.get('quantile_n', 1000)
     )
+
+
+def _build_survey_features(df: pd.DataFrame) -> pd.DataFrame:
+    numeric_df = df.select_dtypes(include=[np.number]).drop(columns=['survey_id'], errors='ignore').reset_index(drop=True)
+    category_df = preprocess.encoding_category_dataframe(df).reset_index(drop=True)
+    _duplicated_columns = set(numeric_df.columns) & set(category_df.columns)
+    features = pd.concat([numeric_df.drop(_duplicated_columns, axis=1), category_df], axis=1)
+    features['survey_id'] = df['survey_id'].to_numpy()
+    return features.groupby('survey_id').mean(numeric_only=True)
+
+
+def _fit_direct_poverty_rate_model(train_x: pd.DataFrame, train_rate_y: pd.DataFrame) -> tuple[MultiOutputRegressor, list[str]]:
+    survey_features = _build_survey_features(train_x)
+    rate_columns = [c for c in train_rate_y.columns if c != 'survey_id']
+    train_targets = train_rate_y.set_index('survey_id')[rate_columns].loc[survey_features.index]
+
+    params = file.load_best_params('lightgbm')
+    params['objective'] = 'regression'
+    params['metric'] = 'rmse'
+    params['verbose'] = -1
+    params['random_state'] = 123
+
+    base_model = lgb.LGBMRegressor(**params)
+    model_direct = MultiOutputRegressor(base_model)
+    model_direct.fit(survey_features, train_targets)
+
+    return model_direct, rate_columns
+
+
+def _predict_direct_poverty_rate(model_direct: MultiOutputRegressor, df: pd.DataFrame, rate_columns: list[str]) -> pd.DataFrame:
+    survey_features = _build_survey_features(df)
+    preds = model_direct.predict(survey_features)
+    pred_df = pd.DataFrame(preds, index=survey_features.index, columns=rate_columns)
+    pred_df.insert(0, 'survey_id', pred_df.index.astype(int))
+    return pred_df.reset_index(drop=True)
+
+
+def _blend_poverty_rates(base_rates: pd.DataFrame, direct_rates: pd.DataFrame) -> pd.DataFrame:
+    if _DIRECT_RATE_BLEND <= 0:
+        return base_rates
+    direct_rates = _normalize_rate_columns(direct_rates, base_rates.columns)
+    merged = base_rates.merge(direct_rates, on='survey_id', suffixes=('_base', '_direct'))
+    blended = pd.DataFrame({'survey_id': merged['survey_id']})
+    for col in base_rates.columns:
+        if col == 'survey_id':
+            continue
+        blended[col] = (1 - _DIRECT_RATE_BLEND) * merged[f'{col}_base'] + _DIRECT_RATE_BLEND * merged[f'{col}_direct']
+    return blended
+
+
+def _normalize_rate_columns(df: pd.DataFrame, reference_cols: pd.Index) -> pd.DataFrame:
+    def _to_float(col: str) -> float | None:
+        if col == 'survey_id':
+            return None
+        return float(col.replace('pct_hh_below_', ''))
+
+    ref_map = {}
+    for col in reference_cols:
+        val = _to_float(col)
+        if val is not None:
+            ref_map[val] = col
+
+    rename_map = {}
+    for col in df.columns:
+        val = _to_float(col)
+        if val is None:
+            continue
+        if val in ref_map:
+            rename_map[col] = ref_map[val]
+
+    if not rename_map:
+        return df
+
+    return df.rename(columns=rename_map)
 
 
 def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict], list[IsotonicRegression]]:
@@ -83,9 +161,13 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         _y_train_mean_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
         _y_test_mean_pred = calc.inverse_target_transform(y_test_pred, target_transform_state)
 
+        direct_model, rate_columns = _fit_direct_poverty_rate_model(train_x, train_rate_y)
+
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
         train_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+        train_direct_rate_y = _predict_direct_poverty_rate(direct_model, train_x, rate_columns)
+        train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, train_direct_rate_y)
 
         ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
 
@@ -96,6 +178,8 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         consumption = test_cons_y.copy()
         consumption['cons_pred'] = _y_test_mean_pred
         test_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+        test_direct_rate_y = _predict_direct_poverty_rate(direct_model, test_x, rate_columns)
+        test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, test_direct_rate_y)
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
@@ -165,9 +249,13 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
         _y_train_mean_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
         _y_test_mean_pred = calc.inverse_target_transform(y_test_pred, target_transform_state)
 
+        direct_model, rate_columns = _fit_direct_poverty_rate_model(train_x, train_rate_y)
+
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
         train_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+        train_direct_rate_y = _predict_direct_poverty_rate(direct_model, train_x, rate_columns)
+        train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, train_direct_rate_y)
 
         ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
 
@@ -179,6 +267,8 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
         consumption = test_cons_y.copy()
         consumption['cons_pred'] = _y_test_mean_pred
         test_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+        test_direct_rate_y = _predict_direct_poverty_rate(direct_model, test_x, rate_columns)
+        test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, test_direct_rate_y)
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
@@ -224,8 +314,12 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     y_train_pred = stacking_regressor.predict(train_x)
     y_train_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
 
+    direct_model, rate_columns = _fit_direct_poverty_rate_model(train_x, train_rate_y)
+
     train_cons_y['cons_pred'] = y_train_pred
     train_pred_rate_y = calc.poverty_rates_from_consumption(train_cons_y, 'cons_pred')
+    train_direct_rate_y = _predict_direct_poverty_rate(direct_model, train_x, rate_columns)
+    train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, train_direct_rate_y)
     ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
     train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
 
@@ -241,6 +335,8 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     _consumption, _ = file.get_submission_formats('../results')
     _consumption['cons_pred'] = _predicted
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
+    pred_direct_rate_y = _predict_direct_poverty_rate(direct_model, _datas['test'], rate_columns)
+    pred_rate_y = _blend_poverty_rates(pred_rate_y, pred_direct_rate_y)
     pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
 
     file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)
