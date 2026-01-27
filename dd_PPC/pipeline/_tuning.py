@@ -115,7 +115,7 @@ def tuning_model(model_name: str, n_trials: int = 100, timeout: int | None = Non
         # boxcox_lambda = trial.suggest_float('boxcox_lambda', 0.0, 0.3)
 
         # Run cross-validation with these parameters
-        _, train_scores, test_scores = test_model_pipeline(
+        _, train_scores, test_scores, _ = test_model_pipeline(
             model_name=model_name,
             model_params={model_name: params}
         )
