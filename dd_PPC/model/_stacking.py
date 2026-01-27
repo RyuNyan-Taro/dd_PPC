@@ -297,7 +297,7 @@ def _get_initialized_model(model_name: str, model_params: dict, category_cols: l
         return X.drop(columns=[
             'has_child', 'exp_per_hsize', 'any_nonagoric_and_sewer', 'lower_than_not_have_consumed',
             'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'zscore_consumed_to_strata',
-            'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
+            'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2'
         ])
 
     return [('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]

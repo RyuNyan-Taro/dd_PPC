@@ -204,6 +204,11 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
         'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
         'urban_sanitation': train['urban'] * train['sanitation_source'],
+        # 'svd_consumed_rate': train['svd_consumed_0'] / train['svd_consumed_1'],
+        # 'age_burden_interaction': train['age'] * (train['hsize'] / (train['sfworkershh'] + 1)),
+        # 'missing_infra_count': 3 - (train['water'] + train['elect'] + train['sewer']),
+        # 'edu_per_worker': train['educ_max'] / (train['sfworkershh'] + 1e-6),
+        # 'relative_infra_wealth': train['svd_infrastructure_0'] - _strata_infra_mean,
         # 'rural_nosewer': ((train.urban=='Rural') & (train.sewer=='No access')).apply(int),
         # 'old_and_low_family_size': train['hsize'] / train['age'],
         # 'age_per_hsize': train['age'] / (train['hsize'] + 1),
@@ -257,6 +262,9 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 def complex_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     train = train.copy()
 
+    hsize_bin = pd.cut(train['hsize'], bins=[0, 2, 5, 100], labels=['S', 'M', 'L'])
+
+
     _complex_category = {
         # 'urban_sector': train['urban'].astype(str) + '_' + train['sector1d'].astype(str),
         # 'lower_than_and_no_access_not_have_consumed': train['region5'].astype(str) + '_' + train['consumed200'].astype(str) + '_' + train['consumed900'].astype(str) + '_' + train['consumed3100'].astype(str),
@@ -266,6 +274,9 @@ def complex_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'cat_hsize_nonagric': (train['hsize'] >= 5).astype(int).astype(str) + "_" + train['any_nonagric'].astype(str)
         'cat_head_profile': train['male'].astype(str) + "_" + train['employed'].astype(str),
         # 'cat_infra_score': train['water'].astype(str) + "_" + train['elect'].astype(str) + "_" + train['sewer'].astype(str)
+        # 'cat_edu_employed': train['educ_max'].astype(str) + "_" + train['employed'].astype(str)
+        # 'cat_size_source': hsize_bin.astype(str) + "_" + train['any_nonagric'].astype(str)
+        # 'cat_sector_geo': train['sector1d'].astype(str) + "_" + train['urban'].astype(str)
     }
 
     return pd.DataFrame(_complex_category).astype('category')
