@@ -246,7 +246,7 @@ def _get_initialized_model(model_name: str, model_params: dict, category_cols: l
             ]}
         }[model_name]
 
-        _convert_category_cols = ['educ_max', 'dweltyp']
+        _convert_category_cols = ['educ_max']
 
         if model_name == 'catboost':
             model_params[model_name]['cat_features'] = list(set(category_cols) - set(_model_dict['drop']))
