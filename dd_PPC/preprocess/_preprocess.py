@@ -472,7 +472,7 @@ def _category_encoding(train: pd.DataFrame) -> tuple[np.ndarray, list[str]]:
 
         _nulls = x_train[_col].isnull()
         x_train.loc[~_nulls, _col] = x_train.loc[~_nulls, _col].apply(lambda x: _category_number_maps[_col][x])
-        x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).to_numpy().flatten()),
+        x_train[_col] = pd.Series(map(round, _imputer.fit_transform(x_train[_col].to_numpy().reshape(-1, 1)).flatten()),
                                   index=x_train.index).astype(int)
 
     # x_train['strata_urban'] = (x_train['strata'].astype(str) + "_" + x_train['urban'].astype(str)).apply(lambda x: _custom_maps['strata_urban'][x])
