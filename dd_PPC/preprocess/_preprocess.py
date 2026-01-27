@@ -177,7 +177,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'age_per_hsize': train['age'] / (train['hsize'] + 1),
         'stable_workers': train['sfworkershh'] * train['sworkershh'] * (train['num_adult_male'] + train['num_adult_female']),
         # 'edu_potential_diff': train['educ_max'] - _sector_edu_mean,
-        # 'dependency_interaction': (train['num_children5'] + train['num_children10'] + train['num_elderly']) / (train['hsize'] + 1),
+        'dependency_interaction': (train['num_children5'] + train['num_children10'] + train['num_elderly']) / (train['hsize'] + 1),
         # 'dependency_ratio': (train['num_children5'] + train['num_children10'] + train['num_children18'] + train['num_elderly']) / (train['num_adult_male'] + train['num_adult_female'] + 1e-6),
         # 'adult_ratio': (train['num_adult_male'] + train['num_adult_female']) / (train['hsize'] + 1e-6),
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
