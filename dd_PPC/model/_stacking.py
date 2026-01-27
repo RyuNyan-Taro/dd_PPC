@@ -235,7 +235,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             ]},
             'xgboost': {'model': xgb.XGBRegressor, 'drop': [
                 'exp_per_hsize', 'lower_than_not_have_consumed', 'stable_workers',
-                'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey'
+                'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'diff_consumed_to_strata'
             ]}
         }[model_name]
 
@@ -282,7 +282,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
     def _drop_features(X):
         return X.drop(columns=[
             'has_child', 'exp_per_hsize', 'any_nonagoric_and_sewer', 'lower_than_not_have_consumed',
-            'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey'
+            'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'zscore_consumed_to_strata'
         ])
 
     return [('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]
