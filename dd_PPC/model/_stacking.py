@@ -246,6 +246,8 @@ def _get_initialized_model(model_name: str, model_params: dict, category_cols: l
             ]}
         }[model_name]
 
+        _convert_category_cols = ['educ_max', 'dweltyp']
+
         if model_name == 'catboost':
             model_params[model_name]['cat_features'] = list(set(category_cols) - set(_model_dict['drop']))
         elif model_name == 'xgboost':
@@ -253,7 +255,7 @@ def _get_initialized_model(model_name: str, model_params: dict, category_cols: l
 
         _model = _model_dict['model'](**model_params[model_name])
         if model_name == 'lightgbm':
-            _model.categorical_features_ = category_cols
+            _model.categorical_features_ = category_cols + _convert_category_cols
 
         _count_encoding_cols = ['sector1d']
         _ce = ColumnTransformer(
@@ -263,10 +265,33 @@ def _get_initialized_model(model_name: str, model_params: dict, category_cols: l
             verbose_feature_names_out=False
         )
 
+        def _convert_category(X):
+
+            df_cat = X[_convert_category_cols].copy()
+            df_cat.index = X.index
+            for _col in _convert_category_cols:
+                df_cat[_col] = df_cat[_col].astype('category')
+
+            return pd.concat([X.drop(columns=_convert_category_cols), df_cat], axis=1)
+
         def _drop_features(X):
             return X.drop(columns=_model_dict['drop'])
 
-        return [('count_encoding', _ce), ('complex_category', FunctionTransformer(_complex_category_wrapper)), ('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]
+        if model_name == 'lightgbm':
+            return [
+                ('count_encoding', _ce),
+                ('complex_category', FunctionTransformer(_complex_category_wrapper)),
+                ('convert_category', FunctionTransformer(_convert_category)),
+                ('drop_features', FunctionTransformer(_drop_features)),
+                ('model', _model)
+            ]
+
+        return [
+            ('count_encoding', _ce),
+            ('complex_category', FunctionTransformer(_complex_category_wrapper)),
+            ('drop_features', FunctionTransformer(_drop_features)),
+            ('model', _model)
+        ]
 
     if model_name in _clf_model:
         _bc_threshold = {
