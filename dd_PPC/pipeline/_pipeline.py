@@ -6,12 +6,23 @@ from matplotlib import pyplot as plt
 from sklearn import set_config
 from sklearn.ensemble import StackingRegressor
 from sklearn.isotonic import IsotonicRegression
+from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
 
 _MODEL_NAMES = ['lightgbm', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
+_TARGET_TRANSFORM = dict(method='log1p', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
+
+
+def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
+    return calc.fit_target_transform(
+        y,
+        method=_TARGET_TRANSFORM['method'],
+        lambda_param=_TARGET_TRANSFORM.get('boxcox_lambda'),
+        quantile_n=_TARGET_TRANSFORM.get('quantile_n', 1000)
+    )
 
 
 def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict], list[IsotonicRegression]]:
@@ -42,16 +53,23 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
     for _i, _id in enumerate(_k_fold_test_ids):
         print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
 
-        stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_model_names,
-                                                                                         boxcox_lambda=boxcox_lambda)
-
         train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
         set_config(transform_output="pandas")
-        train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda)[0]
-        stacking_regressor.fit(train_x, train_y.astype(np.float32).flatten())
+        train_y, target_transform_state = _fit_target_transform(train_cons_y.cons_ppp17.to_numpy())
+        stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(
+            _model_names,
+            boxcox_lambda=boxcox_lambda,
+            target_transform_state=target_transform_state
+        )
+
+        _set_group_cv_splits(stacking_regressor, train_x, train_y, train_x['survey_id'])
+        stacking_regressor.fit(
+            train_x,
+            train_y.astype(np.float32).flatten()
+        )
 
         # fitの後に実行
         model_names = [name for name, _ in model_pipelines]
@@ -62,8 +80,8 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         y_train_pred = stacking_regressor.predict(train_x)
         y_test_pred = stacking_regressor.predict(test_x)
 
-        _y_train_mean_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
-        _y_test_mean_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
+        _y_train_mean_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
+        _y_test_mean_pred = calc.inverse_target_transform(y_test_pred, target_transform_state)
 
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
@@ -124,12 +142,6 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
     isotonic_regressors = []
 
     for _i, _id in enumerate(_k_fold_test_ids):
-        _model_pipeline = model.get_stacking_regressor_and_pipelines(
-            [model_name],
-            boxcox_lambda=boxcox_lambda,
-            model_params=model_params
-        )[1][0][1]
-
         print(f'\nk-fold: {_i + 1}/{len(_k_fold_test_ids)}: {_id}')
 
         train_x, train_cons_y, train_rate_y, test_x, test_cons_y, test_rate_y = data.split_datas(
@@ -137,14 +149,21 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
         )
 
         set_config(transform_output="pandas")
-        train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda)[0]
+        train_y, target_transform_state = _fit_target_transform(train_cons_y.cons_ppp17.to_numpy())
+        _model_pipeline = model.get_stacking_regressor_and_pipelines(
+            [model_name],
+            boxcox_lambda=boxcox_lambda,
+            model_params=model_params,
+            target_transform_state=target_transform_state
+        )[1][0][1]
+
         _model_pipeline.fit(train_x, train_y.astype(np.float32).flatten())
 
         y_train_pred = _model_pipeline.predict(train_x)
         y_test_pred = _model_pipeline.predict(test_x)
 
-        _y_train_mean_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
-        _y_test_mean_pred = calc.inverse_boxcox_transform(y_test_pred, boxcox_lambda)
+        _y_train_mean_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
+        _y_test_mean_pred = calc.inverse_target_transform(y_test_pred, target_transform_state)
 
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
@@ -181,8 +200,6 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
 
     boxcox_lambda = _BOXCOX_LAMBDA
 
-    stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(_MODEL_NAMES, boxcox_lambda=boxcox_lambda)
-
     _datas = file.get_datas()
 
     # learning
@@ -191,11 +208,21 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     train_rate_y = _datas['target_rate']
 
     set_config(transform_output="pandas")
-    train_y = calc.apply_boxcox_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda)[0]
-    stacking_regressor.fit(train_x, train_y.astype(np.float32).flatten())
+    train_y, target_transform_state = _fit_target_transform(train_cons_y.cons_ppp17.to_numpy())
+    stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(
+        _MODEL_NAMES,
+        boxcox_lambda=boxcox_lambda,
+        target_transform_state=target_transform_state
+    )
+
+    _set_group_cv_splits(stacking_regressor, train_x, train_y, train_x['survey_id'])
+    stacking_regressor.fit(
+        train_x,
+        train_y.astype(np.float32).flatten()
+    )
 
     y_train_pred = stacking_regressor.predict(train_x)
-    y_train_pred = calc.inverse_boxcox_transform(y_train_pred, boxcox_lambda)
+    y_train_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
 
     train_cons_y['cons_pred'] = y_train_pred
     train_pred_rate_y = calc.poverty_rates_from_consumption(train_cons_y, 'cons_pred')
@@ -209,7 +236,7 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
 
     # prediction
     _predicted_coxbox = stacking_regressor.predict(_datas['test'])
-    _predicted = calc.inverse_boxcox_transform(_predicted_coxbox, boxcox_lambda)
+    _predicted = calc.inverse_target_transform(_predicted_coxbox, target_transform_state)
 
     _consumption, _ = file.get_submission_formats('../results')
     _consumption['cons_pred'] = _predicted
@@ -230,3 +257,9 @@ def _calculate_metrics(pred_cons_y, y, pred_rate_y, consumption, target_rate_y) 
         mae=mae,
         competition_score=competition_score
     )
+
+
+def _set_group_cv_splits(estimator: StackingRegressor, X, y, groups, n_splits: int = 2) -> None:
+    """Precompute group-aware CV splits to avoid passing groups through fit()."""
+    splitter = GroupKFold(n_splits=n_splits)
+    estimator.cv = list(splitter.split(X, y, groups=groups))

@@ -3,6 +3,9 @@ __all__ = [
     'poverty_rates_from_consumption',
     'apply_boxcox_transform',
     'inverse_boxcox_transform',
+    'fit_target_transform',
+    'inverse_target_transform',
+    'transform_target_thresholds',
     'score_statics'
 ]
 
@@ -11,6 +14,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import boxcox
 from scipy.special import inv_boxcox
+from sklearn.preprocessing import QuantileTransformer
 import torch
 import torch.nn as nn
 
@@ -98,6 +102,62 @@ def inverse_boxcox_transform(transformed_data: np.ndarray, lambda_param: float):
     """Inverse Box-Cox transformation"""
 
     return inv_boxcox(transformed_data, lambda_param)
+
+
+def fit_target_transform(
+        data: np.ndarray,
+        method: str = 'boxcox',
+        lambda_param: float | None = None,
+        quantile_n: int = 1000
+) -> tuple[np.ndarray, dict]:
+    method = method.lower()
+    data = np.asarray(data)
+
+    if method == 'boxcox':
+        transformed, fitted_lambda = apply_boxcox_transform(data, lambda_param)
+        return transformed, {'method': 'boxcox', 'lambda': fitted_lambda}
+    if method == 'log1p':
+        return np.log1p(data), {'method': 'log1p'}
+    if method == 'quantile':
+        qt = QuantileTransformer(
+            n_quantiles=min(quantile_n, len(data)),
+            output_distribution='normal',
+            random_state=123
+        )
+        transformed = qt.fit_transform(data.reshape(-1, 1)).reshape(-1)
+        return transformed, {'method': 'quantile', 'transformer': qt}
+
+    raise ValueError(f'Invalid target transform method: {method}')
+
+
+def inverse_target_transform(transformed_data: np.ndarray, state: dict) -> np.ndarray:
+    method = state.get('method')
+    data = np.asarray(transformed_data)
+
+    if method == 'boxcox':
+        return inverse_boxcox_transform(data, state['lambda'])
+    if method == 'log1p':
+        return np.expm1(data)
+    if method == 'quantile':
+        qt = state['transformer']
+        return qt.inverse_transform(data.reshape(-1, 1)).reshape(-1)
+
+    raise ValueError(f'Invalid target transform method: {method}')
+
+
+def transform_target_thresholds(values: np.ndarray, state: dict) -> np.ndarray:
+    method = state.get('method')
+    vals = np.asarray(values)
+
+    if method == 'boxcox':
+        return apply_boxcox_transform(vals, state['lambda'])[0]
+    if method == 'log1p':
+        return np.log1p(vals)
+    if method == 'quantile':
+        qt = state['transformer']
+        return qt.transform(vals.reshape(-1, 1)).reshape(-1)
+
+    raise ValueError(f'Invalid target transform method: {method}')
 
 
 class CustomCompetitionLoss(nn.Module):

@@ -7,7 +7,7 @@ from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import KFold
+from sklearn.model_selection import GroupKFold
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, TargetEncoder
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
@@ -25,7 +25,8 @@ from ..preprocess import complex_numbers_dataframe, survey_related_features
 def get_stacking_regressor_and_pipelines(
         model_names: list[str],
         boxcox_lambda: float,
-        model_params: dict | None = None
+        model_params: dict | None = None,
+        target_transform_state: dict | None = None
 ) -> tuple[StackingRegressor, list[tuple[str, Pipeline]]]:
     """
     Constructs a stacking regressor and associated pipelines for given models by applying
@@ -65,10 +66,16 @@ def get_stacking_regressor_and_pipelines(
     model_pipelines = [
         (
             _name,
-            Pipeline([('prep', preprocessor)] + _get_initialized_model(_name, model_params, category_cols=complex_category_cols, boxcox_lambda=boxcox_lambda))
+            Pipeline([('prep', preprocessor)] + _get_initialized_model(
+                _name,
+                model_params,
+                category_cols=complex_category_cols,
+                boxcox_lambda=boxcox_lambda,
+                target_transform_state=target_transform_state
+            ))
         ) for _name in model_names]
 
-    kf = KFold(n_splits=5, shuffle=True, random_state=123)
+    kf = GroupKFold(n_splits=2)
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
@@ -208,14 +215,22 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
     return preprocessor
 
 
-def _get_initialized_model(model_name: str, model_params: dict, category_cols: list[str], boxcox_lambda: float) -> list[tuple[str, BaseEstimator]]:
+def _get_initialized_model(
+        model_name: str,
+        model_params: dict,
+        category_cols: list[str],
+        boxcox_lambda: float,
+        target_transform_state: dict | None
+) -> list[tuple[str, BaseEstimator]]:
     _add_float_size_conversion = ['tabular', 'mlp']
     _add_count_encoding = ['lightgbm', 'catboost', 'xgboost']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
 
-    def get_bc_threshold(original_val, lam):
-        return calc.apply_boxcox_transform(np.array([original_val]), lam)[0][0]
+    def get_transformed_threshold(original_val):
+        if target_transform_state is None:
+            return calc.apply_boxcox_transform(np.array([original_val]), boxcox_lambda)[0][0]
+        return calc.transform_target_thresholds(np.array([original_val]), target_transform_state)[0]
 
     if model_name in _add_float_size_conversion:
         match model_name:
@@ -303,7 +318,7 @@ def _get_initialized_model(model_name: str, model_params: dict, category_cols: l
 
         _model = _ClassifierWrapper(
             lgb.LGBMClassifier(**model_params[model_name]),
-            boxcox_threshold=get_bc_threshold(_bc_threshold, boxcox_lambda)
+            boxcox_threshold=get_transformed_threshold(_bc_threshold)
         )
 
         return [('model', _model)]
