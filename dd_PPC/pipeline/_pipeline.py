@@ -1,15 +1,12 @@
 __all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline']
 
 
-import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn import set_config
 from sklearn.ensemble import StackingRegressor
 from sklearn.isotonic import IsotonicRegression
-from sklearn.linear_model import Ridge
 from sklearn.model_selection import GroupKFold
-from sklearn.multioutput import MultiOutputRegressor
 from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
@@ -17,8 +14,6 @@ from .. import file, model, data, calc
 _MODEL_NAMES = ['lightgbm', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
 _TARGET_TRANSFORM = dict(method='log1p', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
-_RATE_MODEL_ALPHA = 1
-_RATE_BLEND = 0.6
 
 
 def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
@@ -28,75 +23,6 @@ def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
         lambda_param=_TARGET_TRANSFORM.get('boxcox_lambda'),
         quantile_n=_TARGET_TRANSFORM.get('quantile_n', 1000)
     )
-
-
-def _normalize_rate_columns(df: pd.DataFrame, reference_cols: pd.Index) -> pd.DataFrame:
-    def _to_float(col: str) -> float | None:
-        if col == 'survey_id':
-            return None
-        return float(col.replace('pct_hh_below_', ''))
-
-    ref_map = {}
-    for col in reference_cols:
-        val = _to_float(col)
-        if val is not None:
-            ref_map[val] = col
-
-    rename_map = {}
-    for col in df.columns:
-        val = _to_float(col)
-        if val is None:
-            continue
-        if val in ref_map:
-            rename_map[col] = ref_map[val]
-
-    if not rename_map:
-        return df
-
-    return df.rename(columns=rename_map)
-
-
-def _fit_rate_from_consumption_model(base_rates: pd.DataFrame, target_rates: pd.DataFrame) -> MultiOutputRegressor:
-    base_rates = base_rates.copy()
-    target_rates = _normalize_rate_columns(target_rates.copy(), base_rates.columns)
-
-    base_rate_cols = [c for c in base_rates.columns if c != 'survey_id']
-    target_rate_cols = [c for c in target_rates.columns if c != 'survey_id']
-
-    base_rates = base_rates.set_index('survey_id')
-    target_rates = target_rates.set_index('survey_id')
-    common_ids = base_rates.index.intersection(target_rates.index)
-    X = base_rates.loc[common_ids, base_rate_cols]
-    y = target_rates.loc[common_ids, target_rate_cols]
-
-    model_rate = MultiOutputRegressor(Ridge(alpha=_RATE_MODEL_ALPHA, random_state=123))
-    model_rate.fit(X, y)
-
-    return model_rate
-
-
-def _predict_rate_from_consumption_model(model_rate: MultiOutputRegressor, base_rates: pd.DataFrame) -> pd.DataFrame:
-    base_rates = base_rates.copy()
-    base_rate_cols = [c for c in base_rates.columns if c != 'survey_id']
-    base_rates = base_rates.set_index('survey_id')
-    preds = model_rate.predict(base_rates[base_rate_cols])
-
-    pred_df = pd.DataFrame(preds, index=base_rates.index, columns=base_rate_cols)
-    pred_df.insert(0, 'survey_id', pred_df.index.astype(int))
-    return pred_df.reset_index(drop=True)
-
-
-def _blend_poverty_rates(base_rates: pd.DataFrame, direct_rates: pd.DataFrame) -> pd.DataFrame:
-    if _RATE_BLEND <= 0:
-        return base_rates
-    direct_rates = _normalize_rate_columns(direct_rates, base_rates.columns)
-    merged = base_rates.merge(direct_rates, on='survey_id', suffixes=('_base', '_direct'))
-    blended = pd.DataFrame({'survey_id': merged['survey_id']})
-    for col in base_rates.columns:
-        if col == 'survey_id':
-            continue
-        blended[col] = (1 - _RATE_BLEND) * merged[f'{col}_base'] + _RATE_BLEND * merged[f'{col}_direct']
-    return blended
 
 
 def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict], list[IsotonicRegression]]:
@@ -160,9 +86,6 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
         train_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
-        rate_model = _fit_rate_from_consumption_model(train_pred_rate_y, train_rate_y)
-        train_direct_rate_y = _predict_rate_from_consumption_model(rate_model, train_pred_rate_y)
-        train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, train_direct_rate_y)
 
         ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
 
@@ -173,8 +96,6 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         consumption = test_cons_y.copy()
         consumption['cons_pred'] = _y_test_mean_pred
         test_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
-        test_direct_rate_y = _predict_rate_from_consumption_model(rate_model, test_pred_rate_y)
-        test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, test_direct_rate_y)
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
@@ -247,9 +168,6 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
         train_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
-        rate_model = _fit_rate_from_consumption_model(train_pred_rate_y, train_rate_y)
-        train_direct_rate_y = _predict_rate_from_consumption_model(rate_model, train_pred_rate_y)
-        train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, train_direct_rate_y)
 
         ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
 
@@ -261,8 +179,6 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
         consumption = test_cons_y.copy()
         consumption['cons_pred'] = _y_test_mean_pred
         test_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
-        test_direct_rate_y = _predict_rate_from_consumption_model(rate_model, test_pred_rate_y)
-        test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, test_direct_rate_y)
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
@@ -310,9 +226,6 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
 
     train_cons_y['cons_pred'] = y_train_pred
     train_pred_rate_y = calc.poverty_rates_from_consumption(train_cons_y, 'cons_pred')
-    rate_model = _fit_rate_from_consumption_model(train_pred_rate_y, train_rate_y)
-    train_direct_rate_y = _predict_rate_from_consumption_model(rate_model, train_pred_rate_y)
-    train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, train_direct_rate_y)
     ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
     train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
 
@@ -328,8 +241,6 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     _consumption, _ = file.get_submission_formats('../results')
     _consumption['cons_pred'] = _predicted
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
-    pred_direct_rate_y = _predict_rate_from_consumption_model(rate_model, pred_rate_y)
-    pred_rate_y = _blend_poverty_rates(pred_rate_y, pred_direct_rate_y)
     pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
 
     file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)

@@ -83,7 +83,6 @@ def get_stacking_regressor_and_pipelines(
         final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
         # final_estimator=lgb.LGBMRegressor(),
         # final_estimator=Lasso(**model_params['lasso']),
-        # final_estimator=ElasticNet(**{'alpha': 1e-3, 'l1_ratio': 0.1, 'max_iter': 10000}),
         # final_estimator=QuantileRegressor(quantile=0.5),
         cv=kf,
         n_jobs=1,
