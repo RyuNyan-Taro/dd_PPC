@@ -6,7 +6,7 @@ ref: https://qiita.com/DS27/items/aa3f6d0f03a8053e5810
 __all__ = ['standardized_with_numbers', 'standardized_with_numbers_dataframe','encoding_category',
            'encoding_category_dataframe', 'create_new_features_data_frame', 'create_new_features_array',
            'target_encode', 'create_survey_aggregates', 'consumed_svd_dataframe', 'infrastructure_svd_dataframe',
-           'complex_numbers_dataframe', 'survey_related_features', 'complex_svd_dataframe'
+           'complex_numbers_dataframe', 'survey_related_features', 'complex_svd_dataframe', 'complex_category_dataframe',
            ]
 
 import numpy as np
@@ -252,6 +252,23 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
     }
 
     return pd.DataFrame(_complex_numbers)
+
+
+def complex_category_dataframe(train: pd.DataFrame) -> pd.DataFrame:
+    train = train.copy()
+
+    _complex_category = {
+        # 'urban_sector': train['urban'].astype(str) + '_' + train['sector1d'].astype(str),
+        # 'lower_than_and_no_access_not_have_consumed': train['region5'].astype(str) + '_' + train['consumed200'].astype(str) + '_' + train['consumed900'].astype(str) + '_' + train['consumed3100'].astype(str),
+        # 'hsize_sector': train['hsize'].astype(str) + '_' + train['sector1d'].astype(str),
+        # 'cat_urban_sanitation': train['urban'].astype(str) + "_" + train['sanitation_source'].astype(str)
+        # 'cat_edu_sector': train['educ_max'].astype(str) + "_" + train['sector1d'].astype(str)
+        # 'cat_hsize_nonagric': (train['hsize'] >= 5).astype(int).astype(str) + "_" + train['any_nonagric'].astype(str)
+        'cat_head_profile': train['male'].astype(str) + "_" + train['employed'].astype(str),
+        # 'cat_infra_score': train['water'].astype(str) + "_" + train['elect'].astype(str) + "_" + train['sewer'].astype(str)
+    }
+
+    return pd.DataFrame(_complex_category).astype('category')
 
 
 def survey_related_features(train: pd.DataFrame) -> pd.DataFrame:
