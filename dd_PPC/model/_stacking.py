@@ -156,7 +156,7 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
             case 'lgb_quantile':
                 _model_param['objective'] = 'quantile'
                 _model_param['metric'] = 'quantile'
-                _model_param['alpha'] = 0.2
+                _model_param['alpha'] = 0.3
                 _model_param['verbose'] = -1
             case 'xgboost':
                 _model_param['objective'] = 'reg:squarederror'
