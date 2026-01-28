@@ -1,4 +1,4 @@
-__all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline', 'sweep_quantile_alpha']
+__all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline', 'sweep_quantile_alpha', 'sweep_mtl_blends', ]
 
 
 import numpy as np
@@ -15,6 +15,7 @@ from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
 from ..model import _nn as model_nn
+
 
 _MODEL_NAMES = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
@@ -124,8 +125,11 @@ def _get_poverty_weights() -> torch.Tensor:
 
 
 def _train_mtl_model(X: np.ndarray, cons_target: np.ndarray, pov_target: np.ndarray, epochs: int = 5, batch_size: int = 256,
-                    lr: float = 1e-3) -> tuple[nn.Module, str]:
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+                    lr: float = 1e-3, seed: int = 123) -> tuple[nn.Module, str]:
+    # fix seeds for reproducibility
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
     input_dim = X.shape[1]
     model_mtl = model_nn.MTLConsPoverty(input_dim=input_dim, pov_dim=pov_target.shape[1]).to(device)
     criterion = model_nn.MTLLossWrapper(_get_poverty_weights().to(device))
