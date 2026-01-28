@@ -165,7 +165,7 @@ class CustomCompetitionLoss(nn.Module):
     def __init__(self, poverty_weights):
         super().__init__()
         # 貧困率の各階級に対する重みをTensorで保持 (19次元など)
-        self.register_buffer('p_weights', torch.tensor(poverty_weights, dtype=torch.float32))
+        self.register_buffer('p_weights', torch.as_tensor(poverty_weights, dtype=torch.float32))
 
     def forward(self, cons_pred, cons_target, pov_pred, pov_target):
         eps = 1e-8  # ゼロ除算防止
