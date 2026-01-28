@@ -123,7 +123,7 @@ def _get_poverty_weights() -> torch.Tensor:
     return torch.tensor(weights, dtype=torch.float32)
 
 
-def _train_mtl_model(X: np.ndarray, cons_target: np.ndarray, pov_target: np.ndarray, epochs: int = 5, batch_size: int = 256,
+def _train_mtl_model(X: np.ndarray, cons_target: np.ndarray, pov_target: np.ndarray, epochs: int = 7, batch_size: int = 256,
                     lr: float = 1e-3) -> tuple[nn.Module, str]:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     input_dim = X.shape[1]
