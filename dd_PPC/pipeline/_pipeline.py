@@ -11,7 +11,7 @@ from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
 
-_MODEL_NAMES = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'catboost', 'ridge']
+_MODEL_NAMES = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
 _TARGET_TRANSFORM = dict(method='boxcox', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
 

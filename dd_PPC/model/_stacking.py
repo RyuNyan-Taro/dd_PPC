@@ -146,8 +146,8 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
 def _get_model_params(model_names: list[str]) -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
-        _model_param = file.load_best_params('lightgbm' if _model in ['lgb_quantile', 'lgb_quantile_low'] else _model)
+    for _model in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
+        _model_param = file.load_best_params('lightgbm' if _model in ['lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid'] else _model)
         match _model:
             case 'lightgbm':
                 _model_param['objective'] = 'regression'
@@ -161,7 +161,12 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
             case 'lgb_quantile_low':
                 _model_param['objective'] = 'quantile'
                 _model_param['metric'] = 'quantile'
-                _model_param['alpha'] = 0.1
+                _model_param['alpha'] = 0.15
+                _model_param['verbose'] = -1
+            case 'lgb_quantile_mid':
+                _model_param['objective'] = 'quantile'
+                _model_param['metric'] = 'quantile'
+                _model_param['alpha'] = 0.5
                 _model_param['verbose'] = -1
             case 'xgboost':
                 _model_param['objective'] = 'reg:squarederror'
@@ -233,7 +238,7 @@ def _get_initialized_model(
         target_transform_state: dict | None
 ) -> list[tuple[str, BaseEstimator]]:
     _add_float_size_conversion = ['tabular', 'mlp']
-    _add_count_encoding = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'catboost', 'xgboost']
+    _add_count_encoding = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid', 'catboost', 'xgboost']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
 
@@ -267,6 +272,10 @@ def _get_initialized_model(
                 'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
                 'stable_workers', 'dependency_interaction'
             ]},
+            'lgb_quantile_mid': {'model': lgb.LGBMRegressor, 'drop': [
+                'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
+                'stable_workers', 'dependency_interaction'
+            ]},
             'catboost': {'model': catboost.CatBoostRegressor, 'drop': [
                 'water', 'sewer', 'urban', 'has_child', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey',
@@ -287,7 +296,7 @@ def _get_initialized_model(
             model_params[model_name]['enable_categorical'] = True
 
         _model = _model_dict['model'](**model_params[model_name])
-        if model_name in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low']:
+        if model_name in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid']:
             _model.categorical_features_ = category_cols + _convert_category_cols
 
         _count_encoding_cols = ['sector1d']
@@ -310,7 +319,7 @@ def _get_initialized_model(
         def _drop_features(X):
             return X.drop(columns=_model_dict['drop'])
 
-        if model_name in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low']:
+        if model_name in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid']:
             return [
                 ('count_encoding', _ce),
                 ('complex_category', FunctionTransformer(_complex_category_wrapper)),
