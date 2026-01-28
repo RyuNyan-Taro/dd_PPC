@@ -21,6 +21,16 @@ from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from .. import preprocess
 from ..preprocess import complex_numbers_dataframe, survey_related_features
 
+_HUBER_VARIANT = 'v3'
+_LGB_QUANTILE_LOW_ALPHA = 0.18
+_HUBER_PARAMS = {
+    'base': dict(max_iter=10000, epsilon=1.1),
+    'v2': dict(max_iter=20000, epsilon=1.2, alpha=0.0001),
+    'v3': dict(max_iter=20000, epsilon=1.35, alpha=0.0005),
+    'v4': dict(max_iter=20000, epsilon=1.4, alpha=0.0005),
+    'v5': dict(max_iter=20000, epsilon=1.3, alpha=0.001),
+}
+
 
 def get_stacking_regressor_and_pipelines(
         model_names: list[str],
@@ -80,18 +90,18 @@ def get_stacking_regressor_and_pipelines(
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
         # final_estimator=Ridge(random_state=123, max_iter=10000, positive=True, alpha=1, fit_intercept=True),
-        # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
-        final_estimator=lgb.LGBMRegressor(
-            n_estimators=300,
-            learning_rate=0.05,
-            num_leaves=15,
-            min_child_samples=30,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            reg_alpha=0.0,
-            reg_lambda=1.0,
-            random_state=123
-        ),
+        final_estimator=HuberRegressor(**_HUBER_PARAMS[_HUBER_VARIANT]),
+        # final_estimator=lgb.LGBMRegressor(
+        #     n_estimators=300,
+        #     learning_rate=0.05,
+        #     num_leaves=31,
+        #     min_child_samples=50,
+        #     subsample=0.8,
+        #     colsample_bytree=0.8,
+        #     reg_alpha=0.0,
+        #     reg_lambda=1.0,
+        #     random_state=123
+        # ),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
         cv=kf,
@@ -171,7 +181,7 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
             case 'lgb_quantile_low':
                 _model_param['objective'] = 'quantile'
                 _model_param['metric'] = 'quantile'
-                _model_param['alpha'] = 0.15
+                _model_param['alpha'] = _LGB_QUANTILE_LOW_ALPHA
                 _model_param['verbose'] = -1
             case 'lgb_quantile_mid':
                 _model_param['objective'] = 'quantile'
