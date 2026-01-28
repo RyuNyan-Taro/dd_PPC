@@ -417,8 +417,6 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
         train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(mtl_train_rate, _MTL_RATE_BLEND)])
     ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
     train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
-    coef, intercept = _fit_rate_linear_correction(train_pred_rate_y, train_rate_y)
-    train_pred_rate_y = _apply_rate_linear_correction(train_pred_rate_y, coef, intercept)
 
     print(_calculate_metrics(
         y_train_pred, train_cons_y.cons_ppp17, train_pred_rate_y, train_cons_y,
