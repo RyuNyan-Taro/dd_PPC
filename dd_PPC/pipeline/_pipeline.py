@@ -224,32 +224,32 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         _y_train_mean_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
         _y_test_mean_pred = calc.inverse_target_transform(y_test_pred, target_transform_state)
 
-        # MTL branch
-        prep = model_pipelines[0][1].named_steps['prep']
-        prep_fitted = prep.fit(train_x)
-        train_feat = prep_fitted.transform(train_x)
-        test_feat = prep_fitted.transform(test_x)
-        if hasattr(train_feat, "to_numpy"):
-            train_feat = train_feat.to_numpy()
-            test_feat = test_feat.to_numpy()
-        pov_target = _build_poverty_targets(train_cons_y.cons_ppp17)
-        mtl_model, mtl_device = _train_mtl_model(
-            train_feat,
-            train_cons_y.cons_ppp17.to_numpy().astype(np.float32),
-            pov_target
-        )
-        mtl_cons_train, mtl_pov_train = _predict_mtl_model(mtl_model, mtl_device, train_feat)
-        mtl_cons_test, mtl_pov_test = _predict_mtl_model(mtl_model, mtl_device, test_feat)
-
-        _y_train_mean_pred = (1 - _MTL_CONS_BLEND) * _y_train_mean_pred + _MTL_CONS_BLEND * mtl_cons_train
-        _y_test_mean_pred = (1 - _MTL_CONS_BLEND) * _y_test_mean_pred + _MTL_CONS_BLEND * mtl_cons_test
+        # # MTL branch
+        # prep = model_pipelines[0][1].named_steps['prep']
+        # prep_fitted = prep.fit(train_x)
+        # train_feat = prep_fitted.transform(train_x)
+        # test_feat = prep_fitted.transform(test_x)
+        # if hasattr(train_feat, "to_numpy"):
+        #     train_feat = train_feat.to_numpy()
+        #     test_feat = test_feat.to_numpy()
+        # pov_target = _build_poverty_targets(train_cons_y.cons_ppp17)
+        # mtl_model, mtl_device = _train_mtl_model(
+        #     train_feat,
+        #     train_cons_y.cons_ppp17.to_numpy().astype(np.float32),
+        #     pov_target
+        # )
+        # mtl_cons_train, mtl_pov_train = _predict_mtl_model(mtl_model, mtl_device, train_feat)
+        # mtl_cons_test, mtl_pov_test = _predict_mtl_model(mtl_model, mtl_device, test_feat)
+        #
+        # _y_train_mean_pred = (1 - _MTL_CONS_BLEND) * _y_train_mean_pred + _MTL_CONS_BLEND * mtl_cons_train
+        # _y_test_mean_pred = (1 - _MTL_CONS_BLEND) * _y_test_mean_pred + _MTL_CONS_BLEND * mtl_cons_test
 
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
         train_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
-        mtl_train_rate = _pov_probs_to_rates(mtl_pov_train, consumption['survey_id'])
-        if _MTL_RATE_BLEND > 0:
-            train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(mtl_train_rate, _MTL_RATE_BLEND)])
+        # mtl_train_rate = _pov_probs_to_rates(mtl_pov_train, consumption['survey_id'])
+        # if _MTL_RATE_BLEND > 0:
+        #     train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(mtl_train_rate, _MTL_RATE_BLEND)])
 
         ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
 
@@ -260,9 +260,9 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         consumption = test_cons_y.copy()
         consumption['cons_pred'] = _y_test_mean_pred
         test_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
-        mtl_test_rate = _pov_probs_to_rates(mtl_pov_test, consumption['survey_id'])
-        if _MTL_RATE_BLEND > 0:
-            test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, [(mtl_test_rate, _MTL_RATE_BLEND)])
+        # mtl_test_rate = _pov_probs_to_rates(mtl_pov_test, consumption['survey_id'])
+        # if _MTL_RATE_BLEND > 0:
+        #     test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, [(mtl_test_rate, _MTL_RATE_BLEND)])
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
@@ -392,29 +392,29 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     y_train_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
 
     # MTL branch
-    prep = model_pipelines[0][1].named_steps['prep']
-    prep_fitted = prep.fit(train_x)
-    train_feat = prep_fitted.transform(train_x)
-    test_feat = prep_fitted.transform(_datas['test'])
-    if hasattr(train_feat, "to_numpy"):
-        train_feat = train_feat.to_numpy()
-        test_feat = test_feat.to_numpy()
-    pov_target = _build_poverty_targets(train_cons_y.cons_ppp17)
-    mtl_model, mtl_device = _train_mtl_model(
-        train_feat,
-        train_cons_y.cons_ppp17.to_numpy().astype(np.float32),
-        pov_target
-    )
-    mtl_cons_train, mtl_pov_train = _predict_mtl_model(mtl_model, mtl_device, train_feat)
-    mtl_cons_test, mtl_pov_test = _predict_mtl_model(mtl_model, mtl_device, test_feat)
-
-    y_train_pred = (1 - _MTL_CONS_BLEND) * y_train_pred + _MTL_CONS_BLEND * mtl_cons_train
+    # prep = model_pipelines[0][1].named_steps['prep']
+    # prep_fitted = prep.fit(train_x)
+    # train_feat = prep_fitted.transform(train_x)
+    # test_feat = prep_fitted.transform(_datas['test'])
+    # if hasattr(train_feat, "to_numpy"):
+    #     train_feat = train_feat.to_numpy()
+    #     test_feat = test_feat.to_numpy()
+    # pov_target = _build_poverty_targets(train_cons_y.cons_ppp17)
+    # mtl_model, mtl_device = _train_mtl_model(
+    #     train_feat,
+    #     train_cons_y.cons_ppp17.to_numpy().astype(np.float32),
+    #     pov_target
+    # )
+    # mtl_cons_train, mtl_pov_train = _predict_mtl_model(mtl_model, mtl_device, train_feat)
+    # mtl_cons_test, mtl_pov_test = _predict_mtl_model(mtl_model, mtl_device, test_feat)
+    #
+    # y_train_pred = (1 - _MTL_CONS_BLEND) * y_train_pred + _MTL_CONS_BLEND * mtl_cons_train
 
     train_cons_y['cons_pred'] = y_train_pred
     train_pred_rate_y = calc.poverty_rates_from_consumption(train_cons_y, 'cons_pred')
-    mtl_train_rate = _pov_probs_to_rates(mtl_pov_train, train_cons_y['survey_id'])
-    if _MTL_RATE_BLEND > 0:
-        train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(mtl_train_rate, _MTL_RATE_BLEND)])
+    # mtl_train_rate = _pov_probs_to_rates(mtl_pov_train, train_cons_y['survey_id'])
+    # if _MTL_RATE_BLEND > 0:
+    #     train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(mtl_train_rate, _MTL_RATE_BLEND)])
     ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
     train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
 
@@ -426,14 +426,14 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     # prediction
     _predicted_coxbox = stacking_regressor.predict(_datas['test'])
     _predicted = calc.inverse_target_transform(_predicted_coxbox, target_transform_state)
-    _predicted = (1 - _MTL_CONS_BLEND) * _predicted + _MTL_CONS_BLEND * mtl_cons_test
+    # _predicted = (1 - _MTL_CONS_BLEND) * _predicted + _MTL_CONS_BLEND * mtl_cons_test
 
     _consumption, _ = file.get_submission_formats('../results')
     _consumption['cons_pred'] = _predicted
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
-    mtl_pred_rate_y = _pov_probs_to_rates(mtl_pov_test, _consumption['survey_id'])
-    if _MTL_RATE_BLEND > 0:
-        pred_rate_y = _blend_poverty_rates(pred_rate_y, [(mtl_pred_rate_y, _MTL_RATE_BLEND)])
+    # mtl_pred_rate_y = _pov_probs_to_rates(mtl_pov_test, _consumption['survey_id'])
+    # if _MTL_RATE_BLEND > 0:
+    #     pred_rate_y = _blend_poverty_rates(pred_rate_y, [(mtl_pred_rate_y, _MTL_RATE_BLEND)])
     pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
 
     file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)
