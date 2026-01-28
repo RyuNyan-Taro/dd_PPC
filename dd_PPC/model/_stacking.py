@@ -22,7 +22,6 @@ from .. import preprocess
 from ..preprocess import complex_numbers_dataframe, survey_related_features
 
 _HUBER_VARIANT = 'v3'
-_LGB_QUANTILE_LOW_ALPHA = 0.18
 _HUBER_PARAMS = {
     'base': dict(max_iter=10000, epsilon=1.1),
     'v2': dict(max_iter=20000, epsilon=1.2, alpha=0.0001),
@@ -181,7 +180,7 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
             case 'lgb_quantile_low':
                 _model_param['objective'] = 'quantile'
                 _model_param['metric'] = 'quantile'
-                _model_param['alpha'] = _LGB_QUANTILE_LOW_ALPHA
+                _model_param['alpha'] = 0.15
                 _model_param['verbose'] = -1
             case 'lgb_quantile_mid':
                 _model_param['objective'] = 'quantile'
