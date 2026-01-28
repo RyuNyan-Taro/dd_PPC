@@ -2,6 +2,7 @@ __all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_
 
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -179,8 +180,9 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
 
         # MTL branch
         prep = model_pipelines[0][1].named_steps['prep']
-        train_feat = prep.transform(train_x)
-        test_feat = prep.transform(test_x)
+        prep_fitted = prep.fit(train_x)
+        train_feat = prep_fitted.transform(train_x)
+        test_feat = prep_fitted.transform(test_x)
         if hasattr(train_feat, "to_numpy"):
             train_feat = train_feat.to_numpy()
             test_feat = test_feat.to_numpy()
@@ -345,8 +347,9 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
 
     # MTL branch
     prep = model_pipelines[0][1].named_steps['prep']
-    train_feat = prep.transform(train_x)
-    test_feat = prep.transform(_datas['test'])
+    prep_fitted = prep.fit(train_x)
+    train_feat = prep_fitted.transform(train_x)
+    test_feat = prep_fitted.transform(_datas['test'])
     if hasattr(train_feat, "to_numpy"):
         train_feat = train_feat.to_numpy()
         test_feat = test_feat.to_numpy()
