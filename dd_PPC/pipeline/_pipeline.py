@@ -10,7 +10,9 @@ from matplotlib import pyplot as plt
 from sklearn import set_config
 from sklearn.ensemble import StackingRegressor
 from sklearn.isotonic import IsotonicRegression
+from sklearn.linear_model import Ridge
 from sklearn.model_selection import GroupKFold
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
@@ -27,6 +29,7 @@ _RATE_DIST_BLEND = 0.2
 _RATE_DIST_ALPHA = 1.0
 _MTL_CONS_BLEND = 0.05
 _MTL_RATE_BLEND = 0.15
+_RATE_DIST_BLEND_SUPP = 0.2
 _POVERTY_THRESHOLDS = np.array([
     3.17, 3.94, 4.60, 5.26, 5.88, 6.47, 7.06, 7.70, 8.40, 9.13,
     9.87, 10.70, 11.62, 12.69, 14.03, 15.64, 17.76, 20.99, 27.37
@@ -166,10 +169,43 @@ def _predict_mtl_model(model_mtl: nn.Module, device: str, X: np.ndarray) -> tupl
     return cons_pred.cpu().numpy(), pov_pred.cpu().numpy()
 
 
+def _build_rate_distribution_features(consumption: pd.DataFrame) -> pd.DataFrame:
+    grouped = consumption.groupby('survey_id')['cons_pred']
+    features = pd.DataFrame({
+        'cons_mean': grouped.mean(),
+        'cons_std': grouped.std().fillna(0.0),
+        'cons_q10': grouped.quantile(0.1),
+        'cons_q50': grouped.quantile(0.5),
+        'cons_q90': grouped.quantile(0.9),
+    })
+    return features
+
+
+def _fit_rate_from_distribution(consumption: pd.DataFrame, target_rate: pd.DataFrame, alpha: float) -> tuple[MultiOutputRegressor, list[str]]:
+    features = _build_rate_distribution_features(consumption)
+    rate_columns = [c for c in target_rate.columns if c != 'survey_id']
+    targets = target_rate.set_index('survey_id')[rate_columns].loc[features.index]
+
+    model_rate = MultiOutputRegressor(Ridge(alpha=alpha, random_state=123))
+    model_rate.fit(features, targets)
+    return model_rate, rate_columns
+
+
+def _predict_rate_from_distribution(model_rate: MultiOutputRegressor, consumption: pd.DataFrame, rate_columns: list[str]) -> pd.DataFrame:
+    features = _build_rate_distribution_features(consumption)
+    preds = model_rate.predict(features)
+    pred_df = pd.DataFrame(preds, index=features.index, columns=rate_columns)
+    pred_df.insert(0, 'survey_id', pred_df.index.astype(int))
+    return pred_df.reset_index(drop=True)
+
+
 def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict], list[IsotonicRegression]]:
 
     def get_feature_importance(model_):
         """Extract feature importance/coefficients based on the model type."""
+        # unwrap pipeline if needed
+        if isinstance(model_, Pipeline):
+            model_ = model_.steps[-1][1]
         if hasattr(model_, 'coef_'):
             # Linear models (Ridge, Lasso, LinearRegression, etc.)
             return model_.coef_
@@ -177,7 +213,7 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
             # Tree-based models (LightGBM, XGBoost, CatBoost, RandomForest, etc.)
             return model_.feature_importances_
         else:
-            raise AttributeError(f"Model {type(model_).__name__} doesn't have coef_ or feature_importances_")
+            return None
 
     boxcox_lambda = _BOXCOX_LAMBDA
     _model_names = _MODEL_NAMES
@@ -215,8 +251,9 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         # fitの後に実行
         model_names = [name for name, _ in model_pipelines]
         weights = get_feature_importance(stacking_regressor.final_estimator_)
-        for name, weight in zip(model_names, weights):
-            print(f"Model: {name}, Weight: {weight:.4f}")
+        if weights is not None:
+            for name, weight in zip(model_names, weights):
+                print(f"Model: {name}, Weight: {weight:.4f}")
 
         y_train_pred = stacking_regressor.predict(train_x)
         y_test_pred = stacking_regressor.predict(test_x)
@@ -250,6 +287,10 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         mtl_train_rate = _pov_probs_to_rates(mtl_pov_train, consumption['survey_id'])
         if _MTL_RATE_BLEND > 0:
             train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(mtl_train_rate, _MTL_RATE_BLEND)])
+        dist_model_supp, dist_cols_supp = _fit_rate_from_distribution(consumption, train_rate_y, alpha=_RATE_DIST_ALPHA)
+        dist_rate_train = _predict_rate_from_distribution(dist_model_supp, consumption, dist_cols_supp)
+        if _RATE_DIST_BLEND_SUPP > 0:
+            train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(dist_rate_train, _RATE_DIST_BLEND_SUPP)])
 
         ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
 
@@ -263,6 +304,9 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         mtl_test_rate = _pov_probs_to_rates(mtl_pov_test, consumption['survey_id'])
         if _MTL_RATE_BLEND > 0:
             test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, [(mtl_test_rate, _MTL_RATE_BLEND)])
+        dist_rate_test = _predict_rate_from_distribution(dist_model_supp, consumption, dist_cols_supp)
+        if _RATE_DIST_BLEND_SUPP > 0:
+            test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, [(dist_rate_test, _RATE_DIST_BLEND_SUPP)])
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
@@ -436,6 +480,9 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     mtl_pred_rate_y = _pov_probs_to_rates(mtl_pov_test, _consumption['survey_id'])
     if _MTL_RATE_BLEND > 0:
         pred_rate_y = _blend_poverty_rates(pred_rate_y, [(mtl_pred_rate_y, _MTL_RATE_BLEND)])
+    dist_rate_pred = _predict_rate_from_distribution(dist_model_supp, _consumption, dist_cols_supp)
+    if _RATE_DIST_BLEND_SUPP > 0:
+        pred_rate_y = _blend_poverty_rates(pred_rate_y, [(dist_rate_pred, _RATE_DIST_BLEND_SUPP)])
     pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
 
     file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)
