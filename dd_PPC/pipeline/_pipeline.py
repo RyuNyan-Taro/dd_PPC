@@ -382,7 +382,7 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
         target_transform_state=target_transform_state
     )
 
-    _set_group_cv_splits(stacking_regressor, train_x, train_y, train_x['survey_id'])
+    _set_group_cv_splits(stacking_regressor, train_x, train_y, train_x['survey_id'], n_splits=3)
     stacking_regressor.fit(
         train_x,
         train_y.astype(np.float32).flatten()
