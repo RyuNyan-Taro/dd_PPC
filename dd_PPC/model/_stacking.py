@@ -7,7 +7,6 @@ from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer
 from sklearn.model_selection import GroupKFold
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, TargetEncoder
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
@@ -21,19 +20,6 @@ from .. import file, model, calc
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from .. import preprocess
 from ..preprocess import complex_numbers_dataframe, survey_related_features
-
-def _augment_meta_features(X):
-    """Add simple stats over base predictions to meta features."""
-    X_arr = np.asarray(X)
-    stats = np.stack([
-        X_arr.mean(axis=1),
-        X_arr.std(axis=1),
-        X_arr.min(axis=1),
-        X_arr.max(axis=1),
-        np.quantile(X_arr, 0.25, axis=1),
-        np.quantile(X_arr, 0.75, axis=1),
-    ], axis=1)
-    return np.concatenate([X_arr, stats], axis=1)
 
 _HUBER_VARIANT = 'v3'
 _HUBER_PARAMS = {
