@@ -41,6 +41,48 @@ def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
     )
 
 
+def _normalize_rate_columns(df: pd.DataFrame, reference_cols: pd.Index) -> pd.DataFrame:
+    rate_cols = [c for c in reference_cols if c != 'survey_id']
+
+    def _to_float(col: str) -> float | None:
+        if col == 'survey_id':
+            return None
+        try:
+            return float(col.replace('pct_hh_below_', ''))
+        except ValueError:
+            return None
+
+    ref_map = {}
+    for col in rate_cols:
+        val = _to_float(col)
+        if val is not None:
+            ref_map[round(val, 3)] = col
+
+    rename_map = {}
+    for col in df.columns:
+        val = _to_float(col)
+        if val is None:
+            continue
+        key = round(val, 3)
+        if key in ref_map:
+            rename_map[col] = ref_map[key]
+
+    renamed = df.rename(columns=rename_map)
+
+    # ensure all reference columns exist
+    aligned = pd.DataFrame(columns=reference_cols)
+    aligned['survey_id'] = renamed['survey_id'] if 'survey_id' in renamed.columns else df.get('survey_id')
+    for col in rate_cols:
+        if col in renamed.columns:
+            aligned[col] = renamed[col]
+        elif col in df.columns:
+            aligned[col] = df[col]
+        else:
+            aligned[col] = np.nan
+
+    return aligned
+
+
 def _blend_poverty_rates(base_rates: pd.DataFrame, extra_rates: list[tuple[pd.DataFrame, float]]) -> pd.DataFrame:
     rate_cols = [c for c in base_rates.columns if c != 'survey_id']
     base_vals = base_rates[rate_cols].to_numpy()
