@@ -2,6 +2,9 @@ __all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_
 
 
 import numpy as np
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, TensorDataset
 from matplotlib import pyplot as plt
 from sklearn import set_config
 from sklearn.ensemble import StackingRegressor
@@ -10,10 +13,22 @@ from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import Pipeline
 
 from .. import file, model, data, calc
+from ..model import _nn as model_nn
 
 _MODEL_NAMES = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
 _TARGET_TRANSFORM = dict(method='boxcox', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
+_RATE_LINEAR_BLEND = 0
+_RATE_Q_BLEND = 0.0
+_RATE_Q_LOW_BLEND = 0.0
+_RATE_DIST_BLEND = 0.2
+_RATE_DIST_ALPHA = 1.0
+_MTL_CONS_BLEND = 0.3
+_MTL_RATE_BLEND = 0.3
+_POVERTY_THRESHOLDS = np.array([
+    3.17, 3.94, 4.60, 5.26, 5.88, 6.47, 7.06, 7.70, 8.40, 9.13,
+    9.87, 10.70, 11.62, 12.69, 14.03, 15.64, 17.76, 20.99, 27.37
+], dtype=np.float32)
 
 
 def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
@@ -23,6 +38,85 @@ def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
         lambda_param=_TARGET_TRANSFORM.get('boxcox_lambda'),
         quantile_n=_TARGET_TRANSFORM.get('quantile_n', 1000)
     )
+
+
+def _blend_poverty_rates(base_rates: pd.DataFrame, extra_rates: list[tuple[pd.DataFrame, float]]) -> pd.DataFrame:
+    rate_cols = [c for c in base_rates.columns if c != 'survey_id']
+    base_vals = base_rates[rate_cols].to_numpy()
+    total_weight = max(0.0, 1.0 - sum(w for _, w in extra_rates))
+    blended_vals = base_vals * total_weight
+
+    for rates_df, weight in extra_rates:
+        if weight <= 0:
+            continue
+        aligned = _normalize_rate_columns(rates_df, base_rates.columns)
+        blended_vals += aligned[rate_cols].to_numpy() * weight
+        total_weight += weight
+
+    if total_weight == 0:
+        return base_rates
+
+    blended = base_rates.copy()
+    blended[rate_cols] = blended_vals / total_weight
+    return blended
+
+
+def _build_poverty_targets(consumption: pd.Series) -> np.ndarray:
+    cons_arr = consumption.to_numpy().astype(np.float32)
+    return (cons_arr[:, None] < _POVERTY_THRESHOLDS[None, :]).astype(np.float32)
+
+
+def _pov_probs_to_rates(pov_probs: np.ndarray, survey_ids: pd.Series) -> pd.DataFrame:
+    rate_cols = [f'pct_hh_below_{t}' for t in _POVERTY_THRESHOLDS]
+    df = pd.DataFrame(pov_probs, columns=rate_cols)
+    df['survey_id'] = survey_ids.to_numpy()
+    grouped = df.groupby('survey_id')
+    rates = grouped[rate_cols].mean().reset_index()
+    return rates
+
+
+def _get_poverty_weights() -> torch.Tensor:
+    weights = [1 - abs(0.4 - p / 100) for p in range(5, 100, 5)]
+    return torch.tensor(weights, dtype=torch.float32)
+
+
+def _train_mtl_model(X: np.ndarray, cons_target: np.ndarray, pov_target: np.ndarray, epochs: int = 5, batch_size: int = 256,
+                    lr: float = 1e-3) -> tuple[nn.Module, str]:
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    input_dim = X.shape[1]
+    model_mtl = model_nn.MTLConsPoverty(input_dim=input_dim, pov_dim=pov_target.shape[1]).to(device)
+    criterion = model_nn.MTLLossWrapper(_get_poverty_weights().to(device))
+    optimizer = torch.optim.Adam(model_mtl.parameters(), lr=lr)
+
+    ds = TensorDataset(
+        torch.tensor(X, dtype=torch.float32),
+        torch.tensor(cons_target, dtype=torch.float32),
+        torch.tensor(pov_target, dtype=torch.float32)
+    )
+    loader = DataLoader(ds, batch_size=batch_size, shuffle=True)
+
+    model_mtl.train()
+    for _ in range(epochs):
+        for xb, yb_cons, yb_pov in loader:
+            xb = xb.to(device)
+            yb_cons = yb_cons.to(device)
+            yb_pov = yb_pov.to(device)
+
+            optimizer.zero_grad()
+            cons_pred, pov_pred = model_mtl(xb)
+            loss = criterion((cons_pred, pov_pred), (yb_cons, yb_pov))
+            loss.backward()
+            optimizer.step()
+
+    return model_mtl, device
+
+
+def _predict_mtl_model(model_mtl: nn.Module, device: str, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    model_mtl.eval()
+    with torch.no_grad():
+        xb = torch.tensor(X, dtype=torch.float32).to(device)
+        cons_pred, pov_pred = model_mtl(xb)
+    return cons_pred.cpu().numpy(), pov_pred.cpu().numpy()
 
 
 def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[dict], list[IsotonicRegression]]:
@@ -83,9 +177,31 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         _y_train_mean_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
         _y_test_mean_pred = calc.inverse_target_transform(y_test_pred, target_transform_state)
 
+        # MTL branch
+        prep = model_pipelines[0][1].named_steps['prep']
+        train_feat = prep.transform(train_x)
+        test_feat = prep.transform(test_x)
+        if hasattr(train_feat, "to_numpy"):
+            train_feat = train_feat.to_numpy()
+            test_feat = test_feat.to_numpy()
+        pov_target = _build_poverty_targets(train_cons_y.cons_ppp17)
+        mtl_model, mtl_device = _train_mtl_model(
+            train_feat,
+            train_cons_y.cons_ppp17.to_numpy().astype(np.float32),
+            pov_target
+        )
+        mtl_cons_train, mtl_pov_train = _predict_mtl_model(mtl_model, mtl_device, train_feat)
+        mtl_cons_test, mtl_pov_test = _predict_mtl_model(mtl_model, mtl_device, test_feat)
+
+        _y_train_mean_pred = (1 - _MTL_CONS_BLEND) * _y_train_mean_pred + _MTL_CONS_BLEND * mtl_cons_train
+        _y_test_mean_pred = (1 - _MTL_CONS_BLEND) * _y_test_mean_pred + _MTL_CONS_BLEND * mtl_cons_test
+
         consumption = train_cons_y.copy()
         consumption['cons_pred'] = _y_train_mean_pred
         train_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+        mtl_train_rate = _pov_probs_to_rates(mtl_pov_train, consumption['survey_id'])
+        if _MTL_RATE_BLEND > 0:
+            train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(mtl_train_rate, _MTL_RATE_BLEND)])
 
         ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
 
@@ -96,6 +212,9 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         consumption = test_cons_y.copy()
         consumption['cons_pred'] = _y_test_mean_pred
         test_pred_rate_y = calc.poverty_rates_from_consumption(consumption, 'cons_pred')
+        mtl_test_rate = _pov_probs_to_rates(mtl_pov_test, consumption['survey_id'])
+        if _MTL_RATE_BLEND > 0:
+            test_pred_rate_y = _blend_poverty_rates(test_pred_rate_y, [(mtl_test_rate, _MTL_RATE_BLEND)])
 
         test_pred_rate_y = model.transform_isotonic_regression(test_pred_rate_y, ir)
 
@@ -224,10 +343,33 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     y_train_pred = stacking_regressor.predict(train_x)
     y_train_pred = calc.inverse_target_transform(y_train_pred, target_transform_state)
 
+    # MTL branch
+    prep = model_pipelines[0][1].named_steps['prep']
+    train_feat = prep.transform(train_x)
+    test_feat = prep.transform(_datas['test'])
+    if hasattr(train_feat, "to_numpy"):
+        train_feat = train_feat.to_numpy()
+        test_feat = test_feat.to_numpy()
+    pov_target = _build_poverty_targets(train_cons_y.cons_ppp17)
+    mtl_model, mtl_device = _train_mtl_model(
+        train_feat,
+        train_cons_y.cons_ppp17.to_numpy().astype(np.float32),
+        pov_target
+    )
+    mtl_cons_train, mtl_pov_train = _predict_mtl_model(mtl_model, mtl_device, train_feat)
+    mtl_cons_test, mtl_pov_test = _predict_mtl_model(mtl_model, mtl_device, test_feat)
+
+    y_train_pred = (1 - _MTL_CONS_BLEND) * y_train_pred + _MTL_CONS_BLEND * mtl_cons_train
+
     train_cons_y['cons_pred'] = y_train_pred
     train_pred_rate_y = calc.poverty_rates_from_consumption(train_cons_y, 'cons_pred')
+    mtl_train_rate = _pov_probs_to_rates(mtl_pov_train, train_cons_y['survey_id'])
+    if _MTL_RATE_BLEND > 0:
+        train_pred_rate_y = _blend_poverty_rates(train_pred_rate_y, [(mtl_train_rate, _MTL_RATE_BLEND)])
     ir = model.fit_isotonic_regression(train_pred_rate_y, train_rate_y)
     train_pred_rate_y = model.transform_isotonic_regression(train_pred_rate_y, ir)
+    coef, intercept = _fit_rate_linear_correction(train_pred_rate_y, train_rate_y)
+    train_pred_rate_y = _apply_rate_linear_correction(train_pred_rate_y, coef, intercept)
 
     print(_calculate_metrics(
         y_train_pred, train_cons_y.cons_ppp17, train_pred_rate_y, train_cons_y,
@@ -237,10 +379,14 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     # prediction
     _predicted_coxbox = stacking_regressor.predict(_datas['test'])
     _predicted = calc.inverse_target_transform(_predicted_coxbox, target_transform_state)
+    _predicted = (1 - _MTL_CONS_BLEND) * _predicted + _MTL_CONS_BLEND * mtl_cons_test
 
     _consumption, _ = file.get_submission_formats('../results')
     _consumption['cons_pred'] = _predicted
     pred_rate_y = calc.poverty_rates_from_consumption(_consumption, 'cons_pred')
+    mtl_pred_rate_y = _pov_probs_to_rates(mtl_pov_test, _consumption['survey_id'])
+    if _MTL_RATE_BLEND > 0:
+        pred_rate_y = _blend_poverty_rates(pred_rate_y, [(mtl_pred_rate_y, _MTL_RATE_BLEND)])
     pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
 
     file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)

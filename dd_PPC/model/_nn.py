@@ -9,6 +9,7 @@ from skorch import NeuralNetRegressor
 
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import complex_numbers_dataframe
+from ..calc import CustomCompetitionLoss
 
 
 def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:
@@ -198,3 +199,35 @@ class Float32Transformer(BaseEstimator, TransformerMixin):
         if isinstance(X, pd.DataFrame): X = X.to_numpy()
 
         return X.astype(np.float32)
+
+
+class MTLConsPoverty(nn.Module):
+    def __init__(self, input_dim: int, hidden: int = 128, pov_dim: int = 19):
+        super().__init__()
+        self.shared = nn.Sequential(
+            nn.Linear(input_dim, hidden),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden, hidden),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+        )
+        self.head_cons = nn.Linear(hidden, 1)
+        self.head_pov = nn.Linear(hidden, pov_dim)
+
+    def forward(self, x):
+        h = self.shared(x)
+        cons = self.head_cons(h).squeeze(-1)
+        pov = torch.sigmoid(self.head_pov(h))
+        return cons, pov
+
+
+class MTLLossWrapper(nn.Module):
+    def __init__(self, poverty_weights):
+        super().__init__()
+        self.loss = CustomCompetitionLoss(poverty_weights)
+
+    def forward(self, outputs, targets):
+        cons_pred, pov_pred = outputs
+        cons_true, pov_true = targets
+        return self.loss(cons_pred, cons_true, pov_pred, pov_true)
