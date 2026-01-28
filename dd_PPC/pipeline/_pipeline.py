@@ -1,4 +1,4 @@
-__all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline']
+__all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline', 'sweep_quantile_alpha']
 
 
 import numpy as np
@@ -244,6 +244,23 @@ def fit_and_predictions_pipeline(folder_prefix: str | None = None):
     pred_rate_y = model.transform_isotonic_regression(pred_rate_y, ir)
 
     file.save_to_submission_format(_predicted, pred_rate=pred_rate_y, folder_prefix=folder_prefix)
+
+
+def sweep_quantile_alpha(alphas: list[float]) -> dict[float, tuple[list[dict], list[dict]]]:
+    results = {}
+    base_params = file.load_best_params('lightgbm')
+    base_params['objective'] = 'quantile'
+    base_params['metric'] = 'quantile'
+    base_params['verbose'] = -1
+    base_params['random_state'] = 123
+
+    for alpha in alphas:
+        params = base_params.copy()
+        params['alpha'] = alpha
+        _, train_scores, test_scores, _ = test_model_pipeline('lgb_quantile', model_params={'lgb_quantile': params})
+        results[alpha] = (train_scores, test_scores)
+
+    return results
 
 
 # common subfunctions for pipelines
