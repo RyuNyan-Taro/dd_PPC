@@ -81,7 +81,17 @@ def get_stacking_regressor_and_pipelines(
         estimators=model_pipelines,
         # final_estimator=Ridge(random_state=123, max_iter=10000, positive=True, alpha=1, fit_intercept=True),
         # final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
-        final_estimator=lgb.LGBMRegressor(),
+        final_estimator=lgb.LGBMRegressor(
+            n_estimators=300,
+            learning_rate=0.05,
+            num_leaves=15,
+            min_child_samples=30,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=0.0,
+            reg_lambda=1.0,
+            random_state=123
+        ),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
         cv=kf,
