@@ -7,7 +7,7 @@ from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import KFold
+from sklearn.model_selection import GroupKFold
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, TargetEncoder
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
@@ -21,11 +21,21 @@ from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from .. import preprocess
 from ..preprocess import complex_numbers_dataframe, survey_related_features
 
+_HUBER_VARIANT = 'v3'
+_HUBER_PARAMS = {
+    'base': dict(max_iter=10000, epsilon=1.1),
+    'v2': dict(max_iter=20000, epsilon=1.2, alpha=0.0001),
+    'v3': dict(max_iter=20000, epsilon=1.35, alpha=0.0005),
+    'v4': dict(max_iter=20000, epsilon=1.4, alpha=0.0005),
+    'v5': dict(max_iter=20000, epsilon=1.3, alpha=0.001),
+}
+
 
 def get_stacking_regressor_and_pipelines(
         model_names: list[str],
         boxcox_lambda: float,
-        model_params: dict | None = None
+        model_params: dict | None = None,
+        target_transform_state: dict | None = None
 ) -> tuple[StackingRegressor, list[tuple[str, Pipeline]]]:
     """
     Constructs a stacking regressor and associated pipelines for given models by applying
@@ -51,7 +61,7 @@ def get_stacking_regressor_and_pipelines(
         its corresponding `Pipeline`.
     """
 
-    num_cols, category_cols, category_number_maps = _get_columns()
+    num_cols, category_cols, complex_category_cols, category_number_maps = _get_columns()
 
     if model_params is None:
         model_params = _get_model_params(model_names)
@@ -65,16 +75,32 @@ def get_stacking_regressor_and_pipelines(
     model_pipelines = [
         (
             _name,
-            Pipeline([('prep', preprocessor)] + _get_initialized_model(_name, model_params, boxcox_lambda=boxcox_lambda))
+            Pipeline([('prep', preprocessor)] + _get_initialized_model(
+                _name,
+                model_params,
+                category_cols=complex_category_cols,
+                boxcox_lambda=boxcox_lambda,
+                target_transform_state=target_transform_state
+            ))
         ) for _name in model_names]
 
-    kf = KFold(n_splits=5, shuffle=True, random_state=123)
+    kf = GroupKFold(n_splits=2)
 
     stacking_regressor = StackingRegressor(
         estimators=model_pipelines,
         # final_estimator=Ridge(random_state=123, max_iter=10000, positive=True, alpha=1, fit_intercept=True),
-        final_estimator=HuberRegressor(max_iter=10000, epsilon=1.1),
-        # final_estimator=lgb.LGBMRegressor(),
+        final_estimator=HuberRegressor(**_HUBER_PARAMS[_HUBER_VARIANT]),
+        # final_estimator=lgb.LGBMRegressor(
+        #     n_estimators=300,
+        #     learning_rate=0.05,
+        #     num_leaves=31,
+        #     min_child_samples=50,
+        #     subsample=0.8,
+        #     colsample_bytree=0.8,
+        #     reg_alpha=0.0,
+        #     reg_lambda=1.0,
+        #     random_state=123
+        # ),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
         cv=kf,
@@ -120,6 +146,10 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
         [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
         columns=_complex_input_cols)).columns)
 
+    complex_category_output_cols = list(preprocess.complex_category_dataframe(pd.DataFrame(
+        [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
+        columns=_complex_input_cols)).columns)
+
     svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
 
     _survey_cols = list({'survey_id', 'sanitation_source'} | set(num_cols) | {'educ_max'} | set(complex_output_cols) | set(svd_cols))
@@ -130,17 +160,32 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
     final_num_cols = num_cols + svd_cols + complex_output_cols + survey_related_output_cols
 
-    return final_num_cols, category_cols, CATEGORY_NUMBER_MAPS
+    return final_num_cols, category_cols, complex_category_output_cols, CATEGORY_NUMBER_MAPS
 
 
 def _get_model_params(model_names: list[str]) -> dict[str, dict]:
     model_params = {}
-    for _model in ['lightgbm', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
-        _model_param = file.load_best_params(_model)
+    for _model in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid', 'xgboost', 'catboost', 'ridge', 'lasso', 'elasticnet', 'kneighbors']:
+        _model_param = file.load_best_params('lightgbm' if _model in ['lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid'] else _model)
         match _model:
             case 'lightgbm':
                 _model_param['objective'] = 'regression'
                 _model_param['metric'] = 'rmse'
+                _model_param['verbose'] = -1
+            case 'lgb_quantile':
+                _model_param['objective'] = 'quantile'
+                _model_param['metric'] = 'quantile'
+                _model_param['alpha'] = 0.3
+                _model_param['verbose'] = -1
+            case 'lgb_quantile_low':
+                _model_param['objective'] = 'quantile'
+                _model_param['metric'] = 'quantile'
+                _model_param['alpha'] = 0.15
+                _model_param['verbose'] = -1
+            case 'lgb_quantile_mid':
+                _model_param['objective'] = 'quantile'
+                _model_param['metric'] = 'quantile'
+                _model_param['alpha'] = 0.5
                 _model_param['verbose'] = -1
             case 'xgboost':
                 _model_param['objective'] = 'reg:squarederror'
@@ -204,14 +249,22 @@ def _get_common_preprocess(category_number_maps: dict, category_cols: list[str],
     return preprocessor
 
 
-def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: float) -> list[tuple[str, BaseEstimator]]:
+def _get_initialized_model(
+        model_name: str,
+        model_params: dict,
+        category_cols: list[str],
+        boxcox_lambda: float,
+        target_transform_state: dict | None
+) -> list[tuple[str, BaseEstimator]]:
     _add_float_size_conversion = ['tabular', 'mlp']
-    _add_count_encoding = ['lightgbm', 'catboost', 'xgboost']
+    _add_count_encoding = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid', 'catboost', 'xgboost']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
 
-    def get_bc_threshold(original_val, lam):
-        return calc.apply_boxcox_transform(np.array([original_val]), lam)[0][0]
+    def get_transformed_threshold(original_val):
+        if target_transform_state is None:
+            return calc.apply_boxcox_transform(np.array([original_val]), boxcox_lambda)[0][0]
+        return calc.transform_target_thresholds(np.array([original_val]), target_transform_state)[0]
 
     if model_name in _add_float_size_conversion:
         match model_name:
@@ -230,19 +283,40 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
                 'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
                 'stable_workers', 'dependency_interaction'
             ]},
+            'lgb_quantile': {'model': lgb.LGBMRegressor, 'drop': [
+                'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
+                'stable_workers', 'dependency_interaction'
+            ]},
+            'lgb_quantile_low': {'model': lgb.LGBMRegressor, 'drop': [
+                'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
+                'stable_workers', 'dependency_interaction'
+            ]},
+            'lgb_quantile_mid': {'model': lgb.LGBMRegressor, 'drop': [
+                'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
+                'stable_workers', 'dependency_interaction'
+            ]},
             'catboost': {'model': catboost.CatBoostRegressor, 'drop': [
                 'water', 'sewer', 'urban', 'has_child', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey',
-                'svd_complex_0', 'svd_complex_1', 'svd_complex_2'
+                'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
             ]},
             'xgboost': {'model': xgb.XGBRegressor, 'drop': [
                 'exp_per_hsize', 'lower_than_not_have_consumed', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'diff_consumed_to_strata',
-                'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2'
+                'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
             ]}
         }[model_name]
 
+        _convert_category_cols = ['educ_max']
+
+        if model_name == 'catboost':
+            model_params[model_name]['cat_features'] = list(set(category_cols) - set(_model_dict['drop']))
+        elif model_name == 'xgboost':
+            model_params[model_name]['enable_categorical'] = True
+
         _model = _model_dict['model'](**model_params[model_name])
+        if model_name in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid']:
+            _model.categorical_features_ = category_cols + _convert_category_cols
 
         _count_encoding_cols = ['sector1d']
         _ce = ColumnTransformer(
@@ -252,10 +326,33 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
             verbose_feature_names_out=False
         )
 
+        def _convert_category(X):
+
+            df_cat = X[_convert_category_cols].copy()
+            df_cat.index = X.index
+            for _col in _convert_category_cols:
+                df_cat[_col] = df_cat[_col].astype('category')
+
+            return pd.concat([X.drop(columns=_convert_category_cols), df_cat], axis=1)
+
         def _drop_features(X):
             return X.drop(columns=_model_dict['drop'])
 
-        return [('count_encoding', _ce), ('drop_features', FunctionTransformer(_drop_features)), ('model', _model)]
+        if model_name in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid']:
+            return [
+                ('count_encoding', _ce),
+                ('complex_category', FunctionTransformer(_complex_category_wrapper)),
+                ('convert_category', FunctionTransformer(_convert_category)),
+                ('drop_features', FunctionTransformer(_drop_features)),
+                ('model', _model)
+            ]
+
+        return [
+            ('count_encoding', _ce),
+            ('complex_category', FunctionTransformer(_complex_category_wrapper)),
+            ('drop_features', FunctionTransformer(_drop_features)),
+            ('model', _model)
+        ]
 
     if model_name in _clf_model:
         _bc_threshold = {
@@ -267,7 +364,7 @@ def _get_initialized_model(model_name: str, model_params: dict, boxcox_lambda: f
 
         _model = _ClassifierWrapper(
             lgb.LGBMClassifier(**model_params[model_name]),
-            boxcox_threshold=get_bc_threshold(_bc_threshold, boxcox_lambda)
+            boxcox_threshold=get_transformed_threshold(_bc_threshold)
         )
 
         return [('model', _model)]
@@ -310,6 +407,13 @@ def _complex_feature_wrapper(X):
 
     df_complex.index = X.index
     return pd.concat([X, df_complex], axis=1)
+
+
+def _complex_category_wrapper(X):
+    df_complex_cat = preprocess.complex_category_dataframe(X)
+
+    df_complex_cat.index = X.index
+    return pd.concat([X, df_complex_cat], axis=1)
 
 
 def _survey_related_feature_wrapper(X):
