@@ -176,11 +176,17 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
                 _model_param['objective'] = 'quantile'
                 _model_param['metric'] = 'quantile'
                 _model_param['alpha'] = 0.3
+                _model_param['learning_rate'] = 0.03
+                _model_param['num_leaves'] = 15
+                _model_param['min_child_samples'] = 40
                 _model_param['verbose'] = -1
             case 'lgb_quantile_low':
                 _model_param['objective'] = 'quantile'
                 _model_param['metric'] = 'quantile'
                 _model_param['alpha'] = 0.15
+                _model_param['learning_rate'] = 0.03
+                _model_param['num_leaves'] = 15
+                _model_param['min_child_samples'] = 40
                 _model_param['verbose'] = -1
             case 'lgb_quantile_mid':
                 _model_param['objective'] = 'quantile'
