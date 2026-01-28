@@ -6,6 +6,7 @@ __all__ = [
     'fit_target_transform',
     'inverse_target_transform',
     'transform_target_thresholds',
+    'CustomCompetitionLoss',
     'score_statics'
 ]
 
