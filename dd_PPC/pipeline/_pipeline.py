@@ -13,7 +13,7 @@ from .. import file, model, data, calc
 
 _MODEL_NAMES = ['lightgbm', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
-_TARGET_TRANSFORM = dict(method='log1p', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
+_TARGET_TRANSFORM = dict(method='boxcox', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
 
 
 def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
