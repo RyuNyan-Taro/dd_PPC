@@ -223,10 +223,13 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
         tol=1e-4
     )
     model_params['tabnet'] = dict(
-        optimizer_params=dict(lr=2e-2),
-        scheduler_params={"step_size": 50, "gamma": 0.9},
+        optimizer_params=dict(lr=1e-2),
+        scheduler_params={"step_size": 30, "gamma": 0.9},
         seed=123,
-        max_epochs=15,
+        max_epochs=20,
+        patience=8,
+        batch_size=512,
+        virtual_batch_size=128,
         eval_metric=["rmse"],
         mask_type='entmax'  # 疎な特徴量選択を可能にする設定
     )
