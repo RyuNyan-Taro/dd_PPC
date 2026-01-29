@@ -18,7 +18,7 @@ from .. import file, model, data, calc
 from ..model import _nn as model_nn
 
 
-_MODEL_NAMES = ['lgb_quantile', 'lgb_quantile_low', 'catboost', 'ridge', 'mlp_regressor']
+_MODEL_NAMES = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'catboost', 'ridge', 'mlp_regressor']
 _BOXCOX_LAMBDA = 0.09
 _TARGET_TRANSFORM = dict(method='boxcox', quantile_n=1000)
 _RATE_LINEAR_BLEND = 0
