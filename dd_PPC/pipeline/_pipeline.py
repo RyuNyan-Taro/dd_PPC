@@ -1,4 +1,4 @@
-__all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline', 'sweep_quantile_alpha', 'sweep_mtl_blends', ]
+__all__ = ['fit_and_test_pipeline', 'test_model_pipeline', 'fit_and_predictions_pipeline', 'sweep_quantile_alpha']
 
 
 import numpy as np
@@ -12,6 +12,7 @@ from sklearn.ensemble import StackingRegressor
 from sklearn.isotonic import IsotonicRegression
 from sklearn.model_selection import GroupKFold
 from sklearn.pipeline import Pipeline
+from scipy.stats import boxcox_normmax
 
 from .. import file, model, data, calc
 from ..model import _nn as model_nn
@@ -19,7 +20,7 @@ from ..model import _nn as model_nn
 
 _MODEL_NAMES = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
-_TARGET_TRANSFORM = dict(method='boxcox', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
+_TARGET_TRANSFORM = dict(method='boxcox', quantile_n=1000)
 _RATE_LINEAR_BLEND = 0
 _RATE_Q_BLEND = 0.0
 _RATE_Q_LOW_BLEND = 0.0
@@ -33,11 +34,14 @@ _POVERTY_THRESHOLDS = np.array([
 ], dtype=np.float32)
 
 
-def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
+def _fit_target_transform(y: np.ndarray, boxcox_lambda: float | None = None) -> tuple[np.ndarray, dict]:
+    if boxcox_lambda is None:
+        boxcox_lambda = _BOXCOX_LAMBDA
+
     return calc.fit_target_transform(
         y,
         method=_TARGET_TRANSFORM['method'],
-        lambda_param=_TARGET_TRANSFORM.get('boxcox_lambda'),
+        lambda_param=boxcox_lambda,
         quantile_n=_TARGET_TRANSFORM.get('quantile_n', 1000)
     )
 
