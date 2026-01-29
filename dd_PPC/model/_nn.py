@@ -1,15 +1,76 @@
-__all__ = ['get_tabular_nn_regressor', 'get_mlp_nn_regressor', 'TabularNN', 'EntityEmbeddingMLP', 'Float32Transformer']
+__all__ = ['get_tabnet_regressor', 'get_tabular_nn_regressor', 'get_mlp_nn_regressor', 'TabularNN', 'EntityEmbeddingMLP', 'Float32Transformer']
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-from sklearn.base import BaseEstimator, TransformerMixin
+import inspect
+from collections.abc import Mapping
+from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin, is_regressor
+from pytorch_tabnet.tab_model import TabNetRegressor
 from skorch import NeuralNetRegressor
 
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import complex_numbers_dataframe
 from ..calc import CustomCompetitionLoss
+
+
+def get_tabnet_regressor(params: dict) -> BaseEstimator:
+
+    params = {} if params is None else params.copy()
+
+    if 'seed' in params:
+        torch.manual_seed(params['seed'])
+        del params['seed']
+
+    # Split constructor params vs fit-time params to avoid unexpected kwargs errors.
+    _init_keys = set(inspect.signature(TabNetRegressor.__init__).parameters.keys()) - {'self', 'kwargs'}
+    init_params = {k: v for k, v in params.items() if k in _init_keys}
+    _fit_keys = {
+        "X_train", "y_train", "eval_set", "eval_name", "eval_metric", "loss_fn", "weights",
+        "max_epochs", "patience", "batch_size", "virtual_batch_size", "num_workers", "drop_last",
+        "callbacks", "pin_memory", "from_unsupervised", "warm_start", "augmentations", "compute_importance"
+    }
+    fit_params = {k: v for k, v in params.items() if k in _fit_keys}
+
+    device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
+
+    return _TabNetSklearnWrapper(
+        init_params=dict(
+            # Preprocessing already encodes categorical values; treat everything as continuous.
+            cat_idxs=[],
+            cat_dims=[],
+            optimizer_fn=torch.optim.Adam,
+            scheduler_fn=torch.optim.lr_scheduler.StepLR,
+            device_name=device,
+            **init_params
+        ),
+        fit_params=fit_params
+    )
+
+
+class _TabNetSklearnWrapper(BaseEstimator, RegressorMixin):
+    """Sklearn-friendly wrapper that handles y shape and fit-time kwargs for TabNet."""
+
+    def __init__(self, init_params: dict | None = None, fit_params: dict | None = None):
+        self.init_params = init_params or {}
+        self.fit_params = fit_params if isinstance(fit_params, Mapping) else (fit_params or {})
+        self._model = None
+        self._estimator_type = "regressor"
+
+    def fit(self, X, y, **kwargs):
+        if y is not None and getattr(y, "ndim", 1) == 1:
+            y = y.reshape(-1, 1)
+        merged = {**self.fit_params, **kwargs}
+        self._model = TabNetRegressor(**self.init_params)
+        self._model.fit(X, y, **merged)
+        return self
+
+    def predict(self, X):
+        preds = self._model.predict(X)
+        if getattr(preds, "ndim", 1) == 2 and preds.shape[1] == 1:
+            return preds[:, 0]
+        return preds
 
 
 def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:
@@ -49,6 +110,8 @@ def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:
     cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
     emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
 
+    device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
+
     regressor = NeuralNetRegressor(
         module=TabularNN,
         module__n_cont=num_features,
@@ -58,7 +121,7 @@ def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:
         optimizer=torch.optim.Adam,
         train_split=None,
         verbose=0,
-        device='cuda' if torch.cuda.is_available() else 'cpu',
+        device=_device,
         **params
     )
 

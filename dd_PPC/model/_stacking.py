@@ -2,6 +2,7 @@ __all__ = ['get_stacking_regressor_and_pipelines']
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
@@ -11,6 +12,7 @@ from sklearn.model_selection import GroupKFold
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, TargetEncoder
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
+from sklearn.neural_network import MLPRegressor
 from category_encoders import CountEncoder
 import lightgbm as lgb
 import xgboost as xgb
@@ -206,7 +208,31 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
 
     model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
     model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
-
+    model_params['mlp_regressor'] = dict(
+        random_state=123, verbose=0,
+        activation='relu', solver='adam',
+        learning_rate='adaptive',
+        learning_rate_init=2e-4,
+        alpha=0.015,
+        batch_size=512,
+        max_iter=300,
+        hidden_layer_sizes=(64, 32),
+        loss='squared_error',
+        validation_fraction=0.15,
+        early_stopping=True, n_iter_no_change=20,
+        tol=1e-4
+    )
+    model_params['tabnet'] = dict(
+        optimizer_params=dict(lr=1e-2),
+        scheduler_params={"step_size": 30, "gamma": 0.9},
+        seed=123,
+        max_epochs=20,
+        patience=8,
+        batch_size=512,
+        virtual_batch_size=128,
+        eval_metric=["rmse"],
+        mask_type='entmax'  # 疎な特徴量選択を可能にする設定
+    )
     for _threshold in ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']:
         model_params[_threshold] = dict(random_state=123, verbose=-1, force_row_wise=True)
 
@@ -256,8 +282,8 @@ def _get_initialized_model(
         boxcox_lambda: float,
         target_transform_state: dict | None
 ) -> list[tuple[str, BaseEstimator]]:
-    _add_float_size_conversion = ['tabular', 'mlp']
-    _add_count_encoding = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid', 'catboost', 'xgboost']
+    _add_float_size_conversion = ['tabular', 'mlp', 'tabnet']
+    _add_count_encoding = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid', 'catboost', 'xgboost', 'mlp_regressor']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
 
@@ -272,10 +298,13 @@ def _get_initialized_model(
                 _model = model.get_tabular_nn_regressor(model_params['tabular'])
             case 'mlp':
                 _model = model.get_mlp_nn_regressor(model_params['mlp'])
+            case 'tabnet':
+                _model = model.get_tabnet_regressor(model_params['tabnet'])
             case _:
                 raise ValueError(f'Invalid model name: {model_name}')
 
-        return [('convert', model.Float32Transformer()), _model]
+        # Every pipeline step must be a (name, estimator/transformer) tuple.
+        return [('convert', model.Float32Transformer()), ('model', _model)]
 
     if model_name in _add_count_encoding:
         _model_dict = {
@@ -304,7 +333,8 @@ def _get_initialized_model(
                 'exp_per_hsize', 'lower_than_not_have_consumed', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'diff_consumed_to_strata',
                 'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
-            ]}
+            ]},
+            'mlp_regressor': {'model': MLPRegressor, 'drop': []}
         }[model_name]
 
         _convert_category_cols = ['educ_max']
@@ -338,11 +368,27 @@ def _get_initialized_model(
         def _drop_features(X):
             return X.drop(columns=_model_dict['drop'])
 
+        def _encode_non_numeric(X):
+            df = X.copy()
+            for col in df.columns:
+                if not is_numeric_dtype(df[col]):
+                    df[col] = df[col].astype('category').cat.codes.astype(np.int32)
+            return df
+
         if model_name in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid']:
             return [
                 ('count_encoding', _ce),
                 ('complex_category', FunctionTransformer(_complex_category_wrapper)),
                 ('convert_category', FunctionTransformer(_convert_category)),
+                ('drop_features', FunctionTransformer(_drop_features)),
+                ('model', _model)
+            ]
+
+        if model_name == 'mlp_regressor':
+            return [
+                ('count_encoding', _ce),
+                ('complex_category', FunctionTransformer(_complex_category_wrapper)),
+                ('encode_non_numeric', FunctionTransformer(_encode_non_numeric)),
                 ('drop_features', FunctionTransformer(_drop_features)),
                 ('model', _model)
             ]
