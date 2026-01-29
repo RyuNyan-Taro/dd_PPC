@@ -233,7 +233,7 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         'exp_per_hsize': train['utl_exp_ppp17'] / train['hsize'],
         'any_nonagoric_and_sewer': (train['any_nonagric'] + train['sewer']) / 2,
         'has_child': train['has_child'].astype(int),
-        'yeo_weight': yeojohnson(train['weight'], yeojohnson_normmax(train['weight']),),
+        'yeo_utl_exp_ppp17': yeojohnson(train['utl_exp_ppp17'], yeojohnson_normmax(train['utl_exp_ppp17']),),
         # 'consumed_times_infra': train['svd_consumed_0'] * train['svd_infrastructure_0'],
         # 'edu_labor_efficiency': train['educ_max'] / (train['sector1d'] + 1),
         # 'utl_per_ae': train['utl_exp_ppp17'] / _adult_equivalence
