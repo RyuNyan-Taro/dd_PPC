@@ -284,12 +284,12 @@ def _get_initialized_model(
                 'stable_workers', 'dependency_interaction'
             ]},
             'lgb_quantile': {'model': lgb.LGBMRegressor, 'drop': [
-                'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
-                'stable_workers', 'dependency_interaction'
+                'exp_per_hsize', 'any_nonagoric_and_sewer', 'urban_sanitation',
+                'dependency_interaction'
             ]},
             'lgb_quantile_low': {'model': lgb.LGBMRegressor, 'drop': [
-                'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
-                'stable_workers', 'dependency_interaction'
+                'exp_per_hsize', 'any_nonagoric_and_sewer', 'urban_sanitation',
+                'dependency_interaction'
             ]},
             'lgb_quantile_mid': {'model': lgb.LGBMRegressor, 'drop': [
                 'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
