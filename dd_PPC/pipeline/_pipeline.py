@@ -19,7 +19,7 @@ from ..model import _nn as model_nn
 
 _MODEL_NAMES = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'catboost', 'ridge']
 _BOXCOX_LAMBDA = 0.09
-_TARGET_TRANSFORM = dict(method='boxcox', boxcox_lambda=_BOXCOX_LAMBDA, quantile_n=1000)
+_TARGET_TRANSFORM = dict(method='boxcox', quantile_n=1000)
 _RATE_LINEAR_BLEND = 0
 _RATE_Q_BLEND = 0.0
 _RATE_Q_LOW_BLEND = 0.0
@@ -33,11 +33,14 @@ _POVERTY_THRESHOLDS = np.array([
 ], dtype=np.float32)
 
 
-def _fit_target_transform(y: np.ndarray) -> tuple[np.ndarray, dict]:
+def _fit_target_transform(y: np.ndarray, boxcox_lambda: float | None = None) -> tuple[np.ndarray, dict]:
+    if boxcox_lambda is None:
+        boxcox_lambda = _BOXCOX_LAMBDA
+
     return calc.fit_target_transform(
         y,
         method=_TARGET_TRANSFORM['method'],
-        lambda_param=_TARGET_TRANSFORM.get('boxcox_lambda'),
+        lambda_param=boxcox_lambda,
         quantile_n=_TARGET_TRANSFORM.get('quantile_n', 1000)
     )
 
