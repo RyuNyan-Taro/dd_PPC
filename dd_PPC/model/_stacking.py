@@ -11,6 +11,7 @@ from sklearn.model_selection import GroupKFold
 from sklearn.preprocessing import StandardScaler, FunctionTransformer, TargetEncoder
 from sklearn.base import BaseEstimator, TransformerMixin, RegressorMixin
 from sklearn.impute import SimpleImputer
+from sklearn.neural_network import MLPRegressor
 from category_encoders import CountEncoder
 import lightgbm as lgb
 import xgboost as xgb
@@ -206,6 +207,7 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
 
     model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
     model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
+    model_params['mlp_regressor'] = dict(random_state=123)
 
     for _threshold in ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']:
         model_params[_threshold] = dict(random_state=123, verbose=-1, force_row_wise=True)
@@ -304,7 +306,8 @@ def _get_initialized_model(
                 'exp_per_hsize', 'lower_than_not_have_consumed', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'diff_consumed_to_strata',
                 'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
-            ]}
+            ]},
+            'mlp_regressor': {'model': MLPRegressor, 'drop': []}
         }[model_name]
 
         _convert_category_cols = ['educ_max']
