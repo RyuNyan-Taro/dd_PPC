@@ -49,13 +49,14 @@ def get_tabnet_regressor(params: dict) -> BaseEstimator:
     )
 
 
-class _TabNetSklearnWrapper(BaseEstimator, TransformerMixin):
+class _TabNetSklearnWrapper(BaseEstimator, RegressorMixin):
     """Sklearn-friendly wrapper that handles y shape and fit-time kwargs for TabNet."""
 
     def __init__(self, init_params: dict | None = None, fit_params: dict | None = None):
         self.init_params = init_params or {}
         self.fit_params = fit_params if isinstance(fit_params, Mapping) else (fit_params or {})
         self._model = None
+        self._estimator_type = "regressor"
 
     def fit(self, X, y, **kwargs):
         if y is not None and getattr(y, "ndim", 1) == 1:
