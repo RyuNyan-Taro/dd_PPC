@@ -292,7 +292,7 @@ def _get_initialized_model(
             case 'mlp':
                 _model = model.get_mlp_nn_regressor(model_params['mlp'])
             case 'tabnet':
-                _model = model.get_tabnet_regressor()
+                _model = model.get_tabnet_regressor(model_params['tabnet'])
             case _:
                 raise ValueError(f'Invalid model name: {model_name}')
 
