@@ -281,7 +281,7 @@ def _get_initialized_model(
         _model_dict = {
             'lightgbm': {'model': lgb.LGBMRegressor, 'drop': [
                 'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
-                'stable_workers', 'dependency_interaction', 'consumed1600'
+                'stable_workers', 'dependency_interaction'
             ]},
             'lgb_quantile': {'model': lgb.LGBMRegressor, 'drop': [
                 'exp_per_hsize', 'any_nonagoric_and_sewer', 'urban_sanitation',
