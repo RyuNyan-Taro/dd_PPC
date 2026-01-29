@@ -301,8 +301,6 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
             - A list of dictionaries containing training evaluation metrics.
             - A list of dictionaries containing testing evaluation metrics.
     """
-    boxcox_lambda = _BOXCOX_LAMBDA
-
     _datas = file.get_datas()
 
     _k_fold_test_ids = [100000, 200000, 300000]
@@ -319,8 +317,11 @@ def test_model_pipeline(model_name: str, model_params: dict | None = None) -> tu
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
+        boxcox_lambda = boxcox_normmax(train_cons_y.cons_ppp17)
+        print(boxcox_lambda)
+
         set_config(transform_output="pandas")
-        train_y, target_transform_state = _fit_target_transform(train_cons_y.cons_ppp17.to_numpy())
+        train_y, target_transform_state = _fit_target_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda=boxcox_lambda)
         _model_pipeline = model.get_stacking_regressor_and_pipelines(
             [model_name],
             boxcox_lambda=boxcox_lambda,
