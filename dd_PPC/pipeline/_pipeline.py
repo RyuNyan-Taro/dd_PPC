@@ -183,6 +183,7 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
         else:
             raise AttributeError(f"Model {type(model_).__name__} doesn't have coef_ or feature_importances_")
 
+    boxcox_lambda = _BOXCOX_LAMBDA
     _model_names = _MODEL_NAMES
 
     _datas = file.get_datas()
@@ -201,10 +202,8 @@ def fit_and_test_pipeline() -> tuple[list[StackingRegressor], list[dict], list[d
             _datas['train'], _datas['target_consumption'], _datas['target_rate'], test_survey_ids=[_id]
         )
 
-        boxcox_lambda = boxcox_normmax(train_cons_y.cons_ppp17)
-
         set_config(transform_output="pandas")
-        train_y, target_transform_state = _fit_target_transform(train_cons_y.cons_ppp17.to_numpy(), boxcox_lambda=boxcox_lambda)
+        train_y, target_transform_state = _fit_target_transform(train_cons_y.cons_ppp17.to_numpy())
         stacking_regressor, model_pipelines = model.get_stacking_regressor_and_pipelines(
             _model_names,
             boxcox_lambda=boxcox_lambda,
