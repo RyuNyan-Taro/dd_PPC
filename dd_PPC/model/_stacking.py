@@ -377,6 +377,7 @@ def _get_initialized_model(
                 ('complex_category', FunctionTransformer(_complex_category_wrapper)),
                 ('encode_non_numeric', FunctionTransformer(_encode_non_numeric)),
                 ('drop_features', FunctionTransformer(_drop_features)),
+                ('scaler', StandardScaler()),
                 ('model', _model)
             ]
 
