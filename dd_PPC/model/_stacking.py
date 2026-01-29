@@ -222,8 +222,12 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
         early_stopping=True, n_iter_no_change=20,
         tol=1e-4
     )
-    model_params['tabnet'] = dict(optimizer_params=dict(lr=2e-2),
+    model_params['tabnet'] = dict(
+        optimizer_params=dict(lr=2e-2),
         scheduler_params={"step_size": 50, "gamma": 0.9},
+        seed=123,
+        max_epochs=15,
+        eval_metric=["rmse"],
         mask_type='entmax'  # 疎な特徴量選択を可能にする設定
     )
     for _threshold in ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']:
@@ -296,7 +300,8 @@ def _get_initialized_model(
             case _:
                 raise ValueError(f'Invalid model name: {model_name}')
 
-        return [('convert', model.Float32Transformer()), _model]
+        # Every pipeline step must be a (name, estimator/transformer) tuple.
+        return [('convert', model.Float32Transformer()), ('model', _model)]
 
     if model_name in _add_count_encoding:
         _model_dict = {

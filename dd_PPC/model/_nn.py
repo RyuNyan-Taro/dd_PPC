@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import inspect
+from collections.abc import Mapping
 from sklearn.base import BaseEstimator, TransformerMixin
 from pytorch_tabnet.tab_model import TabNetRegressor
 from skorch import NeuralNetRegressor
@@ -15,27 +17,57 @@ from ..calc import CustomCompetitionLoss
 
 def get_tabnet_regressor(params: dict) -> TabNetRegressor:
 
+    params = {} if params is None else params.copy()
+
     if 'seed' in params:
         torch.manual_seed(params['seed'])
         del params['seed']
 
-    num_features = len(NUMBER_COLUMNS)
-    cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
-    emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
+    # Split constructor params vs fit-time params to avoid unexpected kwargs errors.
+    _init_keys = set(inspect.signature(TabNetRegressor.__init__).parameters.keys()) - {'self', 'kwargs'}
+    init_params = {k: v for k, v in params.items() if k in _init_keys}
+    _fit_keys = {
+        "X_train", "y_train", "eval_set", "eval_name", "eval_metric", "loss_fn", "weights",
+        "max_epochs", "patience", "batch_size", "virtual_batch_size", "num_workers", "drop_last",
+        "callbacks", "pin_memory", "from_unsupervised", "warm_start", "augmentations", "compute_importance"
+    }
+    fit_params = {k: v for k, v in params.items() if k in _fit_keys}
 
     device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
 
-    model_tabnet = TabNetRegressor(
-        cat_idxs=cat_features_dims,
-        cat_dims=emb_dims,
-        cat_emb_dim=2,  # 各カテゴリの埋め込み次元
+    model_tabnet = _TabNet1DWrapper(
+        # Preprocessing already encodes categorical values; treat everything as continuous.
+        cat_idxs=[],
+        cat_dims=[],
         optimizer_fn=torch.optim.Adam,
         scheduler_fn=torch.optim.lr_scheduler.StepLR,
         device_name=device,
-        **params
+        fit_params=fit_params,
+        **init_params
     )
 
     return model_tabnet
+
+
+class _TabNet1DWrapper(TabNetRegressor):
+    """Thin wrapper to adapt TabNetRegressor to 1D y usage in pipelines."""
+
+    def __init__(self, fit_params=None, **kwargs):
+        self._fit_params = fit_params if isinstance(fit_params, Mapping) else (fit_params or {})
+        super().__init__(**kwargs)
+
+    def fit(self, X, y, **kwargs):
+        if y is not None and getattr(y, "ndim", 1) == 1:
+            y = y.reshape(-1, 1)
+        base = self._fit_params if isinstance(self._fit_params, Mapping) else {}
+        merged = {**base, **kwargs}
+        return super().fit(X, y, **merged)
+
+    def predict(self, X):
+        preds = super().predict(X)
+        if getattr(preds, "ndim", 1) == 2 and preds.shape[1] == 1:
+            return preds[:, 0]
+        return preds
 
 
 def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:
