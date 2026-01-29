@@ -26,8 +26,8 @@ def get_tabnet_regressor(params: dict) -> TabNetRegressor:
     device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
 
     model_tabnet = TabNetRegressor(
-        cat_idxs=cat_idxs,
-        cat_dims=cat_dims,
+        cat_idxs=cat_features_dims,
+        cat_dims=emb_dims,
         cat_emb_dim=2,  # 各カテゴリの埋め込み次元
         optimizer_fn=torch.optim.Adam,
         scheduler_fn=torch.optim.lr_scheduler.StepLR,
