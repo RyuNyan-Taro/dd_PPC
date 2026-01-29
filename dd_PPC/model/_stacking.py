@@ -2,6 +2,7 @@ __all__ = ['get_stacking_regressor_and_pipelines']
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import StackingRegressor
 from sklearn.linear_model import Ridge, Lasso, HuberRegressor, QuantileRegressor, ElasticNet
@@ -207,7 +208,12 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
 
     model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
     model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
-    model_params['mlp_regressor'] = dict(random_state=123)
+    model_params['mlp_regressor'] = dict(
+        random_state=123, verbose=1,
+        activation='relu', solver='adam',
+        loss='squared_error',
+        early_stopping=True, n_iter_no_change=10,
+    )
 
     for _threshold in ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']:
         model_params[_threshold] = dict(random_state=123, verbose=-1, force_row_wise=True)
@@ -341,11 +347,27 @@ def _get_initialized_model(
         def _drop_features(X):
             return X.drop(columns=_model_dict['drop'])
 
+        def _encode_non_numeric(X):
+            df = X.copy()
+            for col in df.columns:
+                if not is_numeric_dtype(df[col]):
+                    df[col] = df[col].astype('category').cat.codes.astype(np.int32)
+            return df
+
         if model_name in ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid']:
             return [
                 ('count_encoding', _ce),
                 ('complex_category', FunctionTransformer(_complex_category_wrapper)),
                 ('convert_category', FunctionTransformer(_convert_category)),
+                ('drop_features', FunctionTransformer(_drop_features)),
+                ('model', _model)
+            ]
+
+        if model_name == 'mlp_regressor':
+            return [
+                ('count_encoding', _ce),
+                ('complex_category', FunctionTransformer(_complex_category_wrapper)),
+                ('encode_non_numeric', FunctionTransformer(_encode_non_numeric)),
                 ('drop_features', FunctionTransformer(_drop_features)),
                 ('model', _model)
             ]
