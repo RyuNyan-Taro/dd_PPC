@@ -1,15 +1,42 @@
-__all__ = ['get_tabular_nn_regressor', 'get_mlp_nn_regressor', 'TabularNN', 'EntityEmbeddingMLP', 'Float32Transformer']
+__all__ = ['get_tabnet_regressor', 'get_tabular_nn_regressor', 'get_mlp_nn_regressor', 'TabularNN', 'EntityEmbeddingMLP', 'Float32Transformer']
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.base import BaseEstimator, TransformerMixin
+from pytorch_tabnet import TabNetRegressor
 from skorch import NeuralNetRegressor
 
 from .._config import CATEGORY_NUMBER_MAPS, NUMBER_COLUMNS
 from ..preprocess import complex_numbers_dataframe
 from ..calc import CustomCompetitionLoss
+
+
+def get_tabnet_regressor(params: dict) -> TabNetRegressor:
+    if params is None:
+        params = dict(lr=0.01, max_epochs=4, batch_size=32)
+
+    if 'seed' in params:
+        torch.manual_seed(params['seed'])
+        del params['seed']
+
+    num_features = len(NUMBER_COLUMNS)
+    cat_features_dims = [len(m) + 1 for m in CATEGORY_NUMBER_MAPS.values()]
+    emb_dims = [min(50, (d + 1) // 2) for d in cat_features_dims]
+
+    model_tabnet = TabNetRegressor(
+        cat_idxs=cat_idxs,
+        cat_dims=cat_dims,
+        cat_emb_dim=2,  # 各カテゴリの埋め込み次元
+        optimizer_fn=torch.optim.Adam,
+        optimizer_params=dict(lr=2e-2),
+        scheduler_params={"step_size": 50, "gamma": 0.9},
+        scheduler_fn=torch.optim.lr_scheduler.StepLR,
+        mask_type='entmax'  # 疎な特徴量選択を可能にする設定
+    )
+
+    return model_tabnet
 
 
 def get_tabular_nn_regressor(params: dict) -> NeuralNetRegressor:

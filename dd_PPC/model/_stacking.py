@@ -272,7 +272,7 @@ def _get_initialized_model(
         boxcox_lambda: float,
         target_transform_state: dict | None
 ) -> list[tuple[str, BaseEstimator]]:
-    _add_float_size_conversion = ['tabular', 'mlp']
+    _add_float_size_conversion = ['tabular', 'mlp', 'tabnet']
     _add_count_encoding = ['lightgbm', 'lgb_quantile', 'lgb_quantile_low', 'lgb_quantile_mid', 'catboost', 'xgboost', 'mlp_regressor']
     _clf_model = ['clf_low', 'clf_middle', 'clf_high', 'clf_very_high']
     _model = None
@@ -288,6 +288,8 @@ def _get_initialized_model(
                 _model = model.get_tabular_nn_regressor(model_params['tabular'])
             case 'mlp':
                 _model = model.get_mlp_nn_regressor(model_params['mlp'])
+            case 'tabnet':
+                _model = model.get_tabnet_regressor()
             case _:
                 raise ValueError(f'Invalid model name: {model_name}')
 
