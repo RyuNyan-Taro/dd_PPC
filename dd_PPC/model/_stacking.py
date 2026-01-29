@@ -211,12 +211,13 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
     model_params['mlp_regressor'] = dict(
         random_state=123, verbose=1,
         activation='relu', solver='adam',
-        learning_rate_init=5e-4,
-        alpha=1e-3,
+        learning_rate_init=3e-4,
+        alpha=7e-3,
         batch_size=256,
-        max_iter=500,
-        hidden_layer_sizes=(192, 96),
+        max_iter=400,
+        hidden_layer_sizes=(96, 48),
         loss='squared_error',
+        validation_fraction=0.15,
         early_stopping=True, n_iter_no_change=15,
         tol=1e-4
     )
