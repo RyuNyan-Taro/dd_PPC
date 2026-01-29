@@ -209,7 +209,7 @@ def _get_model_params(model_names: list[str]) -> dict[str, dict]:
     model_params['tabular'] = dict(lr=0.01, max_epochs=4, batch_size=32, seed=123)
     model_params['mlp'] = dict(lr=0.001, max_epochs=7, batch_size=32, seed=123)
     model_params['mlp_regressor'] = dict(
-        random_state=123, verbose=1,
+        random_state=123, verbose=0,
         activation='relu', solver='adam',
         learning_rate='adaptive',
         learning_rate_init=2e-4,
