@@ -309,6 +309,7 @@ def _get_initialized_model(
     if model_name in _add_count_encoding:
         _model_dict = {
             'lightgbm': {'model': lgb.LGBMRegressor, 'drop': [
+                'weight', 'hsize', 'sewer', 'sanitation_source',
                 'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
                 'stable_workers', 'dependency_interaction'
             ]},
@@ -325,6 +326,7 @@ def _get_initialized_model(
                 'stable_workers', 'dependency_interaction'
             ]},
             'catboost': {'model': catboost.CatBoostRegressor, 'drop': [
+                'weight', 'hsize',
                 'water', 'sewer', 'urban', 'has_child', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey',
                 'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
