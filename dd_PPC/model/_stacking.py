@@ -142,7 +142,9 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
 
     num_cols = NUMBER_COLUMNS.copy()
 
-    _complex_input_cols = num_cols + category_cols + ['svd_consumed_0', 'svd_infrastructure_0', 'svd_consumed_1']
+    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)] + [f'svd_complex_{i}' for i in range(3)]
+
+    _complex_input_cols = num_cols + category_cols + svd_cols
 
     complex_output_cols = list(complex_numbers_dataframe(pd.DataFrame(
         [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
@@ -151,8 +153,6 @@ def _get_columns() -> tuple[list[str], list[str], dict[str, dict[str, int]]]:
     complex_category_output_cols = list(preprocess.complex_category_dataframe(pd.DataFrame(
         [[0] * len(_complex_input_cols), [1] * len(_complex_input_cols)],
         columns=_complex_input_cols)).columns)
-
-    svd_cols = [f'svd_consumed_{i}' for i in range(3)] + [f'svd_infrastructure_{i}' for i in range(3)]
 
     _survey_cols = list({'survey_id', 'sanitation_source'} | set(num_cols) | {'educ_max'} | set(complex_output_cols) | set(svd_cols))
 
@@ -309,7 +309,7 @@ def _get_initialized_model(
     if model_name in _add_count_encoding:
         _model_dict = {
             'lightgbm': {'model': lgb.LGBMRegressor, 'drop': [
-                'weight', 'hsize', 'sewer', 'sanitation_source',
+                'weight', 'hsize', 'sewer', 'sanitation_source', 'water', 'employed',
                 'exp_per_hsize', 'any_nonagoric_and_sewer', 'has_child', 'urban_sanitation',
                 'stable_workers', 'dependency_interaction'
             ]},

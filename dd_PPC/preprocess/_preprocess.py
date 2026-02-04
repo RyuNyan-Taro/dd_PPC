@@ -194,16 +194,50 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
 
     _sector_mean = train.groupby('sector1d')['svd_consumed_0'].transform('mean')
     _sector_std = train.groupby('sector1d')['svd_consumed_0'].transform('std')
+    _worker_density = train['sfworkershh'] / (train['hsize'] + 1)
+    _diff_consume_to_strata = train['svd_consumed_0'] - (_strata_mean + 1e-6)
+    _zscore_consumed_to_strata = (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6)
+    _infra_gap = train['svd_consumed_0'] - train['svd_infrastructure_0']
+    _concat_consumed = train[['consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800', 'consumed3100']].apply(
+        lambda x: sum([_val for _val in x]), axis=1)
 
     _complex_numbers = {
+        'consumed_svd_mix': 0.5 * train['svd_consumed_0'] + 0.3 * train['svd_consumed_1'],
+        # 'complex_over_cons': train['svd_complex_0'] / (train['svd_consumed_0'] + 1e-6),
+
+        'worker_density_norm': _worker_density / (train['hsize'] + 1e-6),
+        # 'worker_density_svd': _worker_density * train['svd_consumed_1'],
+        'strata_gap_consumed': _diff_consume_to_strata / (train['strata'].abs() + 1e-6),
+
+        'infra_gap_sign': _infra_gap * (
+            (train['svd_consumed_0'] - train['svd_infrastructure_0']).apply(lambda x: 1 if x >= 0 else -1)),
+
+        # 'svd_c01_gap': train['svd_consumed_0'] - train['svd_consumed_1'],
+        # 'svd_c02_gap': train['svd_consumed_0'] - train['svd_consumed_2'],
+
+        'concat_consumed_density': _concat_consumed / (train['hsize'] + 1e-6),
+
+        # 'sanitation_infra_mix': train['sanitation_source'] * (
+        #             0.4 * train['svd_infrastructure_0'] + 0.3 * train['svd_infrastructure_1'] + 0.3 * train[
+        #         'svd_infrastructure_2']),
+        # 'water_infra_mix': train['water_source'] * (
+        #             0.4 * train['svd_infrastructure_0'] + 0.3 * train['svd_infrastructure_1'] + 0.3 * train[
+        #         'svd_infrastructure_2']),
+        # 'female_consumed': (train['num_adult_female'] / (train['num_adult_female'] + train['num_adult_male'] + 1e-6)) *
+        #                    train['svd_consumed_0'],
+        # 'child_share': (train['num_children5'] + train['num_children10'] + train['num_children18']) / (
+        #             train['hsize'] + 1e-6),
+        # 'female_share': train['num_adult_female'] / (train['num_adult_female'] + train['num_adult_male'] + 1e-6),
+        'utl_exp_eff': train['utl_exp_ppp17'] / (train['svd_consumed_0'] + 1e-6),
+        'complex_gap': train['svd_complex_0'] - train['svd_consumed_0'],
         # 'adult_equivalence': _adult_equivalence,
         'strata_times_infra': train['strata'] * train['svd_infrastructure_0'],
         'sanitation_and_consumed': (train['sanitation_source'] + 1) * train['svd_consumed_1'],
         # 'urban_times_consumed': (train['urban'] + 1) * train['svd_consumed_1'],
         # 'urban_times_sewer': train['urban'] * (train['sewer'] + 1),
         'consumed_per_hsize': train['svd_consumed_1'] / (train['hsize'] + 1),
-        'infra_gap': train['svd_consumed_0'] - train['svd_infrastructure_0'],
-        'worker_density': train['sfworkershh'] / (train['hsize'] + 1),
+        'infra_gap': _infra_gap,
+        'worker_density': _worker_density,
         'urban_sanitation': train['urban'] * train['sanitation_source'],
         # 'svd_consumed_rate': train['svd_consumed_0'] / train['svd_consumed_1'],
         # 'age_burden_interaction': train['age'] * (train['hsize'] / (train['sfworkershh'] + 1)),
@@ -219,10 +253,9 @@ def complex_numbers_dataframe(train: pd.DataFrame) -> pd.DataFrame:
         # 'dependency_ratio': (train['num_children5'] + train['num_children10'] + train['num_children18'] + train['num_elderly']) / (train['num_adult_male'] + train['num_adult_female'] + 1e-6),
         # 'adult_ratio': (train['num_adult_male'] + train['num_adult_female']) / (train['hsize'] + 1e-6),
         'rel_consumed_to_strata': train['svd_consumed_0'] / (_strata_mean + 1e-6),
-        'diff_consumed_to_strata': train['svd_consumed_0'] - (_strata_mean + 1e-6),
-        'zscore_consumed_to_strata': (train['svd_consumed_0'] - (_strata_mean + 1e-6)) / (_strata_std + 1e-6),
-        'concat_consumed': train[['consumed3100', 'consumed1500', 'consumed2000', 'consumed3000', 'consumed1800', 'consumed3100']].apply(
-        lambda x: sum([_val for _val in x]), axis=1),
+        'diff_consumed_to_strata': _diff_consume_to_strata,
+        'zscore_consumed_to_strata': _zscore_consumed_to_strata,
+        'concat_consumed': _concat_consumed,
         'lower_than_not_have_consumed': train[
             ['consumed900', 'consumed4100', 'consumed300',]].apply(
             lambda x: sum([_val for _val in x]), axis=1),
