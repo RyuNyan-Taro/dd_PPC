@@ -105,7 +105,7 @@ def get_stacking_regressor_and_pipelines(
         # ),
         # final_estimator=Lasso(**model_params['lasso']),
         # final_estimator=QuantileRegressor(quantile=0.5),
-        cv=kf,
+        cv=5,
         n_jobs=1,
         verbose=1
     )
