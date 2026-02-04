@@ -332,6 +332,8 @@ def _get_initialized_model(
                 'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
             ]},
             'xgboost': {'model': xgb.XGBRegressor, 'drop': [
+                'consumed3600', 'weight', 'hsize', 'water', 'consumed2200', 'consumed2700',
+                'sanitation_source_rank_survey',
                 'exp_per_hsize', 'lower_than_not_have_consumed', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey', 'diff_consumed_to_strata',
                 'dependency_interaction', 'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
