@@ -326,7 +326,7 @@ def _get_initialized_model(
                 'stable_workers', 'dependency_interaction'
             ]},
             'catboost': {'model': catboost.CatBoostRegressor, 'drop': [
-                'weight', 'hsize',
+                'weight', 'hsize', 'consumed1500',
                 'water', 'sewer', 'urban', 'has_child', 'stable_workers',
                 'hsize_diff_survey', 'hsize_ratio_survey', 'hsize_rank_survey',
                 'svd_complex_0', 'svd_complex_1', 'svd_complex_2', 'cat_head_profile'
